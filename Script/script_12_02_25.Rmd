@@ -1,0 +1,406 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+# Libraries
+
+```{r,include=FALSE}
+library(dplyr)
+library(lubridate)
+library(gtsummary)
+library(readr)
+library(ggplot2)
+library(tableone)
+library(flextable)
+library(sjlabelled)
+library(readxl)
+library(stringr)
+library(tidyr)
+library(purrr)
+library(tableone)
+library(dplyr)
+library(naniar)
+library(tidyr)
+
+```
+
+# Load DATA
+
+```{r,include=FALSE}
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+
+ADR1 <- data_list[[1]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID =str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+     names_prefix = "ADR1_",
+    values_from = "value",
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (`ADR1_J3-5` = case_when(is.na(`ADR1_J3-5`)&!is.na(ADR1_J5)~ADR1_J5,
+                             T~`ADR1_J3-5`),
+          ADR1_JS = case_when(is.na(ADR1_JS)&!is.na(`ADR1_J3-5-S`)~`ADR1_J3-5-S`,
+                             T~ADR1_JS))%>%
+  rename(ADR1_J3_J5=`ADR1_J3-5`)%>%
+  
+  dplyr::select(ID,
+                ADR1_J0,
+                ADR1_J3_J5,
+                ADR1_JS)
+
+
+ADR2 <- data_list[[2]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+    values_from = "value",
+     names_prefix = "ADR2_" ,
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (
+          ADR2_JS = case_when(is.na(ADR2_JS)&!is.na(`ADR2_J3-5-S`)~`ADR2_J3-5-S`,
+                             T~ADR2_JS))%>%
+  rename(ADR2_J3_J5=`ADR2_J3-5`)%>%
+  dplyr::select(ID,
+                ADR2_J0,
+                ADR2_J3_J5,
+                ADR2_JS)
+
+
+  #Chercher doublons
+ADR1%>%
+  group_by(Patient, ID, Jour) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1)
+ADR2%>%
+  group_by(Patient, ID, Jour) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1)
+
+##Error in `group_by()`:
+#Column `Patient` is not found.
+#Column `Jour` is not found.
+
+colnames(ADR1) # no Patient or Jour
+colnames(ADR2)
+
+str(ADR1)
+str(ADR2)
+
+
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)%>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom,prenom))
+        
+df_list <- lst(DATA,ADR1,ADR2)
+
+df <- reduce(df_list, left_join, by="ID")
+
+```
+
+# LOAD FUNCTIONS
+
+```{r,include=FALSE}
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+```
+
+# DATA MANAGEMENT
+
+```{r,include=FALSE}
+
+df <- df %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+    Time_hosp = as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = as.numeric(ecmo_stop_date - ecmo_start_date)
+  )
+
+
+```
+
+# TABLE 1. Description of the population included
+
+```{r,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0", "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan", "Death")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "Preecmo_tte_diam_LV", "Preecmo_tte_tapse", "Preecmo_tte_vmax_s_mit_lat_LV", "NADcum_D0", "DOBUcum_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0","ADRtot_D0","ADRtot_D3", "ADRtot_w", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo")
+
+var.tot <- c(var.cat, var.cont)
+
+T1 <- df %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), #je transforme en numeric
+         across(all_of(var.cat), as.factor)) #je transforme en cat
+
+--------------------------------------------------------
+--------------------------------------------------------
+# Data preparing for Table 1
+
+## Check for NA
+library(naniar)
+
+# Which variable missing
+missing_summary <- miss_var_summary(T1)
+
+# % variable missing
+gg_miss_var(T1)
+
+print(missing_summary)
+
+#ADRtot_w  25       50% miss
+#ADRtot_D3 21       42% miss
+
+
+## Table 1 standard
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data =T1) # sans groupe de strata
+
+table1 <- print(table1, nonnormal =var.cont)
+
+table1_df <- as.data.frame(print(table1, nonnormal = var.cont, showAllLevels = TRUE))
+table1_df$Variables <- row.names(table1_df)
+
+row.names(table1_df)<-NULL
+table1_df <- table1_df[, c(2,1)]
+
+T1_n <- T1%>%
+  summarise(across(everything(), ~ sum(is.na(.))))%>%
+  pivot_longer(cols= everything(),
+    values_to = "n_missing",
+    names_to = "ID")%>%
+  mutate(n_missing = paste0(n_missing,"/50"),
+         ID = trimws(ID))
+
+table1_df1 <- table1_df %>%
+  mutate(ID = sub("\\(median \\[IQR\\]\\)|= 1 \\(\\%\\)|= Women \\(\\%\\)|\\(\\%\\)", "",Variables),
+         ID = trimws(ID))
+
+table_1_vf <- left_join(table1_df1,T1_n, by="ID")%>%
+  select(Variables,n_missing,Overall)%>%
+  mutate(n_missing = replace_na(n_missing,""))
+
+table_1_vf <- left_join(table1_df1, T1_n, by = "ID") %>%
+  mutate(N = 50 - as.numeric(sub("/50", "", replace_na(n_missing, "0")))) %>%  # Calcola N
+  select(Variables, N, Overall)  # Mantiene solo le colonne desiderate
+
+
+print(table_1_vf)
+
+# Word output
+
+library(officer)
+library(flextable)
+
+table1_flex <- flextable(table_1_vf) %>%
+  theme_zebra() %>%
+  autofit() %>%
+  set_caption("Table 1: Baseline characteristics of the population")
+
+doc <- read_docx() %>%
+  body_add_flextable(table1_flex)
+
+print(doc, target = "TABLES/Table1.docx")
+
+browseURL("TABLES/Table1.docx")
+
+```
+
+#Figure 1: Association between ADRB expressions and outcomes.
+
+```{r,include=FALSE}
+
+## ADRB1 (J0, J3-5, JS) ~ death
+
+#
+df_long <- df %>%
+  pivot_longer(
+    cols = c(ADR1_J0, ADR1_J3_J5, ADR1_JS), 
+    names_to = "ADR1_time", 
+    values_to = "value"
+  ) %>%
+  mutate(j90_deces = factor(j90_deces, levels = c(0, 1), labels = c("NO", "YES")))  # Convertire Death DOPO pivot_longer()
+
+
+count_data <- df_long %>%
+  filter(!is.na(value))%>%
+  group_by(ADR1_time, j90_deces) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(j90_deces))
+#Boxplot
+
+ggplot(df_long |> filter(!is.na(ADR1_time)), aes(x = ADR1_time, y = value, fill = j90_deces)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    x = "ADR1_time",
+    y = "Value",
+    title = "Boxplots ADR1 ~ Death"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("NO" = "#1f78b4", "YES" = "#e31a1c"))+
+  geom_text(data = count_data, aes(x = ADR1_time, y = min(df_long$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = j90_deces), 
+            position = position_dodge(0.7), size = 4, vjust = 1)
+
+
+ggsave("Figures/boxplot_ADR1_Death.pdf", width = 8, height = 6)
+
+## ADRB2 (J0, J3-5, JS) ~ death
+
+#
+df_long <- df %>%
+  select(ID,ADR2_J0, ADR2_J3_J5, ADR2_JS,j90_deces)%>%
+  pivot_longer(
+    cols = c(ADR2_J0, ADR2_J3_J5, ADR2_JS), 
+    names_to = "ADR2_time", 
+    values_to = "value"
+  ) %>%
+  mutate(j90_deces = factor(j90_deces, levels = c(0, 1), labels = c("NO", "YES")))  # Convertire Death DOPO pivot_longer()
+
+count_data <- df_long %>%
+  filter(!is.na(value))%>%
+  group_by(ADR2_time, j90_deces) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(j90_deces))
+
+#Boxplot
+
+ggplot(df_long |> filter(!is.na(ADR2_time)), aes(x = ADR2_time, y = value, fill = j90_deces)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    x = "ADR2_time",
+    y = "Value",
+    title = "Boxplots ADR2 ~ Death"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("NO" = "#1f78b4", "YES" = "#e31a1c"))  +
+  geom_text(data = count_data, aes(x = ADR2_time, y = min(df_long$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = j90_deces), 
+            position = position_dodge(0.7), size = 4, vjust = 1)
+
+
+ggsave("Figures/boxplot_ADR2_Death.pdf", width = 8, height = 6)
+
+
+##With composite outcome
+
+#
+df_long <- df %>%
+  select(ID,ADR1_J0, ADR1_J3_J5, ADR1_JS, Outcome)%>%
+  mutate(Outcome1 = case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome))%>%
+  pivot_longer(
+    cols = c(ADR1_J0, ADR1_J3_J5, ADR1_JS), 
+    names_to = "ADR1_time", 
+    values_to = "value"
+  )
+
+
+count_data <- df_long %>%
+  filter(!is.na(value))%>%
+  group_by(ADR1_time, Outcome1) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcome1))
+#Boxplot
+
+ggplot(df_long |> filter(!is.na(ADR1_time)), aes(x = ADR1_time, y = value, fill = Outcome1)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    x = "ADR1_time",
+    y = "Value",
+    title = "Boxplots ADR1 ~ Outcome"
+  ) +
+  geom_text(data = count_data, aes(x = ADR1_time, y = min(df_long$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = Outcome1), 
+            position = position_dodge(0.7), size = 4, vjust = 1)
+
+
+ggsave("Figures/boxplot_ADR1_Death.pdf", width = 8, height = 6)
+
+## ADRB2 (J0, J3-5, JS) ~ death
+
+#
+df_long <- df %>%
+  select(ID,ADR2_J0, ADR2_J3_J5, ADR2_JS, Outcome)%>%
+  mutate(Outcome1 = case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome))%>%
+  pivot_longer(
+    cols = c(ADR2_J0, ADR2_J3_J5, ADR2_JS), 
+    names_to = "ADR2_time", 
+    values_to = "value"
+  )
+
+
+count_data <- df_long %>%
+  filter(!is.na(value))%>%
+  group_by(ADR2_time, Outcome1) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcome1))
+#Boxplot
+
+ggplot(df_long |> filter(!is.na(ADR2_time)), aes(x = ADR2_time, y = value, fill = Outcome1)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    x = "ADR2_time",
+    y = "Value",
+    title = "Boxplots ADR2 ~ Outcome"
+  ) +
+  geom_text(data = count_data, aes(x = ADR2_time, y = min(df_long$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = Outcome1), 
+            position = position_dodge(0.7), size = 4, vjust = 1)
+
+
+ggsave("Figures/boxplot_ADR2_Death.pdf", width = 8, height = 6)
+
+
+```

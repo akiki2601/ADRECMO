@@ -1,0 +1,414 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+# Libraries
+
+```{r,include=FALSE}
+library(dplyr)
+library(lubridate)
+library(gtsummary)
+library(readr)
+library(ggplot2)
+library(tableone)
+library(flextable)
+library(sjlabelled)
+library(readxl)
+library(stringr)
+library(tidyr)
+library(purrr)
+library(tableone)
+library(dplyr)
+library(naniar)
+library(tidyr)
+
+```
+
+# Load DATA
+
+```{r,include=FALSE}
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+
+ADR1 <- data_list[[1]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID =str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+     names_prefix = "ADR1_",
+    values_from = "value",
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (`ADR1_J3-5` = case_when(is.na(`ADR1_J3-5`)&!is.na(ADR1_J5)~ADR1_J5,
+                             T~`ADR1_J3-5`),
+          ADR1_JS = case_when(is.na(ADR1_JS)&!is.na(`ADR1_J3-5-S`)~`ADR1_J3-5-S`,
+                             T~ADR1_JS))%>%
+  rename(ADR1_J3_J5=`ADR1_J3-5`)%>%
+  
+  dplyr::select(ID,
+                ADR1_J0,
+                ADR1_J3_J5,
+                ADR1_JS)
+
+
+ADR2 <- data_list[[2]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+    values_from = "value",
+     names_prefix = "ADR2_" ,
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (
+          ADR2_JS = case_when(is.na(ADR2_JS)&!is.na(`ADR2_J3-5-S`)~`ADR2_J3-5-S`,
+                             T~ADR2_JS))%>%
+  rename(ADR2_J3_J5=`ADR2_J3-5`)%>%
+  dplyr::select(ID,
+                ADR2_J0,
+                ADR2_J3_J5,
+                ADR2_JS)
+
+
+  #Chercher doublons
+ADR1%>%
+  group_by(Patient, ID, Jour) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1)
+ADR2%>%
+  group_by(Patient, ID, Jour) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1)
+
+##Error in `group_by()`:
+#Column `Patient` is not found.
+#Column `Jour` is not found.
+
+colnames(ADR1) # no Patient or Jour
+colnames(ADR2)
+
+str(ADR1)
+str(ADR2)
+
+
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)%>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom,prenom))
+        
+df_list <- lst(DATA,ADR1,ADR2)
+
+df <- reduce(df_list, left_join, by="ID")
+
+df$ADR1_JS
+
+```
+
+# LOAD FUNCTIONS
+
+```{r,include=FALSE}
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+```
+
+# DATA MANAGEMENT
+
+```{r,include=FALSE}
+
+DATA <- DATA %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+    Time_hosp = as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = as.numeric(ecmo_stop_date - ecmo_start_date)
+  )
+
+
+```
+
+# TABLE 1. Description of the population included
+
+```{r,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0", "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "Preecmo_tte_diam_LV", "Preecmo_tte_tapse", "Preecmo_tte_vmax_s_mit_lat_LV", "NADcum_D0", "DOBUcum_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0","ADRtot_D0","ADRtot_D3", "ADRtot_w", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo")
+
+var.tot <- c(var.cat, var.cont)
+
+T1 <- DATA %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), #je transforme en numeric
+         across(all_of(var.cat), as.factor)) #je transforme en cat
+
+#verifier la normalité des variables, tu vas avoir un pdf dans FIGURES
+
+check_normality_pdf(data = T1, strata = NULL, vars = var.cont, labels = NULL, breaks = 15, path = "FIGURES", file = "check_test1", width = 12, height = 12)
+
+file.exists("FIGURES/check_test1.pdf")
+
+## function check_normality_pdf dosn't work
+
+pdf("FIGURES/test_pdf.pdf", width = 12, height = 12)
+hist(rnorm(100))  # Genera un istogramma casuale
+dev.off()
+file.exists("FIGURES/test_pdf.pdf")
+
+# PDF manual
+library(ggplot2)
+
+pdf("FIGURES/check_test1.pdf", width = 12, height = 12)
+
+for (var in var.cont) {
+  if (var %in% colnames(T1)) {
+    print(
+      ggplot(T1, aes_string(var)) +
+        geom_histogram(bins = 15, fill = "blue", alpha = 0.5) +
+        ggtitle(paste("Distribuzione di", var))
+    )
+  } else {
+    message(paste("❌ Variabile", var, "non trovata in T1"))
+  }
+}
+
+dev.off()
+
+file.exists("FIGURES/check_test1.pdf")
+
+--------------------------------------------------------
+--------------------------------------------------------
+# Data preparing for Table 1
+
+# Tercile
+
+tercile <- quantile(T1$ADRtot_D0, probs = c(0, 1/3, 2/3, 1), na.rm = TRUE)
+print(tercile)
+
+#       0% 33.33333% 66.66667%      100% 
+#    0.145     0.890     2.035     9.810 
+
+# Quartile
+quartile <- quantile(T1$ADRtot_D0, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+print(quartile)
+
+#     0%    25%    50%    75%   100% 
+# 0.1450 0.6775 1.3650 2.2275 9.8100
+
+library(tableone)
+
+## Check for NA
+install.packages("naniar")
+library(naniar)
+
+# Which variable missing
+missing_summary <- miss_var_summary(T1)
+
+# % variable missing
+gg_miss_var(T1)
+
+print(missing_summary)
+
+#ADRtot_w  25       50% miss
+#ADRtot_D3 21       42% miss
+
+
+## Table 1 standard
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data =T1) # sans groupe de strata
+
+table1 <- print(table1, nonnormal =var.cont)
+
+table1_df <- as.data.frame(print(table1, nonnormal = var.cont, showAllLevels = TRUE))
+table1_df$Variables <- row.names(table1_df)
+
+row.names(table1_df)<-NULL
+table1_df <- table1_df[, c(2,1)]
+
+T1_n <- T1%>%
+  summarise(across(everything(), ~ sum(is.na(.))))%>%
+  pivot_longer(cols= everything(),
+    values_to = "n_missing",
+    names_to = "ID")%>%
+  mutate(n_missing = paste0(n_missing,"/50"),
+         ID = trimws(ID))
+
+table1_df1 <- table1_df %>%
+  mutate(ID = sub("\\(median \\[IQR\\]\\)|= 1 \\(\\%\\)|= Women \\(\\%\\)|\\(\\%\\)", "",Variables),
+         ID = trimws(ID))
+
+
+table_1_vf <- left_join(table1_df1,T1_n, by="ID")%>%
+  select(Variables,n_missing,Overall)%>%
+  mutate(n_missing = replace_na(n_missing,""))
+  
+
+## Preparing names for matching
+
+# Transform outcome in charachter
+
+T1$outcome <- as.character(T1$outcome)
+
+var_counts["death"] <- sum(T1$Outcome == "death", na.rm = TRUE)
+
+
+clean_variable_names <- function(names_vector) {
+  names_vector <- str_trim(names_vector)  # Rimuove spazi all'inizio/fine
+  names_vector <- str_replace_all(names_vector, "\\s*=\\s*", "_")  # Sostituisce "=" con "_"
+  names_vector <- str_replace_all(names_vector, "\\(.*?\\)", "")  # Rimuove tutto tra parentesi tonde ()
+  names_vector <- str_replace_all(names_vector, "\\[.*?\\]", "")  # Rimuove tutto tra parentesi quadre []
+  names_vector <- str_replace_all(names_vector, "[^[:alnum:]_]", "_")  # Sostituisce caratteri speciali con "_"
+  names_vector <- str_replace_all(names_vector, "\\d+", "")  # Rimuove tutti i numeri
+  names_vector <- str_replace_all(names_vector, "%", "")  # Rimuove il simbolo "%"
+  names_vector <- str_replace_all(names_vector, "=", "")  # Rimuove il simbolo "%"
+  
+  # Word to remove
+  words_to_remove <- c("iqr", "median", "mean", "sd", "n", "percent", "ci", "range", "pvalue", "min", "max", "se",
+                       "std", "quartile", "mad", "coef", "est", "conf_int", "lower", "upper", "_")
+
+  # Remove
+  names_vector <- str_replace_all(names_vector, paste0("\\b(", paste(words_to_remove, collapse = "|"), ")\\b"), "")
+
+  names_vector <- str_replace_all(names_vector, "_+", "_")  # Rimuove underscore ripetuti
+  names_vector <- str_replace_all(names_vector, "^_|_$", "")  # Rimuove underscore all'inizio/fine
+  names_vector <- tolower(names_vector)  # Converte tutto in minuscolo
+  return(names_vector)
+}
+
+# Apply function to table1_df and var_counts
+table1_df$Variables <- clean_variable_names(table1_df$Variables)
+names(var_counts) <- clean_variable_names(names(var_counts))
+
+
+table1_df <- table1_df %>% filter(Variables != "")
+
+table1_df$Variables <- gsub("gender_women", "gender", table1_df$Variables)
+
+table1_df <- table1_df %>% distinct(Variables, .keep_all = TRUE)
+
+# Add "outcome" subclasses
+var_counts["bridge_to_lvad"] <- sum(T1$outcome == "bridge_to_lvad", na.rm = TRUE)
+var_counts["bridge_to_transplant"] <- sum(T1$outcome == "bridge_to_transplant", na.rm = TRUE)
+var_counts["ecmo_weaning"] <- sum(T1$outcome == "ecmo_weaning", na.rm = TRUE)
+var_counts["death"] <- sum(T1$outcome == "death", na.rm = TRUE)
+
+
+## Controll if some difference left
+
+print("Variabili in table1_df$Variables:")
+print(unique(table1_df$Variables))  # Mostra solo nomi unici
+
+print("Variabili in names(var_counts):")
+print(unique(names(var_counts)))
+
+
+diff_table1 <- setdiff(table1_df$Variables, names(var_counts))
+diff_var_counts <- setdiff(names(var_counts), table1_df$Variables)
+
+print("Variabile in table1_df$Variables ma NON in names(var_counts):")
+print(diff_table1)
+
+print("Variabili in names(var_counts) ma NON in table1_df$Variables:")
+print(diff_var_counts)
+
+## Match
+
+table1_df$N <- var_counts[match(table1_df$Variables, names(var_counts))]
+
+# If NA then 0
+table1_df$N[is.na(table1_df$N)] <- 0  
+
+# N for every variable
+missing_summary <- miss_var_summary(T1)
+var_counts <- setNames(nrow(T1) - missing_summary$n_miss, missing_summary$variable)
+
+# Add N
+table1_df$N <- var_counts[match(table1_df$Variables, names(var_counts))]
+table1_df$N[is.na(table1_df$N)] <- 0  # Sostituisce NA con 0 se necessario
+
+# "N" after "Variables"
+table1_df <- table1_df[, c("Variables", "N", setdiff(names(table1_df), c("Variables", "N")))]
+
+
+## always N=0, check
+
+matched_indices <- match(table1_df$Variables, names(var_counts))
+print("📌 Indici trovati con match():")
+print(matched_indices)
+
+## N correct = problem with matching
+
+# Other matching function
+var_counts_df <- data.frame(Variables = names(var_counts), N = var_counts, stringsAsFactors = FALSE)
+
+table1_df <- table1_df %>% left_join(var_counts_df, by = "Variables")
+
+## matching doesn't work...
+
+# Word output
+
+library(officer)
+library(flextable)
+
+table1_flex <- flextable(table1_df) %>%
+  theme_zebra() %>%
+  autofit() %>%
+  set_caption("Table 1: Baseline characteristics of the population")
+
+doc <- read_docx() %>%
+  body_add_flextable(table1_flex)
+
+print(doc, target = "TABLES/Table1.docx")
+
+browseURL("TABLES/Table1.docx")
+
+```
+
+# 
+
+```{r,include=FALSE}
+
+
+
+```

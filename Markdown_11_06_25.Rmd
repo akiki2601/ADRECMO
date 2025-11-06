@@ -1,0 +1,3288 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+```{=html}
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+# markdown options depending on the output (html with R code and Word without)
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+options(max.print = .Machine$integer.max)
+```
+
+#Package
+
+```{r,include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+library(gtsummary)
+library(sjlabelled)
+library(readxl)
+library(purrr)
+library(tableone)
+library(naniar)
+library(survival)
+library(survminer)
+library(patchwork)
+library(ggpmisc)
+library(cowplot)  
+library(officer)
+library(flextable)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(forcats)
+```
+
+# Method
+
+This study is a monocentric, prospective, observational investigation conducted in Nancy Hospital between 10.10.2017 and 24.05.2022, enrolling 50 adult patients with refractory cardiogenic shock requiring veno-arterial extracorporeal membrane oxygenation (VA-ECMO) support (NCT03327493).
+
+The study was carried out in accordance with the Declaration of Helsinki and approved by the local institutional ethics committee. Written informed consent was obtained from all patients or their legal representatives prior to inclusion.
+
+## Patient Population
+
+Cardiogenic shock was defined as a systolic blood pressure (SBP) <90 mmHg or a mean arterial pressure (MAP) <65 mmHg despite adequate volume resuscitation, accompanied by signs of peripheral hypoperfusion (e.g., cold extremities, oliguria, altered mental status) and a cardiac index <2.2 L/min/m². Refractoriness was defined as a hyporesponsiveness to norepinephrine and/or the persistence of profound clinical signs of hypoperfusion despite optimal resuscitation efforts.
+Eligible patients were adults (≥18 years old) affiliated with a  health insurance system. Cardiogenic shock etiologies included acute ischemic coronary artery disease, primary or ischemic-related dilated cardiomyopathy, myocarditis and stress-induced cardiomyopathy. Patients were excluded if cardiogenic shock was secondary to cardiotoxic poisoning, if they were pregnant, or were under legal protective supervision (e.g., court-appointed guardianship).
+
+## Data Collection
+
+Clinical, laboratory and echocardiographic parameters were prospectively collected at three predefined timepoints:Day 0 (ECMO implantation), Day 3–5 (early course) and Day of ECMO weaning (ECMO explantation). Blood samples were drawn at each timepoint, immediately centrifuged and plasma was stored at –80°C until analysis. Samples were then transferred to the XXX for cells analysis and INSERM UMR942 laboratory (Paris, France) for cytokine analysis. Quantification of adrenoreceptors β1 and β2 on monocytes and CD4⁺ T lymphocytes was performed using flow cytometry. Cytokine concentrations in plasma, including interleukin (IL) -33, IL-1β, IL-2, IL-4, IL-5, IL-6, IL-8/CXCL8, IL-10, GDF-15, IL-12p70, IL-17A/CTLA-8, IFN-γ, TNF-α and granzyme B, were measured using [XXX].
+
+## Assessment of ADRB1 and ADRB2
+
+The expression of β1 (ADRB1) and β2 (ADRB2) adrenergic receptors on circulating immune cell, namely CD4+ T lymphocytes and monocytes, was assessed via flow cytometry. XXX [to be completed from Manon]. Results were expressed as the percentage of cells that were positive for the respective expression receptors.
+
+##Cytokine Quantification
+
+The aforementioned panel of circulating cytokines and immune mediators was quantified from plasma samples. These biomarkers were selected for their roles in pro- and anti-inflammatory signaling. Measurements were performed using a multiplex bead-based immunoassay (Luminex platform), following the manufacturer’s instructions. XXX [to be completed from Malha].
+
+##ECMO Weaning Protocol
+
+A standardized weaning protocol was applied to all patients prior to ECMO explantation. At a constant mean arterial pressure (MAP) between 65 and 75 mmHg, cardiac output was assessed by transthoracic echocardiography at two predefined timepoints: 1. Baseline under full support (ECLS flow at 3.0 L/min) and 2. Low-flow test after 45 minutes of reduced ECMO flow (1.5 L/min).
+Measurements included velocity time integral (VTI) at the left ventricular outflow tract and left ventricular ejection fraction. Changes in norepinephrine and dobutamin dosage during this period were also documented. The decision to explant ECMO was based on clinical tolerance, hemodynamic stability and echocardiographic parameters during the weaning trial.
+
+#FONCTION
+
+```{r,include=FALSE}
+
+# Dummy function to avoid errors
+linearity_test <- function(t2event = NULL, event = "death", var = "copper", adj = c("age", "sex"), data = data, weight = "wt")
+
+
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+
+```
+
+#DATA LOAD
+
+```{r,include=FALSE}
+#ADR LYMPHOCYTES
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+
+ADR1_lympho <- data_list[[1]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID =str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+     names_prefix = "ADR1_",
+    values_from = "value",
+    values_fn = mean,  
+    values_fill = NA
+  )%>%
+  mutate (`ADR1_J3-5` = case_when(is.na(`ADR1_J3-5`)&!is.na(ADR1_J5)~ADR1_J5,
+                             T~`ADR1_J3-5`),
+          ADR1_JS = case_when(is.na(ADR1_JS)&!is.na(`ADR1_J3-5-S`)~`ADR1_J3-5-S`,
+                             T~ADR1_JS))%>%
+  rename(ADR1_J3_J5=`ADR1_J3-5`)%>%
+  dplyr::select(ID,
+                ADR1_J0,
+                ADR1_J3_J5,
+                ADR1_JS)%>%
+  filter(ID!="12-AA")
+
+#CHECK AK OK
+
+ADR2_lympho <- data_list[[2]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+    values_from = "value",
+     names_prefix = "ADR2_" ,
+    values_fn = mean,  
+    values_fill = NA
+  )%>%
+  mutate (
+          ADR2_JS = case_when(is.na(ADR2_JS)&!is.na(`ADR2_J3-5-S`)~`ADR2_J3-5-S`,
+                             T~ADR2_JS))%>%
+  rename(ADR2_J3_J5=`ADR2_J3-5`)%>%
+  dplyr::select(ID,
+                ADR2_J0,
+                ADR2_J3_J5,
+                ADR2_JS)%>%
+  filter(ID!="12-AA")
+
+#CHECK AK OK
+
+##Add Monocytes
+
+fichier_mono <- "DATA/monocytes.xlsx"
+feuilles_mono <- excel_sheets(fichier_mono)
+data_mono <- lapply(feuilles_mono, function(feuille_mono) {
+  read_excel(fichier_mono, sheet = feuille_mono)
+})
+
+ADR1_mono <- data_mono[[1]] %>%
+  select("Patient", "Jour", "%Total") %>%
+  filter(!is.na(`%Total`)) %>%
+  rename(value = `%Total`) %>%
+  mutate(
+    # Create clean ID and normalize 'Jour'
+    ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2")
+  ) %>%
+  # Reshape from long to wide format
+  pivot_wider(
+    names_from = "Jour",
+    names_prefix = "ADR1m_",
+    values_from = "value",
+    values_fn = mean,
+    values_fill = NA
+  ) %>%
+  mutate(
+    `ADR1m_J3-5` = case_when(is.na(`ADR1m_J3-5`) & !is.na(`ADR1m_j3-5`) ~ `ADR1m_j3-5`,
+      TRUE ~`ADR1m_J3-5`),
+      ADR1m_JS = case_when(is.na(`ADR1m_JS`) & !is.na(`ADR1m_jS`) ~ `ADR1m_jS`,
+      TRUE ~`ADR1m_JS`)
+  ) %>%
+  rename(
+    ADR1m_J3_J5 = `ADR1m_J3-5`
+  )%>%
+  # Final variable renaming and selection
+  select(ID, ADR1m_J0, ADR1m_J3_J5, ADR1m_JS)%>%
+    filter(ID!="12-AA")
+#CHECK AK OK
+
+ADR2_mono <- data_mono[[2]] %>%
+  select("Patient", "Jour", "%Total") %>%
+  filter(!is.na(`%Total`)) %>%
+  rename(value = `%Total`) %>%
+  mutate(
+    # Create clean ID and normalize 'Jour'
+    ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2")  ) %>%
+  # Reshape from long to wide format
+  pivot_wider(
+    names_from = "Jour",
+    names_prefix = "ADR2m_",
+    values_from = "value",
+    values_fn = mean,
+    values_fill = NA
+  ) %>%
+  # Create combined J3_J5 timepoint using fallback logic
+    mutate(`ADR2m_J3-5` = case_when(is.na(`ADR2m_J3-5`) & !is.na(`ADR2m_j3-5`) ~ `ADR2m_j3-5`,
+      TRUE ~`ADR2m_J3-5`),
+      ADR2m_JS = case_when(is.na(`ADR2m_JS`) & !is.na(`ADR2m_jS`) ~ `ADR2m_jS`,
+      TRUE ~`ADR2m_JS`)
+      ) %>%
+  # Final variable renaming and selection
+  rename(
+    ADR2m_J3_5 = `ADR2m_J3-5`
+  ) %>%
+  select(ID, ADR2m_J0, ADR2m_J3_5, ADR2m_JS)%>%
+    filter(ID!="12-AA")
+#CHECK AK OK
+
+df_list <- lst(ADR1_lympho, ADR2_lympho, ADR1_mono, ADR2_mono)
+
+# COUNT VALID ID
+count_valid_ID <- function(data, id_col = "ID") {
+  # Fonction qui compte les ID non-NA dans un seul data.frame
+  count_one <- function(df) {
+    df %>%
+      mutate(
+        ID_num = as.integer(str_remove(.data[[id_col]], "-.*")),
+        ID_CAT = if_else(!is.na(ID_num), 1L, 0L)
+      ) %>%
+      summarise(n_valid = sum(ID_CAT, na.rm = TRUE)) %>%
+      pull(n_valid)
+  }
+    imap_dfr(
+      data,
+      ~ tibble(
+          dataset  = .y,
+          n_valid  = count_one(.x)
+        ),
+      .id = NULL
+    )
+  }
+
+count_valid_ID(df_list)
+
+df <- reduce(df_list, full_join, by = "ID")%>%
+  mutate(any_non_na = as.integer(
+      rowSums(
+        !is.na( select(., starts_with("ADR")) ),
+        na.rm = TRUE       
+      ) > 0                  # true if at least one non NA
+    )
+  )
+
+
+#IDENTIFY WHICH ID NOT PRESENT IN ONE AND PRESENT IN OTHER
+id_presence <- imap_dfr(df_list,           
+  ~ tibble(ID      = .x$ID,   
+           dataset = .y)) %>%  
+  mutate(present = 1L) %>%     
+  distinct() %>%               
+  pivot_wider(
+    names_from   = dataset, 
+    values_from  = present,    
+    values_fill  = list(present = 0L)
+  )
+diff_IDs <- id_presence %>%
+  filter(if_any(-ID, ~ .x == 0))
+
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)%>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom,prenom))%>%
+    filter(ID != "12-NANA")
+
+#CHECK AK OK
+
+df_list_1 <- lst(df,DATA)
+
+df_1 <- reduce(df_list_1, left_join, by = "ID")
+dim(df_1)
+
+#CHECK AK OK
+
+fichier_cyto <- "DATA/cytokines.xlsx"
+all_cols <- names(readxl::read_excel(fichier_cyto, n_max = 0))
+#CHECK AK OK
+ck_vars <- c("Sample ID number",
+             "[IL-33] in pg/mL",
+             "[IL1b] in pg/mL",
+             "[IL2] in pg/mL",
+             "[IL4] in pg/mL",
+             "[IL5] in pg/mL",
+             "[IL6] in pg/mL",
+             "[IL8/CXCL8]  in pg/mL",
+             "[IL10] in pg/mL",
+             "[GDF-15] in pg/mL",
+             "[IL12p70] in pg/mL",
+             "[IL17A/CTLA-8] in pg/mL",
+             "[IFNg] in pg/mL",
+             "[TNFa] in pg/mL",
+             "[Granzyme B]  in pg/mL")
+
+stopR<-stopifnot(all(ck_vars %in% all_cols))
+
+df_cyto_raw <- readxl::read_excel(fichier_cyto) %>%
+  dplyr::select(dplyr::all_of(ck_vars))
+
+df_cyto_clean <- df_cyto_raw %>%
+  dplyr::rename(SampleID = `Sample ID number`) %>%
+  dplyr::mutate(
+    ID_num = stringr::str_extract(SampleID, "\\d{2}"),
+    ID_num = stringr::str_remove(ID_num, "^0"),
+    Jour_raw = stringr::str_extract(SampleID, "J[A-Z0-9\\-\\.]+") %>%
+      stringr::str_to_upper() %>%
+      stringr::str_replace_all("-", "_") %>%
+      stringr::str_replace_all("\\.", ""),
+    Jour = dplyr::case_when(
+      Jour_raw %in% c("J3", "J4", "J5", "J3_5", "J3_J5") ~ "J3_J5",
+      Jour_raw %in% c("JS", "JSEVRAGE") ~ "JS",
+      Jour_raw == "J0" ~ "J0",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  dplyr::left_join(
+    df %>% dplyr::select(ID) %>%
+      dplyr::mutate(ID_num = stringr::str_extract(ID, "^\\d{1,2}")),
+    by = "ID_num"
+    ) %>%
+  dplyr::select(-Jour_raw, -ID_num) %>%
+  dplyr::rename_with(~ str_remove_all(., "\\[|\\]| in pg/mL") %>% str_squish() %>% str_replace_all(" ", ""), 
+            .cols = -c(SampleID, ID, Jour)) %>%
+  dplyr::mutate(dplyr::across(
+    -c(SampleID, ID, Jour),
+    ~ stringr::str_replace_all(., ",", ".") %>%
+      stringr::str_remove_all("\\*") %>%
+      stringr::str_replace_all("OOR.*|<.*|undetectable|low|LOQ|ND", "0.0000001") %>%
+      as.numeric()
+  ))
+#CHECK AK OK
+
+# 4. Reshape: long → wide with variable names cytokine_timepoint
+df_cyto_long <- df_cyto_clean %>%
+  dplyr::select(-SampleID) %>%
+  filter(!is.na(ID))%>%
+  tidyr::pivot_longer(cols = -c(ID, Jour),
+                      names_to = "cytokine",
+                      values_to = "value") %>%
+  dplyr::mutate(var_name = paste0(cytokine, "_", Jour)) %>%
+  dplyr::select(ID, var_name, value) %>%
+  tidyr::pivot_wider(names_from = var_name,
+                     values_from = value)
+
+# 5. Final merge into main dataframe
+df <- df %>% dplyr::left_join(df_cyto_long, by = "ID")
+dim(df)
+#CHECK AK OK
+```
+
+# TIMEPOINT CHECK OF THE BLOOD SAMPLE AT DAY 0
+
+```{r,include=TRUE}
+
+# Blood sample at day 0 before ECMO implant?
+
+df %>%
+  select(J0_date, j0_bilan_date) %>%
+  distinct() %>%
+  slice(1:15)
+
+df <- df %>%
+  mutate(
+    J0_date = as.Date(J0_date, format = "%d.%m.%Y"),
+    j0_bilan_date = as.Date(j0_bilan_date, format = "%d.%m.%Y"),
+    bilan_after_ecmo = case_when(
+      is.na(J0_date) | is.na(j0_bilan_date) ~ NA_character_,
+      j0_bilan_date > J0_date ~ "Yes",
+      TRUE ~ "No"
+    )
+  )
+
+table(df$bilan_after_ecmo, useNA = "ifany")
+#CHECK AK OK
+
+df %>%
+  filter(bilan_after_ecmo == "Yes") %>%
+  select(ID, j0_bilan_date, J0_date, bilan_after_ecmo)
+
+#CHECK AK OK
+
+
+df_clean <- df %>%
+  mutate(
+    j0_bilan_date = as.Date(j0_bilan_date, format = "%d.%m.%Y"),
+    J0_date = as.Date(J0_date, format = "%d.%m.%Y"),
+    datetime_bilan = as.POSIXct(paste(j0_bilan_date, as.character(j0_bilan_heure)), format = "%Y-%m-%d %H:%M", tz = "UTC"),
+    datetime_ecmo  = as.POSIXct(paste(J0_date, as.character(J0_heure)), format = "%Y-%m-%d %H:%M", tz = "UTC"),
+    time_diff_mins = as.numeric(difftime(datetime_bilan, datetime_ecmo, units = "mins"))
+  ) %>%
+  filter(!is.na(time_diff_mins))
+
+
+df_clean %>%
+    mutate(time_diff_hours = time_diff_mins / 60) %>%
+  summarise(
+    mean_minutes = mean(time_diff_hours),
+    sd_minutes = sd(time_diff_hours),
+    min = min(time_diff_hours),
+    max = max(time_diff_hours)
+  )
+
+```
+
+Day-0 blood samples were collected on average 3.47 hours (SD 2.43 hours) before ECMO implantation, ranging from -11 hours before to the exact time of ECMO cannulation.
+
+# DATA Management
+
+```{r,include=TRUE}
+df <- df %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    
+    Preecmo_tte_diam_LV = Preecmo_tte_diam_LV * 10,
+    
+    VIS_D0 = (DOBUcum_D0 * 1000) / (Weight * 1440) + 
+         100 * (NADcum_D0 * 1000) / (Weight * 1440),
+
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    
+    Outcome_censored = as.numeric(case_when(
+      Outcome == "Death" ~ "1",
+      Outcome %in% c("ECMO Weaning", "Bridge to Transplant", "Bridge to LVAD") ~ "0"
+    )),
+
+    outcome_date = str_replace_all(outcome_date, "\\.", "/"),
+    icu_admiss_date = str_replace_all(icu_admiss_date, "\\.", "/"),
+    icu_discharge_date = str_replace_all(icu_discharge_date, "\\.", "/"),
+
+    outcome_date = dmy(outcome_date),
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    date_levo = dmy(date_levo),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+
+    diff_days = time_length(interval(icu_admiss_date, outcome_date), "days"),
+    Time_hosp = time_length(interval(icu_admiss_date, icu_discharge_date), "days"),
+    as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = time_length(interval(ecmo_start_date, ecmo_stop_date), "days"),
+    Time_levo = time_length(interval(ecmo_start_date, date_levo), "days"),
+
+    diff_days_J28 = case_when(
+      diff_days > 28 ~ 28,
+      TRUE ~ diff_days
+    ),
+
+    Outcome_censored_28 = case_when(
+      diff_days > 28 & Outcome_censored == 1 ~ 0,
+      TRUE ~ Outcome_censored
+    ),
+
+    ADR1_D0_median = case_when(
+      ADR1_D0 > median(ADR1_D0, na.rm = TRUE) ~ "High",
+      ADR1_D0 <= median(ADR1_D0, na.rm = TRUE) ~ "Low"
+    ),
+
+    ADR2_D0_median = case_when(
+      ADR2_D0 > median(ADR2_D0, na.rm = TRUE) ~ "High",
+      ADR2_D0 <= median(ADR2_D0, na.rm = TRUE) ~ "Low"
+    ),
+    
+    ADR1m_D0_median = case_when(
+      ADR1m_J0 > median(ADR1m_J0, na.rm = TRUE) ~ "High",
+      ADR1m_J0 <= median(ADR1m_J0, na.rm = TRUE) ~ "Low",
+      TRUE ~ NA_character_
+    ),
+    ADR2m_D0_median = case_when(
+      ADR2m_J0 > median(ADR2m_J0, na.rm = TRUE) ~ "High",
+      ADR2m_J0 <= median(ADR2m_J0, na.rm = TRUE) ~ "Low",
+      TRUE ~ NA_character_
+    ),
+
+    Betablocker = case_when(
+      Betablocker == 1 ~ "YES",
+      Betablocker == 0 ~ "NO"
+    ),
+
+    dose_tot_dobu_yes_no = droplevels(as.factor(case_when(
+      dose_tot_dobu > 0 ~ "YES",
+      dose_tot_dobu == 0 ~ "NO"
+    ))),
+
+    levo_in_icu = case_when(
+      Levosimendan == 1 & Time_levo >= 0 ~ "Yes",  
+      Levosimendan == 1 & Time_levo < 0 ~ "No",
+      Levosimendan == 0 ~ "No"
+    ),
+
+    Levosimendan = case_when(
+      Levosimendan == 1 ~ "YES",
+      Levosimendan == 0 ~ "NO",
+      TRUE ~ NA_character_ 
+    )
+  )
+#CHECK AK OK
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0", "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan", "j90_deces")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "NADcum_D0", "DOBUcum_D0", "VIS_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo")
+
+var.tot <- c(var.cat, var.cont)
+```
+
+# TABLE 1: Characteristics of the population
+
+```{r,include=FALSE}
+
+T1 <- df %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), 
+         across(all_of(var.cat), as.factor))
+
+## Table 1 standard
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data =T1) 
+
+table1 <- print(table1,
+                nonnormal =var.cont,
+                 contDigits = 1)
+
+table1_df <- as.data.frame(print(table1, nonnormal = var.cont, showAllLevels = TRUE))
+table1_df$Variables <- row.names(table1_df)
+
+row.names(table1_df)<-NULL
+table1_df <- table1_df[, c(2,1)]
+
+T1_n <- T1%>%
+  summarise(across(everything(), ~ sum(is.na(.))))%>%
+  pivot_longer(cols= everything(),
+    values_to = "n_missing",
+    names_to = "ID")
+
+table1_df1 <- table1_df %>%
+  mutate(ID = sub("\\(median \\[IQR\\]\\)|= 1 \\(\\%\\)|= Women \\(\\%\\)|\\(\\%\\)", "",Variables),
+         ID = trimws(ID))%>%
+  mutate(ID =sub(" = YES","",ID))
+
+table_1_vf <- left_join(table1_df1,T1_n, by="ID")%>%
+  select(Variables,n_missing,Overall)
+
+table_1_vf <- table_1_vf%>%
+mutate(Variables= str_remove(Variables, " \\(median \\[IQR\\]\\)"))
+
+traduction <- c(
+  "n" = "n",
+  "Gender = Women (%)" = "Gender = Female (%)",
+  "HTN = 1 (%)" = "Hypertension (%)",
+  "DM = 1 (%)" = "Diabetes Mellitus (%)",
+  "Immunodepression = 1 (%)" = "Immunosuppression (%)",
+  "CKD = 1 (%)" = "Chronic Kidney Disease (%)",
+  "Neurologic_deficit = 1 (%)" = "Neurological Deficit (%)",
+  "Chronic_respiratory_disease = 1 (%)" = "Chronic Respiratory Disease (%)",
+  "HF = 1 (%)" = "Heart Failure (%)",
+  "Cardiac_arrest_before_canul = 1 (%)" = "Cardiac Arrest Before Cannulation (%)",
+  "IABP_D0 = 1 (%)" = "Intra-Aortic Balloon Pump (%)",
+  "Intubation = 1 (%)" = "Intubation (%)",
+  "EER_D0 = 1 (%)" = "Renal Replacement Therapy (%)",
+  "Outcome (%)" = "Outcome (%)",
+  "   Bridge to LVAD" = "Bridge to LVAD",
+  "   Bridge to Transplant" = "Bridge to Transplant",
+  "   Death" = "Death in ICU",
+  "   ECMO Weaning" = "ECMO Weaning",
+  "Betablocker = YES (%)" = "Beta-blocker (%)",
+  "Alphablocker = 1 (%)" = "Alpha-blocker (%)",
+  "Levosimendan = YES (%)" = "Levosimendan (%)",
+  "j90_deces = 1 (%)" = "90-day Mortality (%)",
+  "Age" = "Age (years)",
+  "BMI" = "Body Mass Index (kg/m²)",
+  "PAS_D0" = "Systolic Blood Pressure (mmHg)",
+  "PAD_D0" = "Diastolic Blood Pressure (mmHg)",
+  "PAM_D0" = "Mean Arterial Pressure (mmHg)",
+  "Pulsepressure_D0" = "Pulse Pressure (mmHg)",
+  "HR_D0" = "Heart Rate (bpm)",
+  "Temp_D0" = "Temperature (°C)",
+  "Preecmo_tte_ef" = "Pre-ECMO Ejection Fraction (%)",
+  "Preecmo_tte_vtiao" = "Pre-ECMO Aortic Velocity Time Integral (cm)",
+  "NADcum_D0" = "Cumulative Norepinephrine Dose (mg)",
+  "DOBUcum_D0" = "Cumulative Dobutamine Dose (mg)",
+  "VIS_D0" = "Vasoactive-Inotropic Score (VIS) at Day 0",
+  "pH_D0" = "pH",
+  "Sao2_D0" = "Oxygen Saturation (%)",
+  "Paco2_D0" = "PaCO2 (mmHg)",
+  "Lact_D0" = "Lactate (mmol/L)",
+  "Hco3_D0" = "Bicarbonate (mmol/L)",
+  "Creat_D0" = "Creatinine (µmol/L)",
+  "Urea_D0" = "Urea (mg/dL)",
+  "ALAT_D0" = "ALT (IU/L)",
+  "ASAT_D0" = "AST (IU/L)",
+  "Bili_D0" = "Bilirubin (mg/dL)",
+  "PT_D0" = "Prothrombin Time (s)",
+  "Tropo_i_hs_D0" = "High Sensitivity Troponin I (ng/L)",
+  "Ntprobnp_D0" = "NT-proBNP (pg/mL)",
+  "DPP3_D0" = "DPP3 (ng/mL)",
+  "Plq_D0" = "Platelet Count (10⁹/L)",
+  "Lenght_eer" = "Duration of Renal Replacement Therapy (days)",
+  "Lenght_vm" = "Duration of Mechanical Ventilation (days)",
+  "Time_hosp" = "ICU Length of Stay (days)",
+  "Time_ecmo" = "ECMO Duration (days)"
+)
+
+table_1_vf <- table_1_vf %>%
+  mutate(Variables = recode(Variables, !!!traduction))
+
+order <- c(
+  "n",
+  # Demographics
+  "Age (years)",
+  "Gender = Female (%)",
+  "Body Mass Index (kg/m²)",
+
+  # Comorbidities
+  "Hypertension (%)",
+  "Diabetes Mellitus (%)",
+  "Heart Failure (%)",
+  "Chronic Kidney Disease (%)",
+  "Chronic Respiratory Disease (%)",
+  "Neurological Deficit (%)",
+  "Immunosuppression (%)",
+
+  # Clinical presentation
+  "Systolic Blood Pressure (mmHg)",
+  "Diastolic Blood Pressure (mmHg)",
+  "Mean Arterial Pressure (mmHg)",
+  "Pulse Pressure (mmHg)",
+  "Heart Rate (bpm)",
+  "Temperature (°C)",
+  "Cardiac Arrest Before Cannulation (%)",
+  "Intra-Aortic Balloon Pump (%)",
+  "Intubation (%)",
+  "Renal Replacement Therapy (%)",
+
+  # Echocardiography
+  "Pre-ECMO Ejection Fraction (%)",
+  "Pre-ECMO Aortic Velocity Time Integral (cm)",
+
+  # Pharmacologic support
+  "Beta-blocker (%)",
+  "Alpha-blocker (%)",
+  "Cumulative Norepinephrine Dose (mg)",
+  "Cumulative Dobutamine Dose (mg)",
+  "Vasoactive-Inotropic Score (VIS) at Day 0",
+  "Levosimendan (%)",
+
+  # Laboratory
+  "pH",
+  "Oxygen Saturation (%)",
+  "PaCO2 (mmHg)",
+  "Lactate (mmol/L)",
+  "Bicarbonate (mmol/L)",
+  "Creatinine (µmol/L)",
+  "Urea (mg/dL)",
+  "ALT (IU/L)",
+  "AST (IU/L)",
+  "Bilirubin (mg/dL)",
+  "Prothrombin Time (s)",
+  "High Sensitivity Troponin I (ng/L)",
+  "NT-proBNP (pg/mL)",
+  "DPP3 (ng/mL)",
+  "Platelet Count (10⁹/L)",
+
+  # Outcomes
+  "Outcome (%)",
+  "Death in ICU",
+  "Bridge to LVAD",
+  "Bridge to Transplant",
+  "ECMO Weaning",
+  "Duration of Renal Replacement Therapy (days)",
+  "Duration of Mechanical Ventilation (days)",
+  "ECMO Duration (days)",
+  "ICU Length of Stay (days)",
+  "90-day Mortality (%)"
+)
+
+table_1_vf2 <- table_1_vf %>%
+  mutate(Variables = factor(Variables, levels = order)) %>%
+  arrange(Variables)%>%
+  rename(Missing = n_missing)
+
+table1 <- flextable(as.data.frame(table_1_vf2)) %>% autofit() %>%
+      set_caption("Table 1: Characteristics of the population") %>% 
+     align(j = c(2:3), align = "center", part = "all")
+
+```
+
+```{r, include=FALSE, eval=F}
+doc <- read_docx() %>%
+  body_add_flextable(table1)
+
+print(doc, target = "TABLES/Table1_def.docx")
+```
+
+
+```{r}
+table1
+```
+
+## Statistical analysis
+
+Baseline clinical, demographic and hemodynamic characteristics were summarized for the overall study population (n = 50). One patient was excluded from the analysis due to being under legal guardianship. Categorical variables were reported as counts and percentages, while continuous variables were expressed as medians and interquartile ranges (IQR). The normality of continuous variables was assessed visually using histograms.
+
+# Check for normality
+
+```{r,eval=FALSE}
+for (var in var.cont) {
+  if (var %in% colnames(T1)) {
+    print(
+      ggplot(T1, aes_string(var)) +
+        geom_histogram(bins = 15, fill = "blue", alpha = 0.5) +
+        ggtitle(paste("Distribuzione di", var))
+    )
+  } else {
+    message(paste("❌ Variabile", var, "non trovata in T1"))
+  }
+}
+```
+
+# Table 2a with hemodynamic parameters at weaning day
+
+```{r, include=FALSE}
+
+## General information at weaning day
+
+df_long <- df %>%
+  select(
+    ID,
+    jsev_ecmo_debit,
+    jsev_dobu_cum,
+    jsev_NAd_cum,
+    jsev_pam,
+    jsev_freq,
+    jsev_ett_fevg,
+    jsev_ett_vmax_s_mit_lat_vg,
+    jsev_lact
+  ) %>%
+  rename(
+    `ECMO flow (l)` = jsev_ecmo_debit,
+    `Dobutamine cumulative (mg)` = jsev_dobu_cum,
+    `Noradrenaline cumulative (mg)` = jsev_NAd_cum,
+    `MAP_baseline (mmHg)` = jsev_pam,
+    `HR (bpm)` = jsev_freq,
+    `FEVG (%)` = jsev_ett_fevg,
+    `Mitral S' (cm/s)` = jsev_ett_vmax_s_mit_lat_vg,
+    `Lactate (mmol/L)` = jsev_lact
+  ) %>%
+  pivot_longer(
+    cols = -ID,
+    names_to = "Parameter",
+    values_to = "Value"
+  )
+
+# Define desired parameter order
+custom_order <- c(
+  "ECMO flow (l)",
+  "Dobutamine cumulative (mg)",
+  "Noradrenaline cumulative (mg)",
+  "MAP_baseline (mmHg)",
+  "HR (bpm)",
+  "FEVG (%)",
+  "Mitral S' (cm/s)",
+  "Lactate (mmol/L)"
+)
+
+# Apply ordering after summarising
+table2a <- df_long %>%
+  group_by(Parameter) %>%
+  summarise(
+    n= sum(!is.na(Value)),
+    Median = round(median(Value, na.rm = TRUE), 1),
+    Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 1),
+    Q3 = round(quantile(Value, 0.75, na.rm = TRUE), 1),
+    .groups = "drop"
+  ) %>%
+  mutate(`Median [IQR]` = paste0(Median, " [", Q1, "–", Q3, "], n=", n)) %>%
+  select(Parameter, `Median [IQR]`) %>%
+  slice(match(custom_order, Parameter))  # Reorder according to custom_order
+
+```
+
+```{r}
+table2a
+```
+
+# Table 2b  hemodynamic parameters during the weaning test
+
+```{r}
+
+# Create new variables for flow condition and unify variable names
+
+df_long <- df %>%
+  select(
+    ID,
+    jsev_epr_sev_t0_3l_itv,
+    jsev_epr_sev_t0_3l_pam,
+    jsev_epr_sev_t0_3l_NAd,
+    `jsev_epr_sev_t1_1,5l_itv`,
+    `jsev_epr_sev_t1_1,5l_pam`,
+    `jsev_epr_sev_t1_1,5l_NAd`,
+    Weight,
+  ) %>%
+  mutate(jsev_epr_sev_t0_3l_NAd_w = jsev_epr_sev_t0_3l_NAd/Weight,
+         `jsev_epr_sev_t1_1,5l_NAd_w` = `jsev_epr_sev_t1_1,5l_NAd`/Weight)%>%
+  rename(
+    `VTI (cm)` = jsev_epr_sev_t0_3l_itv,
+    `MAP (mmHg)` = jsev_epr_sev_t0_3l_pam,
+    `Noradrenalin (µg/kg/h)` = jsev_epr_sev_t0_3l_NAd_w,
+    `VTI_1.5L (cm)` = `jsev_epr_sev_t1_1,5l_itv`,
+    `MAP_1.5L (mmHg)` = `jsev_epr_sev_t1_1,5l_pam`,
+    `Noradrenalin_1.5L (µg/kg/h)` = `jsev_epr_sev_t1_1,5l_NAd_w`
+  ) %>%
+  pivot_longer(
+    cols = -c(ID,jsev_epr_sev_t0_3l_NAd,`jsev_epr_sev_t1_1,5l_NAd`,Weight),
+    names_to = "Parameter_raw",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Value = as.numeric(Value),
+    Condition = case_when(
+      str_detect(Parameter_raw, "1.5L") ~ "1.5L",
+      TRUE ~ "3L"
+    ),
+    Condition = factor(Condition, levels = c("3L", "1.5L")),
+    Parameter = str_replace(Parameter_raw, "_1.5L", "")
+  )
+
+
+# Create summary table
+
+table2b <- df_long %>%
+  group_by(Parameter, Condition) %>%
+  summarise(
+    n = sum(!is.na(Value)),
+    Median = round(median(Value, na.rm = TRUE), 2),
+    Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),
+    Q3 = round(quantile(Value, 0.75, na.rm = TRUE), 2),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Value_IQR = paste0(Median, " [", Q1, "–", Q3, "]; n=", n)
+  ) %>%
+  select(Parameter, Condition, Value_IQR) %>%
+  pivot_wider(names_from = Condition, values_from = Value_IQR)
+```
+
+
+```{r}
+table2b
+```
+
+```{r, include=TRUE}
+
+# Wilcoxon test for a parameter
+
+wilcox.test(Value ~ Condition,
+            data = df_long %>% filter(Parameter == "VTI (cm)"))
+```
+
+No significant difference between VTI at 3L and 1.5L flow conditions at weaning day (Wilcoxon test, p = 0.5).
+
+# Figure 1: Association between ADRB expressions and outcomes
+
+```{r,include=TRUE}
+dim(df)
+F1 <- df %>%
+  select(ID,ADR1_J0, ADR1_J3_J5, ADR1_JS, Outcome)%>%
+  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
+  pivot_longer(
+    cols = c(ADR1_J0, ADR1_J3_J5, ADR1_JS), 
+    names_to = "ADR1_time", 
+    values_to = "value"
+  )%>%
+  mutate(time = as.numeric(case_when(ADR1_time=="ADR1_J0"~1,
+                          ADR1_time=="ADR1_J3_J5"~2,
+                          ADR1_time=="ADR1_JS"~3)),
+         value_log = log10(value))
+
+count_data <- F1 %>%
+  filter(!is.na(value))%>%
+  group_by(ADR1_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcomes))
+
+
+# ===========================
+# Modélisation
+# ===========================
+
+# Modèle avec interaction
+mod1 <- lmerTest::lmer(
+  value_log ~ time * Outcomes + (1 + time | ID),
+  data = F1
+)
+
+
+# Résumé du modèle
+summary(mod1)
+
+# Modèle sans interaction (modèle réduit)
+mod_no_interaction <- lmerTest::lmer(
+  value_log ~ time + Outcomes + (1 + time | ID),
+  data = F1
+)
+
+# Comparaison des modèles (test de l'interaction)
+interact <- anova(mod_no_interaction, mod1)
+# Interprétation : p = 0.58 → interaction non significative
+
+# ===========================
+# Tests des effets fixes
+# ===========================
+
+# ANOVA avec approximation de Kenward-Roger pour les p-values
+a <- anova(mod_no_interaction, ddf = "Kenward-Roger")
+print(a)
+
+# ===========================
+# Vérification des hypothèses
+# ===========================
+
+# 1. Diagrammes de diagnostic généraux
+plot(mod1)  # résidus vs prédictions par groupe
+
+# 2. Résidus vs valeurs ajustées (homoscédasticité)
+plot(fitted(mod1), residuals(mod1),
+     xlab = "Valeurs ajustées", ylab = "Résidus",
+     main = "Résidus vs ajustés")
+
+# 3. Normalité des résidus
+qqnorm(residuals(mod1))
+qqline(residuals(mod1), col = "blue")
+
+# 4. Autocorrélation des résidus (si données longitudinales)
+acf(residuals(mod1), main = "ACF des résidus")
+
+# 5. Normalité des pentes aléatoires (effets aléatoires sur time)
+qqnorm(ranef(mod1)$ID[, "time"],
+       main = "QQ-plot des pentes aléatoires (time)")
+qqline(ranef(mod1)$ID[, "time"], col = "blue")
+
+#extrait P values
+annot_pvals <- data.frame(
+  ADR1_time = "ADR1_J0",
+  value_log = max(F1$value_log, na.rm = TRUE) * 1.1,
+  label = "p[time] == 0.024 * '\n' * p[outcomes] == 0.066"
+)
+
+# ===========================
+# Figure
+# ===========================
+Figure_1 <- ggplot(F1, aes(x = ADR1_time, y = value_log, fill = Outcomes)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    title = "Association between ADRB1 and outcomes",
+    x = "times of measurement",
+    y = "Percentage of T4 lymphocyte expressing ADRB1\n (log 10 scale)",
+  ) +
+  geom_text(data = count_data, aes(x = ADR1_time, y =- min(F1$value_log, na.rm = TRUE) *0.1, 
+                                   label = paste0("n=", n), group = Outcomes), 
+            position = position_dodge(0.7), size = 4, vjust = 1)+
+    scale_x_discrete(labels = c("ADR1_J0" = "implantation", "ADR1_J3_J5" = "day 3 to 5", "ADR1_JS" = "explantation")) +
+  scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",                   
+    "Bridge to transplant or LVAD" = "#377EB8",   
+    "Death" = "#F8766D"                           
+  )) +
+  theme(legend.position = "none")+ 
+  annotate(
+    "text",
+    x = 1,  # position sur l’axe x : 1 = "ADR1_J0"
+    y = max(F1$value_log, na.rm = TRUE) * 1.1,  # position en haut du graphique
+    label = "p[time] == 0.024*';'~p[outcomes] == 0.066",
+    parse = TRUE,
+    size = 4,
+    hjust = 0
+  )
+
+#####################
+## ADRB2 
+#####################
+
+
+F1_1 <- df %>%
+  select(ID,ADR2_J0, ADR2_J3_J5, ADR2_JS, Outcome)%>%
+  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
+  pivot_longer(
+    cols = c(ADR2_J0, ADR2_J3_J5, ADR2_JS), 
+    names_to = "ADR2_time", 
+    values_to = "value"
+  )%>%
+  mutate(time = as.numeric(case_when(ADR2_time=="ADR2_J0"~1,
+                          ADR2_time=="ADR2_J3_J5"~2,
+                          ADR2_time=="ADR2_JS"~3)),
+         value_log = log10(value))
+
+
+count_data <- F1_1 %>%
+  filter(!is.na(value))%>%
+  group_by(ADR2_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcomes))
+
+# ===========================
+# Modélisation
+# ===========================
+
+# Modèle avec interaction
+mod1 <- lmerTest::lmer(
+  value_log ~ time * Outcomes + (1 + time | ID),
+  data = F1_1
+)
+
+# Résumé du modèle
+summary(mod1)
+
+# Modèle sans interaction (modèle réduit)
+mod_no_interaction <- lmerTest::lmer(
+  value_log ~ time + Outcomes + (1 + time | ID),
+  data = F1_1
+)
+
+# Comparaison des modèles (test de l'interaction)
+interact <- anova(mod_no_interaction, mod1)
+# Interprétation : p = 0.3758 → interaction non significative
+
+# ===========================
+# Tests des effets fixes
+# ===========================
+
+# ANOVA avec approximation de Kenward-Roger pour les p-values
+a <- anova(mod_no_interaction, ddf = "Kenward-Roger")
+print(a)
+
+# ===========================
+# Vérification des hypothèses
+# ===========================
+
+# 1. Diagrammes de diagnostic généraux
+plot(mod1)  # résidus vs prédictions par groupe
+
+# 2. Résidus vs valeurs ajustées (homoscédasticité)
+plot(fitted(mod1), residuals(mod1),
+     xlab = "Valeurs ajustées", ylab = "Résidus",
+     main = "Résidus vs ajustés")
+
+# 3. Normalité des résidus
+qqnorm(residuals(mod1))
+qqline(residuals(mod1), col = "blue")
+
+# 4. Autocorrélation des résidus (si données longitudinales)
+acf(residuals(mod1), main = "ACF des résidus")
+
+# 5. Normalité des pentes aléatoires (effets aléatoires sur time)
+qqnorm(ranef(mod1)$ID[, "time"],
+       main = "QQ-plot des pentes aléatoires (time)")
+qqline(ranef(mod1)$ID[, "time"], col = "blue")
+
+#extrait P values
+annot_pvals <- data.frame(
+  ADR2_time = "ADR2_J0",
+  value_log = max(F1_1$value_log, na.rm = TRUE) * 1.1,
+  label = "p[time] == 0.07 * '\n' * p[outcomes] == 0.05"
+)
+
+Figure_1.1 <- ggplot(F1_1, aes(x = ADR2_time, y = value_log, fill = Outcomes)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    title = "Association between ADRB2 and outcomes",
+    x = "times of measurement",
+    y = "Percentage of T4 lymphocyte expressing ADRB2\n (log 10 scale)",
+  ) +
+  geom_text(data = count_data, aes(x = ADR2_time, y = -min(F1_1$value_log, na.rm = TRUE) * 0.01, 
+                                   label = paste0("n=", n), group = Outcomes), 
+            position = position_dodge(0.7), size = 4, vjust = 1)+
+      scale_x_discrete(labels = c("ADR2_J0" = "implantation", "ADR2_J3_J5" = "day 3 to 5", "ADR2_JS" = "explantation"))+
+    scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",                   
+    "Bridge to transplant or LVAD" = "#377EB8",   
+    "Death" = "#F8766D"                           
+  )) +
+    annotate(
+    "text",
+    x = 1,  # position sur l’axe x : 1 = "ADR1_J0"
+    y = max(F1_1$value_log, na.rm = TRUE) * 1.1,  # position en haut du graphique
+    label = "p[time] == 0.07*';'~p[outcomes] == 0.05",
+    parse = TRUE,
+    size = 4,
+    hjust = 0
+  )
+
+
+
+Fig_1 <- Figure_1 #+ theme(plot.title = element_blank())
+Fig_1.1 <- Figure_1.1 #+ theme(plot.title = element_blank())
+
+Figure1_tot <- Fig_1 + Fig_1.1 +
+  plot_annotation(title = "Association between percentage of T4 lymphocyte expressing ADRB and Outcome")
+
+```
+
+```{r}
+Figure1_tot
+```
+
+# Figure 1m: Association between ADRB (monocytes) and outcomes
+
+```{r,include=TRUE}
+
+# Prepare data
+F1m <- df %>%
+  select(ID, ADR1m_J0, ADR1m_J3_J5, ADR1m_JS, Outcome) %>%
+  mutate(Outcomes = factor(case_when(
+    Outcome == "Bridge to LVAD" | Outcome == "Bridge to Transplant" ~ "Bridge to transplant or LVAD",
+    TRUE ~ Outcome
+  ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))) %>%
+  pivot_longer(
+    cols = c(ADR1m_J0, ADR1m_J3_J5, ADR1m_JS), 
+    names_to = "ADR1_time", 
+    values_to = "value"
+  ) %>%
+  mutate(
+    time = case_when(
+      ADR1_time == "ADR1m_J0" ~ 1,
+      ADR1_time == "ADR1m_J3_J5" ~ 2,
+      ADR1_time == "ADR1m_JS" ~ 3
+    )
+  ) %>%
+  filter(!is.na(value), is.finite(value))
+
+F1m <- F1m %>%
+  mutate(value_log = log10(value)) %>%
+  filter(!is.na(value_log), is.finite(value_log))  
+
+
+# Count data for annotation
+count_data_m <- F1m %>%
+  filter(!is.na(value)) %>%
+  group_by(ADR1_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(!is.na(Outcomes))
+
+# ===========================
+# Mixed effects model
+# ===========================
+# Model with interaction
+mod1_m <- lmerTest::lmer(
+  value_log ~ time * Outcomes + (1 + time | ID),
+  data = F1m
+)
+
+# Model without interaction
+mod_no_interaction_m <- lmerTest::lmer(
+  value_log ~ time + Outcomes + (1 + time | ID),
+  data = F1m
+)
+
+# Interaction test
+interact_m <- anova(mod_no_interaction_m, mod1_m)
+# Interpretation : p = 0.64 → interaction not significant
+
+# ANOVA for fixed effect (withouth interaction)
+a_m <- anova(mod_no_interaction_m, ddf = "Kenward-Roger")
+print(a_m)
+
+# ===========================
+# Diagnostic plots
+# ===========================
+# 1. Residual diagnostic plots
+plot(mod1_m)
+
+# 2. Residuals vs Fitted
+plot(fitted(mod1_m), residuals(mod1_m),
+     xlab = "Fitted values", ylab = "Residuals",
+     main = "Residuals vs Fitted")
+
+# 3. Normality of residuals
+qqnorm(residuals(mod1_m))
+qqline(residuals(mod1_m), col = "blue")
+
+# 4. Autocorrelation of residuals
+acf(residuals(mod1_m), main = "ACF of residuals")
+
+# 5. Normality of random intercepts (optional)
+qqnorm(ranef(mod1_m)$ID[, "(Intercept)"],
+       main = "QQ plot of random intercepts (ID)")
+qqline(ranef(mod1_m)$ID[, "(Intercept)"], col = "blue")
+
+# ===========================
+# Figure
+# ===========================
+Figure_1m <- ggplot(F1m, aes(
+    x = ADR1_time,
+    y = value,
+    fill = Outcomes,
+    group = interaction(ADR1_time, Outcomes)  
+)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +
+  scale_y_log10() +
+  labs(
+    title = "Association between ADRB1 expression in monocytes and outcomes",
+    x = "Time of measurement",
+    y = "Percentage of monocytes expressing ADRB1\n(log10 scale)"
+  ) +
+  geom_text(data = count_data_m, aes(
+    x = ADR1_time,
+    y = min(F1m$value[F1m$value > 0], na.rm = TRUE) * 0.5,
+    label = paste0("n=", n),
+    group = interaction(ADR1_time, Outcomes)
+  ),
+  position = position_dodge(0.7),
+  size = 4,
+  vjust = 1) +
+  scale_x_discrete(labels = c(
+    "ADR1m_J0" = "implantation",
+    "ADR1m_J3_J5" = "day 3 to 5",
+    "ADR1m_JS" = "explantation"
+  )) +
+    scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",                   
+    "Bridge to transplant or LVAD" = "#377EB8",   
+    "Death" = "#F8766D"                           
+  )) +
+  theme(legend.position = "none") +
+  annotate(
+    "text",
+    x = 1,
+    y = max(F1m$value, na.rm = TRUE) * 1.1,
+    label = "p[time] == 0.955*';'~p[outcomes] == 0.649",
+    parse = TRUE,
+    size = 4,
+    hjust = 0
+  )
+
+#####################
+## ADRB2 (monocytes)
+#####################
+
+# ==========================
+# Prepare data (non log)
+# ==========================
+F1m_2 <- df %>%
+  select(ID, ADR2m_J0, ADR2m_J3_J5, ADR2m_JS, Outcome) %>%
+  mutate(
+    Outcomes = factor(case_when(
+      Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
+      TRUE ~ Outcome
+    ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
+  ) %>%
+  pivot_longer(
+    cols = c(ADR2m_J0, ADR2m_J3_J5, ADR2m_JS),
+    names_to = "ADR2_time",
+    values_to = "value"
+  ) %>%
+  mutate(
+    time = case_when(
+      ADR2_time == "ADR2m_J0" ~ 1,
+      ADR2_time == "ADR2m_J3_J5" ~ 2,
+      ADR2_time == "ADR2m_JS" ~ 3
+    )
+  ) %>%
+  filter(!is.na(value), is.finite(value))
+
+F1m_2 <- F1m_2 %>%
+  mutate(value_log = log10(value)) %>%
+  filter(!is.na(value_log), is.finite(value_log))
+
+# ==========================
+# Count available data
+# ==========================
+count_data_m2 <- F1m_2 %>%
+  group_by(ADR2_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")
+
+# ==========================
+# Mixed effects model (simplified)
+# ==========================
+mod1_m2 <- lmerTest::lmer(
+  value_log ~ time * Outcomes + (1 + time | ID),
+  data = F1m_2
+)
+
+
+mod_no_interaction_m2 <- lmerTest::lmer(
+  value_log ~ time + Outcomes + (1 + time | ID),
+  data = F1m_2
+)
+
+# Test interaction
+interact_m2 <- anova(mod_no_interaction_m2, mod1_m2)
+# Interpretation : p = 0.76 → interaction not significant
+
+# Fixed effect ANOVA (no interaction)
+a_m2 <- anova(mod_no_interaction_m2, ddf = "Kenward-Roger")
+print(a_m2)
+
+# Extract p-values
+p_time <- a_m2["time", "Pr(>F)"]
+p_outcomes <- a_m2["Outcomes", "Pr(>F)"]
+
+annot_label <- paste0(
+  "p[time] == ", format(round(p_time, 3), nsmall = 3),
+  "*';'*~p[outcomes] == ", format(round(p_outcomes, 3), nsmall = 3)
+)
+
+# ==========================
+# Diagnostics
+# ==========================
+plot(mod1_m2)
+plot(fitted(mod1_m2), residuals(mod1_m2),
+     xlab = "Fitted values", ylab = "Residuals",
+     main = "Residuals vs Fitted")
+
+qqnorm(residuals(mod1_m2))
+qqline(residuals(mod1_m2), col = "blue")
+
+acf(residuals(mod1_m2), main = "ACF of residuals")
+
+qqnorm(ranef(mod1_m2)$ID[, "(Intercept)"], main = "QQ plot of random intercepts")
+qqline(ranef(mod1_m2)$ID[, "(Intercept)"], col = "blue")
+
+# ==========================
+# Final Plot
+# ==========================
+Figure_1m_2 <- ggplot(F1m_2 %>% filter(value > 0), aes(
+  x = ADR2_time, y = value, fill = Outcomes,
+  group = interaction(ADR2_time, Outcomes)
+)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +
+  scale_y_log10() +
+  labs(
+    title = "Association between ADRB2 expression in monocytes and outcomes",
+    x = "Time of measurement",
+    y = "Percentage of monocytes expressing ADRB2\n(log10 scale)"
+  ) +
+  geom_text(data = count_data_m2, aes(
+    x = ADR2_time,
+    y = min(F1m_2$value[F1m_2$value > 0], na.rm = TRUE) * 0.5,
+    label = paste0("n=", n),
+    group = interaction(ADR2_time, Outcomes)
+  ),
+  position = position_dodge(0.7),
+  size = 4,
+  vjust = 1) +
+  scale_x_discrete(labels = c(
+    "ADR2m_J0" = "implantation",
+    "ADR2m_J3_J5" = "day 3 to 5",
+    "ADR2m_JS" = "explantation"
+  )) +
+    scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",                   
+    "Bridge to transplant or LVAD" = "#377EB8",   
+    "Death" = "#F8766D"                           
+  )) +
+  annotate(
+    "text",
+    x = 1,
+    y = max(F1m_2$value, na.rm = TRUE) * 1.2,
+    label = annot_label,
+    parse = TRUE,
+    size = 4,
+    hjust = 0
+  )
+
+Fig_1m <- Figure_1m # + theme(plot.title = element_blank())
+Fig_1m_2 <- Figure_1m_2 # + theme(plot.title = element_blank())
+
+Figure1m_tot <- Fig_1m + Fig_1m_2 +
+  plot_annotation(title = "Association between percentage of monocytes expressing ADRB and Outcome")
+
+```
+
+```{r}
+Figure1m_tot
+```
+
+## Statistical Analysis
+
+To explore the distribution of ADRB1 and ADRB2 expression over time in relation to clinical outcomes, boxplots were generated at three timepoints (implantation, day 3–5, and explantation). To evaluate the temporal dynamics of ADRB1 and ADRB2 expression across clinical outcomes, we used linear mixed-effects models with time, outcome group (ECMO weaning, bridge to LVAD/transplant, or death), and their interaction as fixed effects. Random intercepts and slopes for time were included to account for intra-patient variability. When appropriate, receptor expression values were log10-transformed. Interaction terms were tested using likelihood ratio tests between full and reduced models, and Type III ANOVA with Kenward-Roger approximation was used for fixed effects.
+
+## Results (T4 lymphocytes)
+
+In patients who were successfully weaned from ECMO, both ADRB1 and ADRB2 expression in T4 lymphocytes showed an increase from implantation to explantation. In contrast, patients who died during ECMO exhibited lower or decreasing receptor expression over time. Although these trends were visually distinguishable, the interaction between time and outcome group was not statistically significant (ADRB1: p = 0.58; ADRB2: p = 0.76). Nevertheless, we observed a significant main effect of time for ADRB1 (p = 0.02) and a trend for ADRB2 (p = 0.07), alongside borderline differences across outcome groups (ADRB1: p = 0.07; ADRB2: p = 0.05).
+
+## Results (monocytes)
+In monocytes, ADRB1 and ADRB2 expression did not show any consistent time-dependent pattern across outcome groups. Boxplots revealed no evident increase or decrease over time, regardless of clinical trajecotry. These observations were supported by linear mixed-effects models, which showed no significant interaction between time and outcome group (ADRB1: pinteraction = 0.64; ADRB2: pinteraction = 0.76). Furthermore, neither time nor outcome group had significant main effects (ADRB1: p[time] = 0.95, p[outcomes] = 0.65; ADRB2: p[time] = 0.94, p[outcomes] = 0.57).
+
+# Figure 2: Association between VTI and ADRB in Lymphocyte at day of weaning
+
+```{r,include=TRUE}
+
+#ADRB1
+F2_1_a <- df %>%
+select(`jsev_epr_sev_t1_1,5l_itv`, ADR1_JS)%>%
+  mutate(
+    VTI_JS = case_when(
+      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
+      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
+    )
+  )%>%
+  na.omit()
+   
+
+ # Mann-Whitney test for VTI and ADRB1
+mann_whitney_VTI <- wilcox.test(ADR1_JS ~ VTI_JS, data = F2_1_a)
+
+# Extract and format the p-value
+p_value_VTI <- sprintf("%.3f", mann_whitney_VTI$p.value)
+
+count_data <- F2_1_a %>%
+  group_by(VTI_JS) %>%
+  summarise(n = n())
+
+# Boxplot for ADRB1 with p-value annotation 
+Figure2a <- ggplot(F2_1_a, aes(x = VTI_JS, y = log10(ADR1_JS), fill = VTI_JS)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  geom_text(data = count_data,
+            aes(x = VTI_JS, y = min(log10(F2_1_a$ADR1_JS), na.rm = TRUE) * 1.25,
+                label = paste0("n=", n)),
+            size = 4,
+            inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "A",
+    x = "VTI measured at 1.5 L/min",
+    y = "ADRB1 in lymphocyte measured at ECMO weaning \n (log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text",
+           x = 1.5,
+           y = max(log10(F2_1_a$ADR1_JS), na.rm = TRUE),
+           label = paste("p:", p_value_VTI),
+           size = 5, color = "black", hjust = 0.5)
+
+
+#ADRB2
+F2_2_a <- df %>%
+select(`jsev_epr_sev_t1_1,5l_itv`, ADR2_JS)%>%
+  mutate(
+    VTI_JS = case_when(
+      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
+      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
+    )
+  )%>%
+  na.omit()
+   
+
+ # Mann-Whitney test for VTI and ADRB2
+mann_whitney_VTI_2 <- wilcox.test(log10(ADR2_JS) ~ VTI_JS, data = F2_2_a)
+
+# Extract and format the p-value
+p_value_VTI_2 <- sprintf("%.3f", mann_whitney_VTI_2$p.value)
+
+count_data <- F2_2_a %>%
+  group_by(VTI_JS) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Boxplot for ADRB2 with p-value annotation 
+Figure2b <- ggplot(F2_2_a, aes(x = VTI_JS, y = log10(ADR2_JS), fill = VTI_JS)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "B",
+    x = "VTI measured at 1.5L /min",
+    y = "ADRB2 in lymphocyte measured at ECMO weaning \n (log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate(
+    "text",
+    x = 1.5,
+    y = max(log10(F2_2_a$ADR2_JS), na.rm = TRUE),
+    label = paste("p:", p_value_VTI_2),
+    size = 5,
+    color = "black",
+    hjust = 0.5
+  ) +
+  geom_text(
+    data = count_data,
+    aes(
+      x = VTI_JS,
+      y = min(log10(F2_2_a$ADR2_JS), na.rm = TRUE) * 1.25,  
+      label = paste0("n=", n)
+    ),
+    inherit.aes = FALSE,
+    size = 4
+  )
+
+Figure2_tot <- Figure2a | Figure2b +
+  plot_annotation(
+    title = "Association between VTI at weaning and ADRB1/ADRB2 expression in lymphocyte",
+    tag_levels = c("A","B")  
+  )
+
+```
+
+```{r}
+Figure2_tot
+```
+
+# Figure 2_m: Association between VTI and ADRB in Monocytes at day of weaning
+
+```{r,include=TRUE}
+
+# ADRB1
+
+F2_1_m <- df %>%
+  select(`jsev_epr_sev_t1_1,5l_itv`, ADR1m_JS) %>%
+  mutate(
+    VTI_JS = case_when(
+      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
+      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
+    ),
+    VTI_JS = factor(VTI_JS, levels = c("≤12 cm", ">12 cm"))
+  ) %>%
+  na.omit()
+
+# Mann–Whitney test
+mw_test_adr1m <- wilcox.test(log10(ADR1m_JS) ~ VTI_JS, data = F2_1_m)
+
+# Extract p-value
+p_value_adr1m <- sprintf("%.3f", mw_test_adr1m$p.value)
+
+count_data_m <- F2_1_m %>%
+  group_by(VTI_JS) %>%
+  summarise(n = n())
+
+# Plot
+Figure2m_A <- ggplot(F2_1_m, aes(x = VTI_JS, y = log10(ADR1m_JS), fill = VTI_JS)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_m,
+            aes(x = VTI_JS,
+                y = -2.5,
+                label = paste0("n=", n)),
+            size = 4,
+            inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "A",
+    x = "VTI measured at 1.5L /min",
+    y = "ADRB1 in monocyte at ECMO weaning\n(log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate(
+    "text",
+    x = 1.5,
+    y = max(log10(F2_1_m$ADR1m_JS), na.rm = TRUE) * 1.05,
+    label = paste("p:", p_value_adr1m),
+    size = 5
+  ) +
+  coord_cartesian(clip = "off")
+
+# ADRB2
+
+F2_2_m <- df %>%
+  select(`jsev_epr_sev_t1_1,5l_itv`, ADR2m_JS) %>%
+  mutate(
+    VTI_JS = case_when(
+      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
+      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
+    ),
+    VTI_JS = factor(VTI_JS, levels = c("≤12 cm", ">12 cm"))
+  ) %>%
+  na.omit()
+
+# Mann–Whitney test
+mw_test_adr2m <- wilcox.test(log10(ADR2m_JS) ~ VTI_JS, data = F2_2_m)
+
+# Extract p-value
+p_value_adr2m <- sprintf("%.3f", mw_test_adr2m$p.value)
+
+count_data_m2 <- F2_2_m %>%
+  group_by(VTI_JS) %>%
+  summarise(n = n())
+
+# Plot
+Figure2m_B <- ggplot(F2_2_m, aes(x = VTI_JS, y = log10(ADR2m_JS), fill = VTI_JS)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_m2,
+            aes(x = VTI_JS,
+                y = min(log10(F2_2_m$ADR2m_JS), na.rm = TRUE) * 1.25,
+                label = paste0("n=", n)),
+            size = 4,
+            inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "B",
+    x = "VTI measured at 1.5L /min",
+    y = "ADRB2 in monocyte at ECMO weaning\n(log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate(
+    "text",
+    x = 1.5,
+    y = max(log10(F2_2_m$ADR2m_JS), na.rm = TRUE) * 1.05,
+    label = paste("p:", p_value_adr2m),
+    size = 5
+  )
+
+# Combined plot
+
+Figure2m_tot <- Figure2m_A | Figure2m_B +
+  plot_annotation(
+    title = "Association between VTI at weaning and ADRB1/ADRB2 expression in monocyte",
+    tag_levels = "A"
+  )
+
+```
+
+```{r}
+Figure2m_tot
+```
+
+## Statistical Analysis
+
+To assess the association between ADRB1 and ADRB2 expression at the time of ECMO weaning and left ventricular outflow tract velocity-time integral (VTI) measured at 1.5 L/min ECMO flow, patients were stratified according to a VTI threshold of 12 cm. Mann–Whitney U tests were used to compare log-transformed ADRB expression between the two groups (≤12 cm vs >12 cm). Results were visualized using boxplots.
+
+## Results 
+
+In lymphocytes, both ADRB1 and ADRB2 expression levels at the time of ECMO weaning were significantly lower in patients with a suboptimal VTI (≤12 cm), a threshold commonly used to assess readiness for explantation. This difference was statistically significant for both markers (ADRB1: p = 0.04; ADRB2: p = 0.04), suggesting a potential association between impaired hemodynamic recovery and reduced β-adrenergic receptor expression.
+
+In contrast, no statistically significant differences in ADRB1 or ADRB2 expression in monocytes were observed between patients with VTI ≤12 cm and those with VTI >12 cm (ADRB1: p = 0.73; ADRB2: p = 0.79).
+
+
+# ADR and inotropics
+
+# ADR \~ dobutamin
+
+```{r,include=TRUE}
+
+### Correlation between ADRB1 in Lymphocyte and total dobutamine dose
+
+F3c_a <- df %>%
+  select(ADR1_JS, dose_tot_dobu) %>%
+  filter(!is.na(ADR1_JS), !is.na(dose_tot_dobu))
+
+cor_test_adr1 <- cor.test(F3c_a$ADR1_JS, F3c_a$dose_tot_dobu, method = "spearman")
+rho_adr1 <- sprintf("%.4f", cor_test_adr1$estimate)
+pval_adr1 <- sprintf("p = %.3f", cor_test_adr1$p.value)
+
+Fig_3c <- ggplot(F3c_a, aes(x = dose_tot_dobu, y = ADR1_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(title = "Correlation between dobutamine dose and ADRB1 (lymphocytes)",
+       x = "Dobutamine dose (mg)",
+       y = "ADRB1 expression on T helper lymphocytes") +
+  annotate("text", 
+           x = min(F3c_a$dose_tot_dobu, na.rm = TRUE), 
+           y = max(F3c_a$ADR1_JS, na.rm = TRUE), 
+           label = paste("Spearman rho:", rho_adr1, "\n", pval_adr1),
+           hjust = 0, size = 5, color = "black") +
+  theme_minimal()
+
+
+### Correlation between ADRB2 in Lymphocyte and total dobutamine dose
+
+F3c_b <- df %>%
+  select(ADR2_JS, dose_tot_dobu) %>%
+  filter(!is.na(ADR2_JS), !is.na(dose_tot_dobu))
+
+cor_test_adr2 <- cor.test(F3c_b$ADR2_JS, F3c_b$dose_tot_dobu, method = "spearman")
+rho_adr2 <- sprintf("%.4f", cor_test_adr2$estimate)
+pval_adr2 <- sprintf("p = %.3f", cor_test_adr2$p.value)
+
+Fig_3d <- ggplot(F3c_b, aes(x = dose_tot_dobu, y = ADR2_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(title = "Correlation between dobutamine dose and ADRB2 (lymphocytes)",
+       x = "Dobutamine dose (mg)",
+       y = "ADRB2 expression on T helper lymphocytes") +
+  annotate("text", 
+           x = min(F3c_b$dose_tot_dobu, na.rm = TRUE), 
+           y = max(F3c_b$ADR2_JS, na.rm = TRUE), 
+           label = paste("Spearman rho:", rho_adr2, "\n", pval_adr2),
+           hjust = 0, size = 5, color = "black") +
+  theme_minimal()
+
+### Correlation between ADRB1 in Monocyte and total dobutamine dose
+
+F3c_m1 <- df %>%
+  select(ADR1m_JS, dose_tot_dobu) %>%
+  filter(!is.na(ADR1m_JS), !is.na(dose_tot_dobu))
+
+cor_test_adr1m <- cor.test(F3c_m1$ADR1m_JS, F3c_m1$dose_tot_dobu, method = "spearman")
+rho_adr1m <- sprintf("%.4f", cor_test_adr1m$estimate)
+pval_adr1m <- sprintf("p = %.3f", cor_test_adr1m$p.value)
+
+Fig_3c_m <- ggplot(F3c_m1, aes(x = dose_tot_dobu, y = ADR1m_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(title = "Correlation between dobutamine dose and ADRB1 (monocytes)",
+       x = "Dobutamine dose (mg)",
+       y = "ADRB1 expression on monocytes at ECMO weaning") +
+  annotate("text", 
+           x = min(F3c_m1$dose_tot_dobu, na.rm = TRUE), 
+           y = max(F3c_m1$ADR1m_JS, na.rm = TRUE), 
+           label = paste("Spearman rho:", rho_adr1m, "\n", pval_adr1m),
+           hjust = 0, size = 5, color = "black") +
+  theme_minimal()
+
+### Correlation between ADRB2 in Monocyte and total dobutamine dose
+
+F3c_m2 <- df %>%
+  select(ADR2m_JS, dose_tot_dobu) %>%
+  filter(!is.na(ADR2m_JS), !is.na(dose_tot_dobu))
+
+cor_test_adr2m <- cor.test(F3c_m2$ADR2m_JS, F3c_m2$dose_tot_dobu, method = "spearman")
+rho_adr2m <- sprintf("%.4f", cor_test_adr2m$estimate)
+pval_adr2m <- sprintf("p = %.3f", cor_test_adr2m$p.value)
+
+Fig_3d_m <- ggplot(F3c_m2, aes(x = dose_tot_dobu, y = ADR2m_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(title = "Correlation between dobutamine dose and ADRB2 (monocytes)",
+       x = "Dobutamine dose (mg)",
+       y = "ADRB2 expression on monocytes at ECMO weaning") +
+  annotate("text", 
+           x = min(F3c_m2$dose_tot_dobu, na.rm = TRUE), 
+           y = max(F3c_m2$ADR2m_JS, na.rm = TRUE), 
+           label = paste("Spearman rho:", rho_adr2m, "\n", pval_adr2m),
+           hjust = 0, size = 5, color = "black") +
+  theme_minimal()
+
+
+```
+
+## Statistical analysis
+
+The association between cumulative dobutamine dose and the percentage of T-helper lymphocytes/monocyte expressing ADRB was assessed using Spearman's rank correlation coefficient. 
+
+## Results
+
+A weak negative correlation was observed between ADRB expression in lymphocytes and total dobutamine dose, which did not reach statistical significance.
+In contrast, both ADRB1 and ADRB2 expression in monocytes at the time of ECMO weaning were moderately correlated with cumulative dobutamine dose (Spearman ρ = 0.52, p = 0.021 for ADRB1; ρ = 0.54, p = 0.015 for ADRB2), indicating a significant positive association.
+
+# Figure 3: Association of cumulative dobutamine and ADRB in Lymphocyte at day of weaning
+
+```{r}
+# ADRB1
+
+F3_a <- df %>%
+  select(dose_tot_dobu, ADR1_JS) %>%
+  mutate(dobu_cut = case_when(
+    dose_tot_dobu > median(dose_tot_dobu, na.rm = TRUE) ~ "> median",
+    dose_tot_dobu <= median(dose_tot_dobu, na.rm = TRUE) ~ "≤ median"
+  )) %>%
+  filter(!is.na(ADR1_JS), !is.na(dose_tot_dobu))%>%
+  mutate(dobu_cut = factor(dobu_cut, levels = c("≤ median", "> median")))
+
+# Test di Mann–Whitney
+mw_adr1 <- wilcox.test(log10(ADR1_JS) ~ dobu_cut, data = F3_a)
+p_val_adr1 <- sprintf("%.3f", mw_adr1$p.value)
+
+count_data_a <- F3_a %>%
+  group_by(dobu_cut) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Figure ADR1
+Figure3a <- ggplot(F3_a, aes(x = dobu_cut, y = log10(ADR1_JS), fill = dobu_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), alpha = 0.7, size = 2) +
+  geom_text(data = count_data_a,
+            aes(x = dobu_cut, y = min(log10(F3_a$ADR1_JS), na.rm = TRUE) * 1.1,
+                label = paste0("n=", n)),
+            size = 4,
+            inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤ median" = "#009E73", "> median" = "#CC79A7")) +
+  labs(
+    title = "A",
+    x = "Cumulative Dobutamine (cut at median)",
+    y = "ADRB1 at ECMO weaning (log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text",
+           x = 1.5,
+           y = max(log10(F3_a$ADR1_JS), na.rm = TRUE) * 1.15,
+           label = paste("p:", p_val_adr1),
+           size = 5)
+
+# ADRB2
+
+F3_b <- df %>%
+  select(dose_tot_dobu, ADR2_JS) %>%
+  mutate(dobu_cut = case_when(
+    dose_tot_dobu > median(dose_tot_dobu, na.rm = TRUE) ~ "> median",
+    dose_tot_dobu <= median(dose_tot_dobu, na.rm = TRUE) ~ "≤ median"
+  )) %>%
+  filter(!is.na(ADR2_JS), !is.na(dose_tot_dobu))%>%
+  mutate(dobu_cut = factor(dobu_cut, levels = c("≤ median", "> median")))
+
+# Test
+mw_adr2 <- wilcox.test(log10(ADR2_JS) ~ dobu_cut, data = F3_b)
+p_val_adr2 <- sprintf("%.3f", mw_adr2$p.value)
+
+count_data_b <- F3_b %>%
+  group_by(dobu_cut) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Figure ADR2
+Figure3b <- ggplot(F3_b, aes(x = dobu_cut, y = log10(ADR2_JS), fill = dobu_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), alpha = 0.7, size = 2) +
+  geom_text(data = count_data_b,
+            aes(x = dobu_cut, y = min(log10(F3_b$ADR2_JS), na.rm = TRUE) * 1.1,
+                label = paste0("n=", n)),
+            size = 4,
+            inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤ median" = "#009E73", "> median" = "#CC79A7")) +
+  labs(
+    title = "B",
+    x = "Cumulative Dobutamine (cut at median)",
+    y = "ADRB2 at ECMO weaning (log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text",
+           x = 1.5,
+           y = max(log10(F3_b$ADR2_JS), na.rm = TRUE) * 1.15,
+           label = paste("p:", p_val_adr2),
+           size = 5)
+
+# === Combine ===
+Figure3_dobu_cum <- Figure3a + Figure3b +
+  plot_annotation(title = "Association between cumulative dobutamine and ADR expression in lymphocytes")
+
+```
+
+```{r}
+Figure3_dobu_cum
+```
+
+# Figure 3_m: Association of cumulative dobutamine and ADRB in Monocyte at day of weaning
+
+```{r,include=TRUE}
+
+## ADRB1
+
+# Prepare data
+F3_m_a <- df %>%
+  select(dose_tot_dobu, ADR1m_JS) %>%
+  mutate(
+    dobu_cut = case_when(
+      dose_tot_dobu > median(dose_tot_dobu, na.rm = TRUE) ~ "> median",
+      TRUE ~ "≤ median"
+    )
+  ) %>%
+  filter(!is.na(ADR1m_JS), !is.na(dose_tot_dobu)) %>%
+  mutate(dobu_cut = factor(dobu_cut, levels = c("≤ median", "> median")))
+
+
+# Mann–Whitney test
+mw_test_adr1m <- wilcox.test(log10(ADR1m_JS) ~ dobu_cut, data = F3_m_a)
+p_value_adr1m <- sprintf("%.3f", mw_test_adr1m$p.value)
+
+# Count per group
+count_data_adr1m <- F3_m_a %>%
+  group_by(dobu_cut) %>%
+  summarise(n = n())
+
+# Plot
+Figure3_dobu_cum_a <- ggplot(F3_m_a, aes(x = dobu_cut, y = log10(ADR1m_JS), fill = dobu_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), alpha = 0.7, size = 2) +
+  geom_text(
+    data = F3_m_a %>% group_by(dobu_cut) %>% summarise(n = n()) %>%
+      mutate(y_n_label = -2.5),  # y personalizzata direttamente qui
+    aes(x = dobu_cut, y = y_n_label, label = paste0("n=", n)),
+    inherit.aes = FALSE, size = 4
+  ) +
+  scale_fill_manual(values = c("≤ median" = "#009E73", "> median" = "#CC79A7")) +
+  labs(title = "A", x = "Cumulative Dobutamine", y = "ADRB1 in monocytes at weaning (log10)") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text",
+           x = 1.5,
+           y = max(log10(F3_m_a$ADR1m_JS), na.rm = TRUE),
+           label = paste("p:", p_value_adr1m),
+           size = 5)
+
+
+##ADRB2
+
+# Prepare data
+F3_m_b <- df %>%
+  select(dose_tot_dobu, ADR2m_JS) %>%
+  mutate(
+    dobu_cut = case_when(
+      dose_tot_dobu > median(dose_tot_dobu, na.rm = TRUE) ~ "> median",
+      TRUE ~ "≤ median"
+    )
+  ) %>%
+  filter(!is.na(ADR2m_JS), !is.na(dose_tot_dobu))%>%
+  mutate(dobu_cut = factor(dobu_cut, levels = c("≤ median", "> median")))
+
+# Mann–Whitney test
+mw_test_adr2m <- wilcox.test(log10(ADR2m_JS) ~ dobu_cut, data = F3_m_b)
+p_value_adr2m <- sprintf("%.3f", mw_test_adr2m$p.value)
+
+# Count per group
+count_data_adr2m <- F3_m_b %>%
+  group_by(dobu_cut) %>%
+  summarise(n = n())
+
+# Plot
+Figure3_dobu_cum_b <- ggplot(F3_m_b, aes(x = dobu_cut, y = log10(ADR2m_JS), fill = dobu_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), alpha = 0.7, size = 2) +
+  geom_text(data = count_data_adr2m, aes(x = dobu_cut, y = min(log10(F3_m_b$ADR2m_JS), na.rm = TRUE) * 1.25,
+                                         label = paste0("n=", n)), inherit.aes = FALSE, size = 4) +
+  scale_fill_manual(values = c("≤ median" = "#009E73", "> median" = "#CC79A7")) +
+  labs(title = "B", x = "Cumulative Dobutamine", y = "ADRB2 in monocytes at weaning (log10)") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(log10(F3_m_b$ADR2m_JS), na.rm = TRUE), label = paste("p:", p_value_adr2m), size = 5)
+
+# Cumulative
+Figure3m_dobu_cum <- Figure3_dobu_cum_a + Figure3_dobu_cum_b +
+  plot_annotation(title = "Association between cumulative dobutamine and ADR expression in monocytes")
+
+```
+
+```{r}
+Figure3m_dobu_cum
+```
+
+## Statistical Analysis
+
+As evolution of some patients allowed an early weaning before D5, we considered that D3-D5 and D weaning are the same time point. To explore whether cumulative exposure to inotropic stimulation was associated with β-adrenergic receptor modulation over time, we investigated the relationship between the total cumulative dose of dobutamine (expressed in mg) and ADRB1/ADRB2 expression at ECMO weaning day.
+This timepoint was selected as it reflects the net effect of continuous pharmacological stimulation throughout the ECMO course, thereby allowing the assessment of potential receptor adaptation (e.g., up- or downregulation).
+
+First, we performed a correlation analysis between cumulative dobutamine dose and ADRB1/ADRB2 expression using Spearman’s rank correlation coefficient, due to the non-normal distribution of the data.
+Second, patients were stratified according to the median of cumulative dobutamine dose. Expression levels of ADRB1 and ADRB2 (in both CD4+ lymphocytes and monocytes) at ECMO weaning were compared between patients above versus below the median using the Mann–Whitney U test. A two-sided p-value < 0.05 was considered statistically significant.
+
+## Results
+
+Among lymphocytes, there was no significant difference in ADRB expression between patients with higher versus lower cumulative dobutamine exposure. ADRB1 levels were comparable across groups, while a trend toward lower ADRB2 expression was observed in patients who received higher doses of dobutamine.
+
+In contrast, monocyte expression patterns followed a more consistent trend. Both ADRB1 and ADRB2 expression levels tended to be higher in patients exposed to higher cumulative doses of dobutamine, although this association did not reach statistical significance.
+
+# ADR \~ noradrenalin
+
+```{r,include=TRUE}
+
+### Correlation between ADRB1 in Lymphocyte and total noradrenalin dose
+
+df4 <- df %>%
+  dplyr::select(dose_tot_NAd, ADR1_JS, Weight) %>%
+  filter(!is.na(ADR1_JS), !is.na(dose_tot_NAd)) %>%
+  mutate(NAD_per_kg = dose_tot_NAd / Weight)
+
+# Correlation
+correlation_adr1 <- sprintf("%.4f", cor(df4$ADR1_JS, df4$dose_tot_NAd, method = "spearman", use = "complete.obs"))
+
+# Plot ADRB1
+Figure_4_NADcum_A <- ggplot(df4, aes(x = dose_tot_NAd, y = ADR1_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    title = "Correlation between noradrenaline dose and ADRB1 (lymphocytes)",
+    x = "Cumulative noradrenaline dose (mg)",
+    y = "ADRB1 expression at ECMO weaning (JS)"
+  ) +
+  annotate(
+    "text",
+    x = min(df4$dose_tot_NAd, na.rm = TRUE),
+    y = max(df4$ADR1_JS, na.rm = TRUE) * 0.95,
+    label = paste("Spearman correlation:", correlation_adr1),
+    hjust = 0,
+    size = 5,
+    color = "black"
+  ) +
+  theme_minimal()
+
+
+print(Figure_4_NADcum_A)
+
+
+### Correlation between ADRB2 in Lymphocyte and total noradrenalin dose
+
+df4 <- df %>%
+  dplyr::select(dose_tot_NAd, ADR2_JS, Weight) %>%
+  filter(!is.na(ADR2_JS), !is.na(dose_tot_NAd)) %>%
+  mutate(NAD_per_kg = dose_tot_NAd / Weight)
+
+correlation_adr2 <- sprintf("%.4f", cor(df4$ADR2_JS, df4$dose_tot_NAd, method = "spearman", use = "complete.obs"))
+
+Figure_4_NADcum_B <- ggplot(df4, aes(x = dose_tot_NAd, y = ADR2_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    title = "Correlation between noradrenaline dose and ADRB2 (lymphocytes)",
+    x = "Cumulative noradrenaline dose (mg)",
+    y = "ADRB2 expression at ECMO weaning (JS)"
+  ) +
+  annotate(
+    "text",
+    x = min(df4$dose_tot_NAd, na.rm = TRUE),
+    y = max(df4$ADR2_JS, na.rm = TRUE) * 0.95,
+    label = paste("Spearman correlation:", correlation_adr2),
+    hjust = 0,
+    size = 5,
+    color = "black"
+  ) +
+  theme_minimal()
+
+print(Figure_4_NADcum_B)
+
+### Correlation between ADRB1 in Monocyte and total noradrenalin dose
+
+df4 <- df %>%
+  select(ADR1m_JS, dose_tot_NAd, Weight) %>%
+  filter(!is.na(ADR1m_JS), !is.na(dose_tot_NAd)) %>%
+  mutate(NAD_per_kg = dose_tot_NAd / Weight)
+
+# Spearman correlation
+cor_adr1m <- sprintf("%.4f", cor(df4$ADR1m_JS, df4$dose_tot_NAd, method = "spearman", use = "complete.obs"))
+
+# Plot
+Figure4_NADmono_A <- ggplot(df4, aes(x = dose_tot_NAd, y = ADR1m_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    title = "Correlation between Noradrenaline dose and ADRB1 (monocytes)",
+    x = "Cumulative noradrenaline dose (mg)",
+    y = "Monocyte ADRB1 expression at ECMO weaning"
+  ) +
+  annotate("text",
+           x = min(df4$dose_tot_NAd, na.rm = TRUE),
+           y = max(df4$ADR1m_JS, na.rm = TRUE) * 0.95,
+           label = paste("Spearman correlation:", cor_adr1m),
+           hjust = 0, size = 5, color = "black") +
+  theme_minimal()
+
+print(Figure4_NADmono_A)
+
+### Correlation between ADRB2 in Monocyte and total noradrenalin dose
+
+df4 <- df %>%
+  select(ADR2m_JS, dose_tot_NAd, Weight) %>%
+  filter(!is.na(ADR2m_JS), !is.na(dose_tot_NAd)) %>%
+  mutate(NAD_per_kg = dose_tot_NAd / Weight)
+
+# Spearman correlation
+cor_adr2m <- sprintf("%.4f", cor(df4$ADR2m_JS, df4$dose_tot_NAd, method = "spearman", use = "complete.obs"))
+
+# Plot
+Figure4_NADmono_B <- ggplot(df4, aes(x = dose_tot_NAd, y = ADR2m_JS)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    title = "Correlation between Noradrenaline dose and ADRB2 (monocytes)",
+    x = "Cumulative noradrenaline dose (mg)",
+    y = "Monocyte ADRB2 expression at ECMO weaning"
+  ) +
+  annotate("text",
+           x = min(df4$dose_tot_NAd, na.rm = TRUE),
+           y = max(df4$ADR2m_JS, na.rm = TRUE) * 0.95,
+           label = paste("Spearman correlation:", cor_adr2m),
+           hjust = 0, size = 5, color = "black") +
+  theme_minimal()
+
+print(Figure4_NADmono_B)
+
+```
+
+## Results
+
+No significant correlations were observed between cumulative noradrenaline dose and ADRB1 or ADRB2 expression in either T helper lymphocytes (r = –0.09 and –0.29, respectively) or monocytes (r = –0.18 and 0.02, respectively).
+
+# Figure 4: Association of cumulative noradrenaline and ADRB in Lymphocyte at day of weaning
+
+```{r,include=TRUE}
+
+### ADRB1 in T lymphocytes ~ cumulative NAd (median)
+
+F5a <- df %>%
+  mutate(
+    ADR1_JS_clean = case_when(
+      !is.na(ADR1_JS) ~ ADR1_JS,
+      is.na(ADR1_JS) & !is.na(ADR1_J3_J5) ~ ADR1_J3_J5,
+      TRUE ~ NA_real_
+    ),
+    NAd_group = case_when(
+      dose_tot_NAd > median(dose_tot_NAd, na.rm = TRUE) ~ "> median",
+      dose_tot_NAd <= median(dose_tot_NAd, na.rm = TRUE) ~ "≤ median",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(ADR1_JS_clean), !is.na(NAd_group)) %>%
+  mutate(NAd_group = factor(NAd_group, levels = c("≤ median", "> median")))
+
+# p-value (Mann–Whitney)
+wilcox_test_adr1 <- wilcox.test(ADR1_JS_clean ~ NAd_group, data = F5a)
+p_value_adr1 <- sprintf("%.3f", wilcox_test_adr1$p.value)
+
+count_data_adr1 <- F5a %>%
+  group_by(NAd_group) %>%
+  summarise(n = n())
+
+# Boxplot
+Figure_5a <- ggplot(F5a, aes(x = NAd_group, y = ADR1_JS_clean, fill = NAd_group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(
+    data = count_data_adr1,
+    aes(x = NAd_group, y = min(F5a$ADR1_JS_clean, na.rm = TRUE) * 1.2,
+        label = paste0("n=", n)),
+    size = 4,
+    inherit.aes = FALSE
+  ) +
+  scale_fill_manual(values = c("≤ median" = "#66C2AC", "> median" = "#D73027")) +
+  labs(
+    title = "A",
+    x = "Cumulative noradrenaline dose",
+    y = "ADRB1 expression at ECMO weaning"
+  ) +
+  annotate("text",
+           x = 1.5,
+           y = max(F5a$ADR1_JS_clean, na.rm = TRUE) * 1.05,
+           label = paste("p:", p_value_adr1),
+           size = 5, color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+### ADRB2 in T lymphocytes ~ cumulative NAd (median)
+
+F5b <- df %>%
+  mutate(
+    ADR2_JS_clean = case_when(
+      !is.na(ADR2_JS) ~ ADR2_JS,
+      is.na(ADR2_JS) & !is.na(ADR2_J3_J5) ~ ADR2_J3_J5,
+      TRUE ~ NA_real_
+    ),
+    NAd_group = case_when(
+      dose_tot_NAd > median(dose_tot_NAd, na.rm = TRUE) ~ "> median",
+      dose_tot_NAd <= median(dose_tot_NAd, na.rm = TRUE) ~ "≤ median",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(ADR2_JS_clean), !is.na(NAd_group)) %>%
+  mutate(NAd_group = factor(NAd_group, levels = c("≤ median", "> median")))
+
+# Test di Mann–Whitney
+wilcox_test_adr2 <- wilcox.test(ADR2_JS_clean ~ NAd_group, data = F5b)
+p_value_adr2 <- sprintf("%.3f", wilcox_test_adr2$p.value)
+
+# Conta per gruppo
+count_data_adr2 <- F5b %>%
+  group_by(NAd_group) %>%
+  summarise(n = n())
+
+# Boxplot
+Figure_5b <- ggplot(F5b, aes(x = NAd_group, y = ADR2_JS_clean, fill = NAd_group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(
+    data = count_data_adr2,
+    aes(x = NAd_group, y = min(F5b$ADR2_JS_clean, na.rm = TRUE) * 1.2,
+        label = paste0("n=", n)),
+    size = 4,
+    inherit.aes = FALSE
+  ) +
+  scale_fill_manual(values = c("≤ median" = "#66C2AC", "> median" = "#D73027")) +
+  labs(
+    title = "B",
+    x = "Cumulative noradrenaline dose",
+    y = "ADRB2 expression at ECMO weaning"
+  ) +
+  annotate("text",
+           x = 1.5,
+           y = max(F5b$ADR2_JS_clean, na.rm = TRUE) * 1.05,
+           label = paste("p:", p_value_adr2),
+           size = 5, color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+Figure_5a <- Figure_5a + theme(plot.title = element_blank())
+Figure_5b <- Figure_5b + theme(plot.title = element_blank())
+
+# Combinazione dei due plot
+Figure4_tot <- Figure_5a + Figure_5b +
+  plot_annotation(
+    title = "Association between cumulative noradrenaline dose and β-adrenergic receptor expression on T helper lymphocytes"
+  )
+```
+
+```{r}
+Figure4_tot
+```
+
+# Figure 4m: Association of cumulative noradrenaline and ADRB in Monocyte at day of weaning
+
+```{r,include=TRUE}
+
+cut_median_nad <- median(df$dose_tot_NAd, na.rm = TRUE)
+
+#ADRB1m
+F4_m_a <- df %>%
+  select(dose_tot_NAd, ADR1m_JS, ADR1m_J3_J5) %>%
+  mutate(
+    ADR1m_final = case_when(
+      !is.na(ADR1m_JS) ~ ADR1m_JS,
+      is.na(ADR1m_JS) & !is.na(ADR1m_J3_J5) ~ ADR1m_J3_J5,
+      TRUE ~ NA_real_
+    ),
+    NAd_cut = case_when(
+      dose_tot_NAd <= cut_median_nad ~ "≤ median",
+      dose_tot_NAd > cut_median_nad ~ "> median",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(ADR1m_final), !is.na(NAd_cut)) %>%
+  mutate(NAd_cut = factor(NAd_cut, levels = c("≤ median", "> median")))
+
+# P-value
+p_val_adr1m <- wilcox.test(ADR1m_final ~ NAd_cut, data = F4_m_a)$p.value
+p_text_adr1m <- paste("p:", format(round(p_val_adr1m, 3), nsmall = 3))
+
+# Count
+count_data_m1 <- F4_m_a %>%
+  group_by(NAd_cut) %>%
+  summarise(n = n())
+
+# Plot ADRB1m
+Figure4m_A <- ggplot(F4_m_a, aes(x = NAd_cut, y = log10(ADR1m_final), fill = NAd_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_m1,
+            aes(x = NAd_cut, y = min(log10(F4_m_a$ADR1m_final), na.rm = TRUE) * 1.2,
+                label = paste0("n=", n)),
+            size = 4, inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤ median" = "#66C2A5", "> median" = "#D73027")) +
+  labs(
+    title = "A",
+    x = "Cumulative norepinephrine dose",
+    y = "Monocyte ADRB1 expression at ECMO weaning\n(log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5,
+           y = max(log10(F4_m_a$ADR1m_final), na.rm = TRUE) * 1.15,
+           label = p_text_adr1m,
+           size = 5)
+
+
+# ADRB2m
+
+F4_m_b <- df %>%
+  select(dose_tot_NAd, ADR2m_JS, ADR2m_J3_J5) %>%
+  mutate(
+    ADR2m_final = case_when(
+      !is.na(ADR2m_JS) ~ ADR2m_JS,
+      is.na(ADR2m_JS) & !is.na(ADR2m_J3_J5) ~ ADR2m_J3_J5,
+      TRUE ~ NA_real_
+    ),
+    NAd_cut = case_when(
+      dose_tot_NAd <= cut_median_nad ~ "≤ median",
+      dose_tot_NAd > cut_median_nad ~ "> median",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(ADR2m_final), !is.na(NAd_cut)) %>%
+  mutate(NAd_cut = factor(NAd_cut, levels = c("≤ median", "> median")))
+
+# P-value
+p_val_adr2m <- wilcox.test(ADR2m_final ~ NAd_cut, data = F4_m_b)$p.value
+p_text_adr2m <- paste("p:", format(round(p_val_adr2m, 3), nsmall = 3))
+
+# Count
+count_data_m2 <- F4_m_b %>%
+  group_by(NAd_cut) %>%
+  summarise(n = n())
+
+# Plot ADRB2m
+Figure4m_B <- ggplot(F4_m_b, aes(x = NAd_cut, y = log10(ADR2m_final), fill = NAd_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_m2,
+            aes(x = NAd_cut, y = min(log10(F4_m_b$ADR2m_final), na.rm = TRUE) * 1.2,
+                label = paste0("n=", n)),
+            size = 4, inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤ median" = "#66C2AC", "> median" = "#D73027")) +
+  labs(
+    title = "B",
+    x = "Cumulative norepinephrine dose",
+    y = "Monocyte ADRB2 expression at ECMO weaning\n(log10 scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5,
+           y = max(log10(F4_m_b$ADR2m_final), na.rm = TRUE) * 1.15,
+           label = p_text_adr2m,
+           size = 5)
+
+# Combine plots
+
+Figure4_mono <- Figure4m_A + Figure4m_B +
+  plot_annotation(title = "Association between cumulative norepinephrine dose and ADRB1/2 expression in monocytes at ECMO weaning")
+```
+
+```{r}
+Figure4_mono
+```
+
+## Results 
+
+Among lymphocytes, both ADRB1 and ADRB2 expression at ECMO weaning tended to be lower in patients receiving a cumulative noradrenaline dose above the median. However, these differences did not reach statistical significance.
+
+Among monocytes, ADRB1 expression at ECMO weaning was significantly lower in patients receiving a cumulative norepinephrine dose above the median compared to those below (p = 0.039). A similar trend was observed for ADRB2 expression, although the difference did not reach statistical significance (p = 0.077).
+
+While Spearman correlation analyses did not reveal a significant association between cumulative norepinephrine dose and ADRB1/ADRB2 expression in monocytes, patients with doses above the median exhibited significantly lower ADRB1 levels at ECMO weaning (p = 0.039). This suggests that potential receptor downregulation may occur only above a certain threshold of catecholaminergic stimulation.
+
+# ADRB \~ VIS Score at day 0 in Lymphocytes
+
+```{r,include=TRUE}
+
+df <- df %>%
+  mutate(VIS_cut = case_when(
+    VIS_D0 > 15 ~ ">15",
+    VIS_D0 <= 15 ~ "≤15"
+  )) %>%
+  mutate(VIS_cut = factor(VIS_cut, levels = c("≤15", ">15")))
+
+# ADRB1 in lymphocytes
+F_VIS_adrb1 <- df %>%
+  select(ADR1_JS, VIS_cut) %>%
+  filter(!is.na(ADR1_JS), !is.na(VIS_cut))
+
+count_data_adrb1 <- F_VIS_adrb1 %>%
+  group_by(VIS_cut) %>%
+  summarise(n = n(), .groups = "drop")
+
+p_value_adrb1 <- wilcox.test(log10(ADR1_JS) ~ VIS_cut, data = F_VIS_adrb1)$p.value
+p_label_adrb1 <- paste("p =", format(p_value_adrb1, digits = 2, nsmall = 3))
+
+plot_ADRB1 <- ggplot(F_VIS_adrb1, aes(x = VIS_cut, y = log10(ADR1_JS), fill = VIS_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_adrb1, aes(x = VIS_cut, y = -2.5, label = paste0("n=", n)),
+            inherit.aes = FALSE, size = 4) +
+  annotate("text", x = 1.5, y = max(log10(F_VIS_adrb1$ADR1_JS), na.rm = TRUE), label = p_label_adrb1, size = 5) +
+  scale_fill_manual(values = c("≤15" = "#0072B2", ">15" = "#D55E00")) +
+  labs(title = "ADRB1 expression in lymphocytes by VIS score", x = "VIS score", y = "ADRB1 in lymphocytes at day 0 (log10 scale)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# ADRB2 in lymphocytes
+F_VIS_adrb2 <- df %>%
+  select(ADR2_JS, VIS_cut) %>%
+  filter(!is.na(ADR2_JS), !is.na(VIS_cut))
+
+count_data_adrb2 <- F_VIS_adrb2 %>%
+  group_by(VIS_cut) %>%
+  summarise(n = n(), .groups = "drop")
+
+p_value_adrb2 <- wilcox.test(log10(ADR2_JS) ~ VIS_cut, data = F_VIS_adrb2)$p.value
+p_label_adrb2 <- paste("p =", format(p_value_adrb2, digits = 2, nsmall = 3))
+
+plot_ADRB2 <- ggplot(F_VIS_adrb2, aes(x = VIS_cut, y = log10(ADR2_JS), fill = VIS_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_adrb2, aes(x = VIS_cut, y = -2.5, label = paste0("n=", n)),
+            inherit.aes = FALSE, size = 4) +
+  annotate("text", x = 1.5, y = max(log10(F_VIS_adrb2$ADR2_JS), na.rm = TRUE), label = p_label_adrb2, size = 5) +
+  scale_fill_manual(values = c("≤15" = "#0072B2", ">15" = "#D55E00")) +
+  labs(title = "ADRB2 expression in lymphocytes by VIS score", x = "VIS score", y = "ADRB2 in lymphocytes at day 0 (log10 scale)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Combined plot per linfociti
+plot_ADRB_lympho_combined <- plot_ADRB1 + plot_ADRB2 + 
+  plot_layout(ncol = 2) + 
+  plot_annotation(title = "ADRB1 and ADRB2 expression in lymphocytes stratified by VIS score")
+
+print(plot_ADRB_lympho_combined)
+```
+
+# ADRB \~ VIS Score at day 0 in Monocytes
+
+```{r,include=TRUE}
+
+# VIS_cut 
+df <- df %>%
+  mutate(VIS_cut = case_when(
+    VIS_D0 > 15 ~ ">15",
+    VIS_D0 <= 15 ~ "≤15"
+  )) %>%
+  mutate(VIS_cut = factor(VIS_cut, levels = c("≤15", ">15")))
+
+### ADRB1 
+F_VIS_adrb1_m <- df %>%
+  select(ADR1m_JS, VIS_cut) %>%
+  filter(!is.na(ADR1m_JS), !is.na(VIS_cut))
+
+count_data_adr1m <- F_VIS_adrb1_m %>%
+  group_by(VIS_cut) %>%
+  summarise(n = n(), .groups = "drop")
+
+p_value_adr1m <- wilcox.test(log10(ADR1m_JS) ~ VIS_cut, data = F_VIS_adrb1_m)$p.value
+p_label_adr1m <- paste("p =", format(p_value_adr1m, digits = 2, nsmall = 3))
+
+plot_ADRB1m <- ggplot(F_VIS_adrb1_m, aes(x = VIS_cut, y = log10(ADR1m_JS), fill = VIS_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_adr1m, aes(x = VIS_cut, y = -2.5, label = paste0("n=", n)),
+            inherit.aes = FALSE, size = 4) +
+  annotate("text", x = 1.5, y = max(log10(F_VIS_adrb1_m$ADR1m_JS), na.rm = TRUE), label = p_label_adr1m, size = 5) +
+  scale_fill_manual(values = c("≤15" = "#0072B2", ">15" = "#D55E00")) +
+  labs(title = "ADRB1 expression in monocytes by VIS", x = "VIS score", y = "ADRB1 in monocytes at day 0 (log10 scale)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+### ADRB2 
+F_VIS_adrb2_m <- df %>%
+  select(ADR2m_JS, VIS_cut) %>%
+  filter(!is.na(ADR2m_JS), !is.na(VIS_cut))
+
+count_data_adr2m <- F_VIS_adrb2_m %>%
+  group_by(VIS_cut) %>%
+  summarise(n = n(), .groups = "drop")
+
+p_value_adr2m <- wilcox.test(log10(ADR2m_JS) ~ VIS_cut, data = F_VIS_adrb2_m)$p.value
+p_label_adr2m <- paste("p =", format(p_value_adr2m, digits = 2, nsmall = 3))
+
+plot_ADRB2m <- ggplot(F_VIS_adrb2_m, aes(x = VIS_cut, y = log10(ADR2m_JS), fill = VIS_cut)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_adr2m, aes(x = VIS_cut, y = -2.5, label = paste0("n=", n)),
+            inherit.aes = FALSE, size = 4) +
+  annotate("text", x = 1.5, y = max(log10(F_VIS_adrb2_m$ADR2m_JS), na.rm = TRUE), label = p_label_adr2m, size = 5) +
+  scale_fill_manual(values = c("≤15" = "#0072B2", ">15" = "#D55E00")) +
+  labs(title = "ADRB2 expression in monocytes by VIS", x = "VIS score", y = "ADRB2 in monocytes at day 0 (log10 scale)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Combined
+plot_ADRB_mono_combined <- plot_ADRB1m + plot_ADRB2m + 
+  plot_layout(ncol = 2) + 
+  plot_annotation(title = "ADRB1 and ADRB2 expression in monocytes stratified by VIS score")
+
+# Combined plot per linfociti
+plot_ADRB_lympho_combined <- plot_ADRB1 + plot_ADRB2 + 
+  plot_layout(ncol = 2) + 
+  plot_annotation(title = "ADRB1 and ADRB2 expression in lymphocytes stratified by VIS score")
+
+print(plot_ADRB_mono_combined)
+```
+
+# ADR \~ levosimendan
+
+# Figure 5: Association of Levosimendan and ADRB in Lymphocyte at day 3-5
+
+```{r,include=TRUE}
+
+#ADRB1
+
+F5_lym <- df %>%
+  dplyr::select(Levosimendan, ADR1_J3_J5) %>%
+  filter(!is.na(Levosimendan), !is.na(ADR1_J3_J5)) %>%
+  mutate(log_ADR1 = log10(ADR1_J3_J5))
+
+# p-value
+p_adr1 <- sprintf("%.4f", wilcox.test(log_ADR1 ~ Levosimendan, data = F5_lym, exact = FALSE)$p.value)
+
+# count 
+count_data_adr1 <- F5_lym %>%
+  group_by(Levosimendan) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Boxplot
+Figure_5A <- ggplot(F5_lym, aes(x = Levosimendan, y = log_ADR1, fill = Levosimendan)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_adr1,
+            aes(x = Levosimendan,
+                y = min(F5_lym$log_ADR1, na.rm = TRUE) * 1.25,
+                label = paste0("n=", n)),
+            inherit.aes = FALSE,
+            size = 4) +
+  scale_fill_manual(values = c("NO" = "#56B4E9", "YES" = "#F0E442")) +
+  labs(title = "ADRB1 expression on T helper lymphocytes",
+       x = "Levosimendan",
+       y = "ADRB1 at D3–D5 of ECMO (log10 scale)") +
+  annotate("text", x = 1.5, y = max(F5_lym$log_ADR1, na.rm = TRUE),
+           label = paste("Mann–Whitney p =", p_adr1),
+           size = 5, hjust = 0.5, color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+#ADRB2
+
+F5_lym_b <- df %>%
+  dplyr::select(Levosimendan, ADR2_J3_J5) %>%
+  filter(!is.na(Levosimendan), !is.na(ADR2_J3_J5)) %>%
+  mutate(log_ADR2 = log10(ADR2_J3_J5))
+
+# p-value
+p_adr2 <- sprintf("%.4f", wilcox.test(log_ADR2 ~ Levosimendan, data = F5_lym_b, exact = FALSE)$p.value)
+
+# count 
+count_data_adr2 <- F5_lym_b %>%
+  group_by(Levosimendan) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Boxplot
+Figure_5B <- ggplot(F5_lym_b, aes(x = Levosimendan, y = log_ADR2, fill = Levosimendan)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.1), size = 2, alpha = 0.7) +
+  geom_text(data = count_data_adr2,
+            aes(x = Levosimendan,
+                y = min(F5_lym_b$log_ADR2, na.rm = TRUE) * 1.25,
+                label = paste0("n=", n)),
+            inherit.aes = FALSE,
+            size = 4) +
+  scale_fill_manual(values = c("NO" = "#56B4E9", "YES" = "#F0E442")) +
+  labs(title = "ADRB2 expression on T helper lymphocytes",
+       x = "Levosimendan",
+       y = "ADRB2 at D3–D5 of ECMO (log10 scale)") +
+  annotate("text", x = 1.5, y = max(F5_lym_b$log_ADR2, na.rm = TRUE),
+           label = paste("Mann–Whitney p =", p_adr2),
+           size = 5, hjust = 0.5, color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+Figure_5A <- Figure_5A + theme(plot.title = element_blank())
+Figure_5B <- Figure_5B + theme(plot.title = element_blank())
+
+Figure5_tot_log <- Figure_5A + Figure_5B +
+  plot_annotation(title = "Association between Levosimendan and ADRB expression (log scale) at D3–D5")
+```
+
+```{r}
+Figure5_tot_log
+```
+
+# Figure 5m: Association of Levosimendan and ADRB in Monocyte at day of weaning
+
+```{r,include=TRUE}
+
+# ADRB1 
+F5_mon_a <- df %>%
+  dplyr::select(Levosimendan, ADR1m_J3_J5) %>%
+  filter(!is.na(Levosimendan), !is.na(ADR1m_J3_J5))
+
+# P-value
+p_adr1m <- sprintf("%.4f", wilcox.test(ADR1m_J3_J5 ~ Levosimendan, data = F5_mon_a, exact = FALSE)$p.value)
+
+# Count per group
+count_data_adr1m <- F5_mon_a %>%
+  group_by(Levosimendan) %>%
+  summarise(n = n())
+
+# Boxplot
+Figure_5Am <- ggplot(F5_mon_a, aes(x = Levosimendan, y = log10(ADR1m_J3_J5), fill = Levosimendan)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  geom_text(data = count_data_adr1m,
+            aes(x = Levosimendan, y = min(log10(F5_mon_a$ADR1m_J3_J5), na.rm = TRUE) * 1.2,
+                label = paste0("n=", n)),
+            inherit.aes = FALSE,
+            size = 4) +
+  scale_fill_manual(values = c("NO" = "#56B4E9", "YES" = "#F0E442")) +
+  labs(title = "A",
+       x = "Levosimendan",
+       y = "Monocyte ADRB1 expression at D3–D5 (log10 scale)") +
+  annotate("text", x = 1.5, y = max(log10(F5_mon_a$ADR1m_J3_J5), na.rm = TRUE),
+           label = paste("Mann–Whitney p =", p_adr1m),
+           size = 5, color = "black", hjust = 0.5) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+# ADRB2 
+F5_mon_b <- df %>%
+  dplyr::select(Levosimendan, ADR2m_J3_J5) %>%
+  filter(!is.na(Levosimendan), !is.na(ADR2m_J3_J5))
+
+# P-value
+p_adr2m <- sprintf("%.4f", wilcox.test(ADR2m_J3_J5 ~ Levosimendan, data = F5_mon_b, exact = FALSE)$p.value)
+
+count_data_adr2m <- F5_mon_b %>%
+  group_by(Levosimendan) %>%
+  summarise(n = n())
+
+# Boxplot
+Figure_5Bm <- ggplot(F5_mon_b, aes(x = Levosimendan, y = log10(ADR2m_J3_J5), fill = Levosimendan)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  geom_text(data = count_data_adr2m,
+            aes(x = Levosimendan, y = min(log10(F5_mon_b$ADR2m_J3_J5), na.rm = TRUE) * 1.2,
+                label = paste0("n=", n)),
+            inherit.aes = FALSE,
+            size = 4) +
+  scale_fill_manual(values = c("NO" = "#56B4E9", "YES" = "#F0E442")) +
+  labs(title = "B",
+       x = "Levosimendan",
+       y = "Monocyte ADRB2 expression at D3–D5 (log10 scale)") +
+  annotate("text", x = 1.5, y = max(log10(F5_mon_b$ADR2m_J3_J5), na.rm = TRUE),
+           label = paste("Mann–Whitney p =", p_adr2m),
+           size = 5, color = "black", hjust = 0.5) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+#Combined
+
+Figure_5Am <- Figure_5Am + theme(plot.title = element_blank())
+Figure_5Bm <- Figure_5Bm + theme(plot.title = element_blank())
+
+Figure5_mon_tot <- Figure_5Am + Figure_5Bm +
+  plot_annotation(title = "Association between Levosimendan and ADRB expression on monocytes at D3–D5 of ECMO",
+                  tag_levels = "A")
+
+```
+
+```{r}
+Figure5_mon_tot
+```
+
+## Results 
+
+ADRB2 expression at D3-D5 was significantly lower in patients who did not received Levosimendan compared to those who did. N difference where seen in monocytes.
+
+# Figure 6: Survival \~ ADR in Lymphocyte
+
+```{r,include=TRUE}
+
+# ADRB1
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR1_D0_median, data = df)
+
+Figure_6 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  
+  risk.table.title = "Number at Risk (number censored)",  
+  xlim = c(0, 28),         
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),
+  ggtheme = theme_minimal(),
+  legend.labs = c("High", "Low")
+)
+
+Figure_6 <- Figure_6 + ggtitle("28-day Survival Curves for ADRB1")
+
+# ADRB2
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR2_D0_median, data = df)
+
+Figure_6.1 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  
+  risk.table.title = "Number at Risk (number censored)",  
+  xlim = c(0, 28),         
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),  
+  ggtheme = theme_minimal(),
+  legend.labs = c("High", "Low")
+)
+
+Figure_6.1 <- Figure_6.1 + ggtitle("28-day Survival Curves for ADRB2")
+
+# Combine the plots (ADR1 and ADR2) side by side with the risk tables
+Figure_6_combined <- plot_grid(Figure_6$plot, Figure_6$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+Figure_6.1_combined <- plot_grid(Figure_6.1$plot, Figure_6.1$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+
+# Remove titles from individual plots
+Figure_6_combined <- Figure_6_combined + theme(plot.title = element_blank())
+Figure_6.1_combined <- Figure_6.1_combined + theme(plot.title = element_blank())
+
+# Combine both survival plots (ADR1 and ADR2) together with a title
+Figure6_tot <- plot_grid(Figure_6_combined, Figure_6.1_combined, ncol = 2, align = "h")
+
+# Add a title to the combined figure
+Figure6_tot <- Figure6_tot + plot_annotation(title = "28-day Survival Curves for ADRB expressed in Lymphocytes")
+
+```
+
+```{r}
+Figure6_tot
+```
+
+# Figure 6m: Survival \~ ADR in Monocyte
+
+```{r,include=TRUE}
+
+df_surv_m1 <- df %>%
+  filter(!is.na(ADR1m_D0_median), !is.na(diff_days_J28), !is.na(Outcome_censored_28))
+
+# ADRB1 on Monocytes
+km_fit_m1 <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR1m_D0_median, data = df_surv_m1)
+
+
+Fig_m1 <- ggsurvplot(km_fit_m1, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  
+  risk.table.title = "Number at Risk (number censored)",  
+  xlim = c(0, 28),         
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),
+  ggtheme = theme_minimal(),
+  legend.labs = c("High", "Low")
+)
+
+Fig_m1 <- Fig_m1 + ggtitle("28-day Survival Curves for ADRB1")
+
+# ADRB2 on Monocytes
+km_fit_m2 <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR2m_D0_median, data = df)
+
+Fig_m2 <- ggsurvplot(km_fit_m2, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  
+  risk.table.title = "Number at Risk (number censored)",  
+  xlim = c(0, 28),         
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),  
+  ggtheme = theme_minimal(),
+  legend.labs = c("High", "Low")
+)
+
+Fig_m2 <- Fig_m2 + ggtitle("28-day Survival Curves for ADRB2")
+
+# Combine plots
+Fig_m1_combined <- plot_grid(Fig_m1$plot, Fig_m1$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+Fig_m2_combined <- plot_grid(Fig_m2$plot, Fig_m2$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+
+Fig_m1_combined <- Fig_m1_combined + theme(plot.title = element_blank())
+Fig_m2_combined <- Fig_m2_combined + theme(plot.title = element_blank())
+
+Fig_monocyte_survival <- Fig_m1_combined + Fig_m2_combined +
+  plot_annotation(title = "28-day Survival Curves for ADRB expressed in Monocytes")
+```
+
+```{r}
+Fig_monocyte_survival
+```
+
+## Statistical analysis
+
+To assess the prognostic significance of baseline β-adrenergic receptor expression, we stratified patients based on the median value of ADRB1 and ADRB2 measured at ECMO initiation (D0). Survival analysis was performed using Kaplan–Meier curves and the log-rank test to compare 28-day survival between patients with “High” vs “Low” expression. Patients were censored at the time of ECMO weaning, heart transplantation or LVAD implantation. 
+
+## Results
+
+Although the differences did not reach statistical significance, a trend was observed indicating that patients with higher ADRB expression in both lymphocytes and monocytes at ECMO initiation had lower 28-day survival probability. This pattern suggests a potential association between adrenergic receptor activation and worse short-term outcomes.
+
+# Citokines
+
+```{r}
+
+plot_cytokine <- function(df, cytokine_name) {
+  
+  # Colomn name
+  col_J0 <- paste0(cytokine_name, "_J0")
+  col_J3_J5 <- paste0(cytokine_name, "_J3_J5")
+  col_JS <- paste0(cytokine_name, "_JS")
+
+  # 1. dataset
+  data_plot <- df %>%
+    select(ID, Outcome, all_of(c(col_J0, col_J3_J5, col_JS))) %>%
+    mutate(
+      Outcomes = factor(case_when(
+        Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
+        TRUE ~ as.character(Outcome)
+      ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
+    ) %>%
+    pivot_longer(
+      cols = c(all_of(c(col_J0, col_J3_J5, col_JS))),
+      names_to = "cyto_time",
+      values_to = "value"
+    ) %>%
+    mutate(
+      time = case_when(
+        cyto_time == col_J0 ~ 1,
+        cyto_time == col_J3_J5 ~ 2,
+        cyto_time == col_JS ~ 3,
+        TRUE ~ NA_real_
+      ),
+      value_log = log10(value)
+    )
+
+  # 2. n
+  count_data <- data_plot %>%
+    filter(!is.na(value)) %>%
+    group_by(cyto_time, Outcomes) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    filter(!is.na(Outcomes))
+
+  # 3. Models
+  mod1 <- lmerTest::lmer(
+    value_log ~ time * Outcomes + (1 + time | ID),
+    data = data_plot
+  )
+  mod_no_interaction <- lmerTest::lmer(
+    value_log ~ time + Outcomes + (1 + time | ID),
+    data = data_plot
+  )
+
+  p_anova <- anova(mod_no_interaction, ddf = "Kenward-Roger")
+  p_time <- format.pval(p_anova["time", "Pr(>F)"], digits = 3, eps = .001)
+  p_outcome <- format.pval(p_anova["Outcomes", "Pr(>F)"], digits = 3, eps = .001)
+
+  # 4. Plot
+  p <- ggplot(data_plot, aes(x = cyto_time, y = value_log, fill = Outcomes)) +
+    geom_boxplot(position = position_dodge(0.7), width = 0.6) +
+    scale_y_log10() +
+    labs(
+      title = paste("Association between", cytokine_name, "and outcomes"),
+      x = "Times of measurement",
+      y = paste("Log10 of", cytokine_name, "(pg/mL)")
+    ) +
+    geom_text(data = count_data, aes(
+      x = cyto_time,
+      y = -min(data_plot$value_log, na.rm = TRUE) * 0.01,
+      label = paste0("n=", n),
+      group = Outcomes
+    ), position = position_dodge(0.7), size = 4, vjust = 1) +
+    scale_x_discrete(labels = setNames(
+  c("implantation", "day 3 to 5", "explantation"),
+  c(col_J0, col_J3_J5, col_JS)
+)) +
+    scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",
+      "Bridge to transplant or LVAD" = "#377EB8",
+      "Death" = "#F8766D"
+    )) +
+    annotate(
+      "text",
+      x = 1,
+      y = max(data_plot$value_log, na.rm = TRUE) * 1.1,
+      label = paste0("p[time] == ", p_time, "*';'*~p[outcomes] == ", p_outcome),
+      parse = TRUE,
+      size = 4,
+      hjust = 0
+    )
+
+  print(p)
+}
+
+```
+
+# IL-6
+
+```{r}
+plot_cytokine(df, "IL6")
+```
+
+IL-6 levels were lower in patients successfully weaned from ECMO, particularly at baseline (day 0) and at explantation. A significant effect of time was observed (p = 0.02), while the association with clinical outcomes showed a trend without reaching statistical significance (p = 0.055).
+
+# IL-33
+
+```{r}
+plot_cytokine_linear <- function(df, cytokine_name = "IL-33") {
+  col_J0 <- paste0(cytokine_name, "_J0")
+  col_J3_J5 <- paste0(cytokine_name, "_J3_J5")
+  col_JS <- paste0(cytokine_name, "_JS")
+
+  data_plot <- df %>%
+    select(ID, Outcome, all_of(c(col_J0, col_J3_J5, col_JS))) %>%
+    mutate(
+      Outcomes = factor(case_when(
+        Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
+        TRUE ~ as.character(Outcome)
+      ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
+    ) %>%
+    pivot_longer(cols = all_of(c(col_J0, col_J3_J5, col_JS)),
+                 names_to = "cyto_time", values_to = "value") %>%
+    filter(!is.na(value)) %>%
+    mutate(
+      time = case_when(
+        cyto_time == col_J0 ~ 1,
+        cyto_time == col_J3_J5 ~ 2,
+        cyto_time == col_JS ~ 3,
+        TRUE ~ NA_real_
+      )
+    )
+
+  count_data <- data_plot %>%
+    group_by(cyto_time, Outcomes) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    filter(!is.na(Outcomes))
+
+  mod1 <- lmerTest::lmer(value ~ time * Outcomes + (1 + time | ID), data = data_plot)
+  mod_no_interaction <- lmerTest::lmer(value ~ time + Outcomes + (1 + time | ID), data = data_plot)
+  p_anova <- anova(mod_no_interaction, ddf = "Kenward-Roger")
+  p_time <- format.pval(p_anova["time", "Pr(>F)"], digits = 3, eps = .001)
+  p_outcome <- format.pval(p_anova["Outcomes", "Pr(>F)"], digits = 3, eps = .001)
+
+  ggplot(data_plot, aes(x = cyto_time, y = value, fill = Outcomes)) +
+    geom_boxplot(position = position_dodge(0.7), width = 0.6) +
+    labs(
+      title = "Association between IL-33 and outcomes",
+      x = "Times of measurement",
+      y = "IL-33 (pg/mL)"
+    ) +
+    geom_text(data = count_data, aes(
+      x = cyto_time,
+      y = min(data_plot$value, na.rm = TRUE) * 0.9,
+      label = paste0("n=", n),
+      group = Outcomes
+    ), position = position_dodge(0.7), size = 4, vjust = 1) +
+    scale_x_discrete(labels = setNames(
+  c("implantation", "day 3 to 5", "explantation"),
+  c(col_J0, col_J3_J5, col_JS)
+)) +
+    scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",
+      "Bridge to transplant or LVAD" = "#377EB8",
+      "Death" = "#F8766D"
+    )) +
+    annotate("text", x = 1, y = max(data_plot$value, na.rm = TRUE) * 1.1,
+             label = paste0("p[time] == ", p_time, "*';'*~p[outcomes] == ", p_outcome),
+             parse = TRUE, size = 4, hjust = 0)
+}
+
+plot_cytokine_linear(df, "IL-33")
+```
+
+Plasma concentrations of IL-33 were undetectable in the vast majority of patients, with only three samples showing quantifiable values above the detection threshold. Due to this distribution, IL-33 levels were visualized on a linear scale rather than log-transformed.
+
+In addition to IL-33, we also measured IL-1β, IL-2 and IL-4; however, these cytokines were consistently undetectable across all samples, preventing any meaningful quantitative analysis. Similarly, plasma concentrations of IL-12p70, IFN-γ and Granzyme B were below the detection threshold in all patients. IL-17A was undetectable in the vast majority of samples, with only one patient showing a quantifiable value above the lower limit of detection. TNF-α was quantifiable in only two patients. Due to the pervasive non-detectability of these markers, no statistical comparison across timepoints or clinical outcomes was feasible.
+
+# IL-5
+
+```{r}
+plot_cytokine(df, "IL5")
+```
+
+Among the cytokines measured, IL-5 concentrations appeared lower in patients successfully weaned from ECMO, although differences across timepoints and outcomes did not reach statistical significance.
+
+# IL-8
+
+```{r}
+plot_cytokine(df, "IL8/CXCL8")
+```
+
+Also IL-8 concentrations appeared clear lower in patients successfully weaned from ECMO, although differences across timepoints and outcomes did not reach statistical significance.
+
+# IL-10
+
+```{r}
+
+plot_cytokine <- function(df, cytokine_name) {
+  
+  # Column names for the three timepoints
+  col_J0 <- paste0(cytokine_name, "_J0")
+  col_J3_J5 <- paste0(cytokine_name, "_J3_J5")
+  col_JS <- paste0(cytokine_name, "_JS")
+
+  # 1. Prepare dataset
+  data_plot <- df %>%
+    select(ID, Outcome, all_of(c(col_J0, col_J3_J5, col_JS))) %>%
+    mutate(
+      Outcomes = factor(case_when(
+        Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
+        TRUE ~ as.character(Outcome)
+      ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
+    ) %>%
+    pivot_longer(
+      cols = c(all_of(c(col_J0, col_J3_J5, col_JS))),
+      names_to = "cyto_time",
+      values_to = "value"
+    ) %>%
+    mutate(
+      time = case_when(
+        cyto_time == col_J0 ~ 1,
+        cyto_time == col_J3_J5 ~ 2,
+        cyto_time == col_JS ~ 3,
+        TRUE ~ NA_real_
+      ),
+      value_log = log10(value)
+    )
+
+  # 2. Count number per group
+  count_data <- data_plot %>%
+    filter(!is.na(value)) %>%
+    group_by(cyto_time, Outcomes) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    filter(!is.na(Outcomes))
+
+  # 3. Fit models
+  mod1 <- lmerTest::lmer(
+    value_log ~ time * Outcomes + (1 + time | ID),
+    data = data_plot
+  )
+  mod_no_interaction <- lmerTest::lmer(
+    value_log ~ time + Outcomes + (1 + time | ID),
+    data = data_plot
+  )
+
+  p_anova <- anova(mod_no_interaction, ddf = "Kenward-Roger")
+  p_time_raw <- format.pval(p_anova["time", "Pr(>F)"], digits = 3, eps = .001)
+  p_outcome_raw <- format.pval(p_anova["Outcomes", "Pr(>F)"], digits = 3, eps = .001)
+
+  # Safe formatting for p-values with '<'
+  p_time <- if (grepl("<", p_time_raw)) "\"<2e-16\"" else p_time_raw
+  p_outcome <- if (grepl("<", p_outcome_raw)) "\"<2e-16\"" else p_outcome_raw
+
+  # 4. Plot
+  p <- ggplot(data_plot, aes(x = cyto_time, y = value_log, fill = Outcomes)) +
+    geom_boxplot(position = position_dodge(0.7), width = 0.6) +
+    scale_y_log10() +
+    labs(
+      title = paste("Association between", cytokine_name, "and outcomes"),
+      x = "Times of measurement",
+      y = paste("Log10 of", cytokine_name, "(pg/mL)")
+    ) +
+    geom_text(data = count_data, aes(
+      x = cyto_time,
+      y = -min(data_plot$value_log, na.rm = TRUE) * 0.01,
+      label = paste0("n=", n),
+      group = Outcomes
+    ), position = position_dodge(0.7), size = 4, vjust = 1) +
+    scale_x_discrete(labels = setNames(
+      c("implantation", "day 3 to 5", "explantation"),
+      c(col_J0, col_J3_J5, col_JS)
+    )) +
+    scale_fill_manual(values = c(
+      "ECMO Weaning" = "#4DAF4A",
+      "Bridge to transplant or LVAD" = "#377EB8",
+      "Death" = "#F8766D"
+    )) +
+    annotate(
+      "text",
+      x = 1,
+      y = max(data_plot$value_log, na.rm = TRUE) * 1.1,
+      label = paste0("p[time] == ", p_time, "*';'*~p[outcomes] == ", p_outcome),
+      parse = TRUE,
+      size = 4,
+      hjust = 0
+    )
+
+  print(p)
+}
+
+plot_cytokine(df, "IL10")
+
+```
+
+IL-10 levels showed a statistically significant change over time (p < 0.05), indicating dynamic modulation during the clinical course. However, no significant differences were observed across the defined outcome groups. 
+
+# GDF-15
+
+```{r}
+plot_cytokine(df, "GDF-15")
+```
+
+GDF-15 concentrations appeared lower in patients successfully weaned from ECMO, although differences across timepoints and outcomes did not reach statistical significance.
+
+## Results
+
+Not all cytokines, whether pro-inflammatory or anti-inflammatory, were consistently measurable in our cohort. Based on the data, cytokine levels do not appear to be significantly associated with clinical outcomes. Interestingly, both pro-inflammatory and anti-inflammatory cytokines tend to decrease over time. 
+
+# Citokynes Levels at Day 0 by Outcome Group
+
+```{r}
+anti_infiamm <- c("IL10", "GDF-15")
+pro_infiamm <- c("IL5", "IL6", "IL8/CXCL8")
+
+plot_cytokines_group <- function(df, timepoint = "J3_J5") {
+
+  cols_anti <- paste0(anti_infiamm, "_", timepoint)
+  cols_pro <- paste0(pro_infiamm, "_", timepoint)
+  
+  df_sub <- df %>%
+    select(ID, Outcome, all_of(c(cols_anti, cols_pro))) %>%
+    mutate(
+      Outcomes = factor(case_when(
+        Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
+        TRUE ~ Outcome
+      ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
+    )
+  
+  # Reshape long 
+  df_long <- df_sub %>%
+    pivot_longer(cols = -c(ID, Outcome, Outcomes),
+                 names_to = "cytokine_time", values_to = "value") %>%
+    mutate(
+      cytokine = sub(paste0("_", timepoint), "", cytokine_time),
+      # Negativ sign for anti-inflamm on left
+      value_plot = ifelse(cytokine %in% anti_infiamm, -value, value),
+      cytokine = factor(cytokine, levels = c(anti_infiamm, pro_infiamm))
+    ) %>%
+    filter(!is.na(value))
+  
+  # Colors
+  colori <- c(
+    "ECMO Weaning" = "#4DAF4A",
+    "Bridge to transplant or LVAD" = "#377EB8",
+    "Death" = "#F8766D"
+  )
+  
+  # Plot
+  ggplot(df_long, aes(x = value_plot, y = fct_rev(cytokine), fill = Outcomes)) +
+    geom_bar(stat = "summary", fun = mean, position = "dodge", width = 0.7) +
+    scale_fill_manual(values = colori) +
+    scale_x_continuous(
+      breaks = scales::pretty_breaks(n = 10),
+      labels = abs,
+      name = "Mean cytokine level (pg/mL)"
+    ) +
+    labs(title = paste("Cytokine levels at", timepoint, "by outcome group"),
+         y = "Cytokine") +
+    theme_minimal() +
+    theme(
+      legend.position = "right"
+    )
+}
+
+
+plot_cytokines_group(df, "J0")
+```
+
+# Citokynes Levels at Day 3-5 by Outcome Group
+
+```{r}
+plot_cytokines_group(df, "J3_J5") 
+```
+
+# Citokynes Levels at Day of Weaning by Outcome Group
+
+```{r}
+plot_cytokines_group(df, "JS")
+```
+
+# Citokynes Levels at Day 0 by Outcome Group, log scale
+
+```{r}
+
+anti_infiamm <- c("IL10", "GDF-15")
+pro_infiamm <- c("IL5", "IL6", "IL8/CXCL8")
+
+plot_cytokines_group_log_vertical <- function(df, timepoint = "J3_J5") {
+  
+  cols_anti <- paste0(anti_infiamm, "_", timepoint)
+  cols_pro <- paste0(pro_infiamm, "_", timepoint)
+  
+  df_sub <- df %>%
+    select(ID, Outcome, all_of(c(cols_anti, cols_pro))) %>%
+    mutate(
+      Outcomes = factor(case_when(
+        Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
+        TRUE ~ Outcome
+      ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
+    )
+  
+  df_long <- df_sub %>%
+    pivot_longer(cols = -c(ID, Outcome, Outcomes),
+                 names_to = "cytokine_time", values_to = "value") %>%
+    mutate(
+      cytokine = sub(paste0("_", timepoint), "", cytokine_time),
+      # Replace zeros or negatives before log10
+      value_adj = ifelse(value <= 0, 1e-7, value),
+      value_log = log10(value_adj),
+      # Group label
+      group = case_when(
+        cytokine %in% anti_infiamm ~ "Anti-inflammatory",
+        cytokine %in% pro_infiamm ~ "Pro-inflammatory",
+        TRUE ~ "Other"
+      ),
+      # Custom sign flipping: IL10 positive, IL5 negative, other anti-inflam negative, pro positive
+      value_plot = case_when(
+        cytokine == "IL10" ~ value_log,
+        cytokine == "IL5" ~ -value_log,
+        group == "Anti-inflammatory" & cytokine != "IL10" ~ -value_log,
+        TRUE ~ value_log
+      ),
+      cytokine = factor(cytokine, levels = c(anti_infiamm, pro_infiamm)),
+      group = factor(group, levels = c("Anti-inflammatory", "Pro-inflammatory"))
+    ) %>%
+    filter(!is.na(value_log))
+  
+  colori <- c(
+    "ECMO Weaning" = "#4DAF4A",
+    "Bridge to transplant or LVAD" = "#377EB8",
+    "Death" = "#F8766D"
+  )
+  
+  # Plot base
+  p <- ggplot(df_long, aes(x = value_plot, y = fct_rev(cytokine), fill = Outcomes)) +
+    geom_bar(stat = "summary", fun = mean, position = position_dodge(width = 0.7), width = 0.6) +
+    scale_fill_manual(values = colori) +
+    scale_x_continuous(
+      breaks = scales::pretty_breaks(n = 10),
+      labels = function(x) round(abs(x), 2),
+      name = "Mean log10 cytokine level (pg/mL)"
+    ) +
+    labs(title = paste("Log10 Cytokine levels at", timepoint, "by outcome group"),
+         y = "Cytokine") +
+    theme_minimal(base_size = 14) +
+    theme(
+      legend.position = "right",
+      axis.text.y = element_text(size = 12),
+      plot.margin = margin(t = 35, r = 20, b = 10, l = 20)
+    )
+  
+  # Add top annotation for anti/pro groups with grid::annotation_custom
+  library(grid)
+  anti_label <- textGrob("Anti-inflammatory", x = unit(0.15, "npc"), y = unit(0.98, "npc"),
+                        gp = gpar(fontsize = 14, fontface = "bold"))
+  pro_label <- textGrob("Pro-inflammatory", x = unit(0.85, "npc"), y = unit(0.98, "npc"),
+                       gp = gpar(fontsize = 14, fontface = "bold"))
+  
+  p + annotation_custom(anti_label) + annotation_custom(pro_label)
+}
+
+plot_cytokines_group_log_vertical(df, "J0")
+
+```
+
+At day 0, patients who later achieved ECMO weaning tended to have higher levels of anti-inflammatory cytokines such as IL-10. GDF-15 levels were comparable between patients who died and those who were weaned. In contrast, pro-inflammatory cytokines—particularly IL-6 and IL-8—were elevated in patients who died. 
+
+
+(For Antoine: For better graphical representation, I choose a logarithmic scale. Among all timepoints, I will focused primarily on day 0, aiming to identify potential predictors or markers that could help clinicians recognize patients with a more aggressive disease course and possibly guide management decisions, although currently no targeted therapy has been proven effective.)

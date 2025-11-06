@@ -1,0 +1,1144 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+```{=html}
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+# markdown options depending on the output (html with R code and Word without)
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+options(max.print = .Machine$integer.max)
+```
+
+# Packages needed
+
+```{r,include=FALSE}
+library(dplyr)
+library(lubridate)
+library(gtsummary)
+library(readr)
+library(ggplot2)
+library(tableone)
+library(flextable)
+library(sjlabelled)
+library(readxl)
+library(stringr)
+library(tidyr)
+library(purrr)
+library(tableone)
+library(dplyr)
+library(naniar)
+library(tidyr)
+library(survival)
+library(survminer)
+library(patchwork)
+library(ggpmisc)
+library(cowplot)  
+library(officer)
+library(flextable)
+```
+
+# Method
+
+## Statistical method
+
+As evolution of some patients allowed an early weaning before D5, we considered that D3-D5 and D weaning are the same time point.
+
+# Fonctions
+
+```{r,include=FALSE}
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+```
+
+# DATA Load
+
+```{r,include=FALSE}
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+
+ADR1 <- data_list[[1]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID =str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+     names_prefix = "ADR1_",
+    values_from = "value",
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (`ADR1_J3-5` = case_when(is.na(`ADR1_J3-5`)&!is.na(ADR1_J5)~ADR1_J5,
+                             T~`ADR1_J3-5`),
+          ADR1_JS = case_when(is.na(ADR1_JS)&!is.na(`ADR1_J3-5-S`)~`ADR1_J3-5-S`,
+                             T~ADR1_JS))%>%
+  rename(ADR1_J3_J5=`ADR1_J3-5`)%>%
+  
+  dplyr::select(ID,
+                ADR1_J0,
+                ADR1_J3_J5,
+                ADR1_JS)
+
+
+ADR2 <- data_list[[2]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+    values_from = "value",
+     names_prefix = "ADR2_" ,
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (
+          ADR2_JS = case_when(is.na(ADR2_JS)&!is.na(`ADR2_J3-5-S`)~`ADR2_J3-5-S`,
+                             T~ADR2_JS))%>%
+  rename(ADR2_J3_J5=`ADR2_J3-5`)%>%
+  dplyr::select(ID,
+                ADR2_J0,
+                ADR2_J3_J5,
+                ADR2_JS)
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)%>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom,prenom))
+        
+df_list <- lst(DATA,ADR1,ADR2)
+
+df <- reduce(df_list, left_join, by="ID")%>%
+  filter(ID!="12-NANA")
+```
+
+# DATA Management
+
+```{r,include=FALSE}
+df <- df %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    
+Outcome_censored = as.numeric(case_when(Outcome=="Death"~ "1",Outcome=="ECMO Weaning"|Outcome=="Bridge to Transplant"|Outcome=="Bridge to LVAD"~"0")),
+
+         outcome_date = str_replace_all(outcome_date, "\\.", "/"),
+         icu_admiss_date = str_replace_all(icu_admiss_date, "\\.", "/"),
+         icu_discharge_date = str_replace_all(icu_discharge_date, "\\.", "/"),
+
+         outcome_date= dmy(outcome_date),
+         icu_admiss_date=dmy(icu_admiss_date),
+         icu_discharge_date=dmy(icu_discharge_date),
+         date_levo = dmy(date_levo),
+         ecmo_start_date = dmy(ecmo_start_date),
+         ecmo_stop_date = dmy(ecmo_stop_date),
+
+         diff_days = time_length(interval(icu_admiss_date, outcome_date), "days"),
+    Time_hosp = time_length(interval(icu_admiss_date, icu_discharge_date), "days"),as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = time_length(interval(ecmo_start_date, ecmo_stop_date), "days"),
+    Time_levo = time_length(interval(ecmo_start_date, date_levo), "days"),
+         diff_days_J28 = case_when(diff_days>28 ~ 28,
+                                   T~ diff_days),
+         Outcome_censored_28 = case_when(diff_days>28 & Outcome_censored == 1~ 0,T~ Outcome_censored),
+
+         ADR1_D0_median = case_when(ADR1_D0 > median(ADR1_D0, na.rm=T)~"High",
+                                    ADR1_D0 <= median(ADR1_D0, na.rm=T)~"Low"),
+        ADR2_D0_median = case_when(ADR2_D0 > median(ADR2_D0, na.rm=T)~"High",
+                                    ADR2_D0 <= median(ADR2_D0, na.rm=T)~"Low"),
+
+Betablocker= case_when(Betablocker==1~ "YES",
+               Betablocker==0~ "NO"),
+dose_tot_dobu_yes_no= droplevels(as.factor(case_when(dose_tot_dobu>0~ "YES",
+               dose_tot_dobu==0~ "NO"))),
+levo_in_icu = case_when(
+      Levosimendan == 1 & Time_levo>= 0 ~ "Yes",  
+      Levosimendan == 1 & Time_levo< 0 ~ "No",
+      Levosimendan == 0 ~ "No"
+    ),
+Levosimendan= case_when(Levosimendan==1~ "YES",
+               Levosimendan==0~ "NO"))
+```
+
+# Check for normality
+
+```{r,include=FALSE}
+
+for (var in var.cont) {
+  if (var %in% colnames(T1)) {
+    print(
+      ggplot(T1, aes_string(var)) +
+        geom_histogram(bins = 15, fill = "blue", alpha = 0.5) +
+        ggtitle(paste("Distribuzione di", var))
+    )
+  } else {
+    message(paste("❌ Variabile", var, "non trovata in T1"))
+  }
+}
+
+```
+
+# TABLE 1: description of baseline characteristics of the population at inclusion
+
+```{r,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0", "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan", "Death")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "Preecmo_tte_diam_LV", "Preecmo_tte_tapse", "Preecmo_tte_vmax_s_mit_lat_LV", "NADcum_D0", "DOBUcum_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo")
+
+var.tot <- c(var.cat, var.cont)
+
+T1 <- df %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), 
+         across(all_of(var.cat), as.factor))
+
+
+## Table 1 standard
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data =T1) # sans groupe de strata
+
+table1 <- print(table1, nonnormal =var.cont)
+
+table1_df <- as.data.frame(print(table1, nonnormal = var.cont, showAllLevels = TRUE))
+table1_df$Variables <- row.names(table1_df)
+
+row.names(table1_df)<-NULL
+table1_df <- table1_df[, c(2,1)]
+
+T1_n <- T1%>%
+  summarise(across(everything(), ~ sum(is.na(.))))%>%
+  pivot_longer(cols= everything(),
+    values_to = "n_missing",
+    names_to = "ID")%>%
+  mutate(n_missing = paste0(n_missing,"/50"),
+         ID = trimws(ID))
+
+table1_df1 <- table1_df %>%
+  mutate(ID = sub("\\(median \\[IQR\\]\\)|= 1 \\(\\%\\)|= Women \\(\\%\\)|\\(\\%\\)", "",Variables),
+         ID = trimws(ID))
+
+table_1_vf <- left_join(table1_df1,T1_n, by="ID")%>%
+  select(Variables,n_missing,Overall)%>%
+  mutate(n_missing = replace_na(n_missing,""))
+
+table_1_vf <- left_join(table1_df1, T1_n, by = "ID") %>%
+  mutate(N = 50 - as.numeric(sub("/50", "", replace_na(n_missing, "0")))) %>%  # Calcola N
+  select(Variables, N, Overall)  
+
+print(table_1_vf)
+table_1_vf <- table_1_vf%>%
+mutate(Variables= str_remove(Variables, " \\(median \\[IQR\\]\\)"))
+
+traduction <- c(
+  "n" = "n",
+  "Gender = Women (%)" = "Gender = Female (%)",
+  "HTN = 1 (%)" = "Hypertension (%)",
+  "DM = 1 (%)" = "Diabetes Mellitus (%)",
+  "Immunodepression = 1 (%)" = "Immunosuppression (%)",
+  "CKD = 1 (%)" = "Chronic Kidney Disease (%)",
+  "Neurologic_deficit = 1 (%)" = "Neurological Deficit (%)",
+  "Chronic_respiratory_disease = 1 (%)" = "Chronic Respiratory Disease (%)",
+  "HF = 1 (%)" = "Heart Failure (%)",
+  "Cardiac_arrest_before_canul = 1 (%)" = "Cardiac Arrest Before Cannulation (%)",
+  "IABP_D0 = 1 (%)" = "Intra-Aortic Balloon Pump (%)",
+  "Intubation = 1 (%)" = "Intubation (%)",
+  "EER_D0 = 1 (%)" = "Renal Replacement Therapy (%)",
+  "Outcome (%)" = "Outcome (%)",
+  "   Bridge to LVAD" = "Bridge to LVAD",
+  "   Bridge to Transplant" = "Bridge to Transplant",
+  "   Death" = "Death",
+  "   ECMO Weaning" = "ECMO Weaning",
+  "Betablocker = YES (%)" = "Beta-blocker (%)",
+  "Alphablocker = 1 (%)" = "Alpha-blocker (%)",
+  "Levosimendan = 1 (%)" = "Levosimendan (%)",
+  "Death = 1 (%)" = "Death (%)",
+  "Age" = "Age (years)",
+  "BMI" = "Body Mass Index (kg/m²)",
+  "PAS_D0" = "Systolic Blood Pressure (mmHg)",
+  "PAD_D0" = "Diastolic Blood Pressure (mmHg)",
+  "PAM_D0" = "Mean Arterial Pressure (mmHg)",
+  "Pulsepressure_D0" = "Pulse Pressure (mmHg)",
+  "HR_D0" = "Heart Rate (bpm)",
+  "Temp_D0" = "Temperature (°C)",
+  "Preecmo_tte_ef" = "Pre-ECMO Ejection Fraction (%)",
+  "Preecmo_tte_vtiao" = "Pre-ECMO Aortic Valve Velocity (m/s)",
+  "Preecmo_tte_diam_LV" = "Pre-ECMO Left Ventricular Diameter (mm)",
+  "Preecmo_tte_tapse" = "Pre-ECMO TAPSE (mm)",
+  "Preecmo_tte_vmax_s_mit_lat_LV" = "Pre-ECMO Mitral Lateral Velocity (m/s)",
+  "NADcum_D0" = "Cumulative Norepinephrine Dose (µg/kg/min)",
+  "DOBUcum_D0" = "Cumulative Dobutamine Dose (µg/kg/min)",
+  "pH_D0" = "pH",
+  "Sao2_D0" = "Oxygen Saturation (%)",
+  "Paco2_D0" = "PaCO2 (mmHg)",
+  "Lact_D0" = "Lactate (mmol/L)",
+  "Hco3_D0" = "Bicarbonate (mmol/L)",
+  "Creat_D0" = "Creatinine (mg/dL)",
+  "Urea_D0" = "Urea (mg/dL)",
+  "ALAT_D0" = "ALT (IU/L)",
+  "ASAT_D0" = "AST (IU/L)",
+  "Bili_D0" = "Bilirubin (mg/dL)",
+  "PT_D0" = "Prothrombin Time (s)",
+  "Tropo_i_hs_D0" = "High Sensitivity Troponin I (ng/L)",
+  "Ntprobnp_D0" = "NT-proBNP (pg/mL)",
+  "DPP3_D0" = "DPP3 (ng/mL)",
+  "Plq_D0" = "Platelet Count (10⁹/L)",
+  "Lenght_eer" = "Duration of Renal Replacement Therapy (days)",
+  "Lenght_vm" = "Duration of Mechanical Ventilation (days)",
+  "Time_hosp" = "Hospital Length of Stay (days)",
+  "Time_ecmo" = "ECMO Duration (days)"
+)
+
+table_1_vf <- table_1_vf %>%
+  mutate(Variables = recode(Variables, !!!traduction))
+
+table1 <- flextable(as.data.frame(table_1_vf)) %>% autofit() %>%
+      set_caption("Table 1: Baseline characteristics") %>% 
+     align(j = c(2:3), align = "center", part = "all")
+
+doc <- read_docx() %>%
+  body_add_flextable(table1)
+
+print(doc, target = "TABLES/Table1_def.docx")
+
+browseURL("TABLES/Table1_def.docx")
+
+
+```
+
+# Figure 1: Association between ADRB expressions and outcomes
+
+```{r,include=FALSE}
+
+##With composite outcome
+
+F1 <- df %>%
+  select(ID,ADR1_J0, ADR1_J3_J5, ADR1_JS, Outcome)%>%
+  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("ECMO Weaning","Bridge to transplant or LVAD","Death")))%>%
+  pivot_longer(
+    cols = c(ADR1_J0, ADR1_J3_J5, ADR1_JS), 
+    names_to = "ADR1_time", 
+    values_to = "value"
+  )
+
+
+count_data <- F1 %>%
+  filter(!is.na(value))%>%
+  group_by(ADR1_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcomes))
+
+#Boxplot
+
+Fig_1 <- ggplot(F1, aes(x = ADR1_time, y = value, fill = Outcomes)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    title = "Association between ADRB1 and outcomes",
+    x = "times of measurement",
+    y = "Percentage of T4 lymphocyte expressing ADRB1",
+  ) +
+  geom_text(data = count_data, aes(x = ADR1_time, y = min(F1$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = Outcomes), 
+            position = position_dodge(0.7), size = 4, vjust = 1)+
+    scale_x_discrete(labels = c("ADR1_J0" = "implantation", "ADR1_J3_J5" = "day 3 to 5", "ADR1_JS" = "explantation")) +
+  theme(legend.position = "none")
+
+print(Fig_1)
+ggsave("Figures/boxplot_ADR1_Outcome.pdf", width = 8, height = 6)
+
+## ADRB2 (J0, J3-5, JS) ~ death
+
+F1_1 <- df %>%
+  select(ID,ADR2_J0, ADR2_J3_J5, ADR2_JS, Outcome)%>%
+  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("ECMO Weaning","Bridge to transplant or LVAD","Death")))%>%
+  pivot_longer(
+    cols = c(ADR2_J0, ADR2_J3_J5, ADR2_JS), 
+    names_to = "ADR2_time", 
+    values_to = "value"
+  )
+
+count_data <- F1_1 %>%
+  filter(!is.na(value))%>%
+  group_by(ADR2_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcomes))
+
+#Boxplot
+
+Fig_1.1 <- ggplot(F1_1, aes(x = ADR2_time, y = value, fill = Outcomes)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    title = "Association between ADRB2 and outcomes",
+    x = "times of measurement",
+    y = "Percentage of T4 lymphocyte expressing ADRB2",
+  ) +
+  geom_text(data = count_data, aes(x = ADR2_time, y = min(F1_1$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = Outcomes), 
+            position = position_dodge(0.7), size = 4, vjust = 1)+
+      scale_x_discrete(labels = c("ADR1_J0" = "implantation", "ADR1_J3_J5" = "day 3 to 5", "ADR1_JS" = "explantation"))
+
+print(Fig_1.1)
+ggsave("Figures/boxplot_ADR2_Outcome.pdf", width = 8, height = 6)
+
+Fig_1 <- Fig_1 + theme(plot.title = element_blank())
+Fig_1.1 <- Fig_1.1 + theme(plot.title = element_blank())
+
+Fig1_tot <- Fig_1 + Fig_1.1 +
+  plot_annotation(title = "Association between percentage of T4 lymphocyte expressing ADRB and Outcome")
+print(Fig1_tot)
+ggsave("Figures/boxplot_ADR_Outcome_full.pdf", width = 12, height = 6)
+
+```
+
+# Figure 2: Association between VTI and ADRB1
+
+```{r,include=FALSE}
+
+#Faire un tableau 3L -  1.5L: PAM/NORADRE/DOBU/FC
+
+colnames(df) <- gsub(",", ".", colnames(df))  
+
+
+# VERSION AVEC ITV SEVRAGE
+
+#ADRB1
+
+F2_1 <- df %>%
+  dplyr::select(jsev_epr_sev_t1_1.5l_itv,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  mutate(VTI_cut= case_when(jsev_epr_sev_t1_1.5l_itv>12~ ">12 cm",
+               jsev_epr_sev_t1_1.5l_itv<=12~ "<=12 cm"))%>%
+   filter(!is.na(ADR1_JS) & !is.na(jsev_epr_sev_t1_1.5l_itv))
+
+
+#boxplot
+Fig_2 <- ggplot(F2_1, aes(x= VTI_cut, y = ADR1_JS, fill = factor(VTI_cut))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between VTI at weaning and percentage of T4 lymphocyte expressing ADRB1", x = "VTI measured at 1.5L/min", y = "ADR1 measured \n the last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_2)
+ggsave("Figures/boxplot_VTI_ADR1.pdf", width = 8, height = 6)
+
+#ADRB2
+View(df)
+F2_2 <- df %>%
+  dplyr::select(jsev_epr_sev_t1_1.5l_itv,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+  mutate(VTI_cut= case_when(jsev_epr_sev_t1_1.5l_itv>12~ ">12 cm",
+               jsev_epr_sev_t1_1.5l_itv<=12~ "<=12 cm"))%>%
+   filter(!is.na(ADR2_JS) & !is.na(jsev_epr_sev_t1_1.5l_itv))
+
+
+#boxplot
+Fig_2.1 <- ggplot(F2_2, aes(x= VTI_cut, y = ADR2_JS, fill = factor(VTI_cut))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between VTI at weaning and percentage of T4 lymphocyte expressing ADRB2", x = "VTI measured at 1.5L/min", y = "ADR2 measured \n the last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_2.1)
+ggsave("Figures/boxplot_VTI_ADR2.pdf", width = 8, height = 6)
+
+
+
+Fig_2 <- Fig_2 + theme(plot.title = element_blank())
+Fig_2.1 <- Fig_2.1 + theme(plot.title = element_blank())
+
+Fig2_tot <- Fig_2 + Fig_2.1 +
+  plot_annotation(title = "Association between VTI at weaning and percentage of T4 lymphocyte expressing ADRB")
+print(Fig2_tot)
+
+ggsave("Figures/boxplot_VTI_ADR_1_2.pdf", width = 8, height = 6)
+
+```
+
+# Figure 3: Survival \~ ADR
+
+```{r,include=FALSE}
+
+#ADRB1
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR1_D0_median, data = df)
+
+Fig_3 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  # 🔹 Rimuove "Strata" dalla tabella
+  risk.table.title = "Number at Risk (number censored)",  # 🔹 Cambia il titolo della tabella
+  xlim = c(0, 28),         # 🔹 Tronca l'asse X a 28 giorni
+  break.time.by = 7,
+  legend.title = " ",       # 🔹 Rimuove "Strata" dalla legenda
+  palette = c("#E63946", "#457B9D"),
+  ggtheme = theme_minimal(),
+    legend.labs = c("High", "Low")
+)
+
+Fig_3 <- Fig_3 + ggtitle("28-day Survival Curves for ADR1")
+print(Fig_3)
+Fig_3_combined <- plot_grid(Fig_3$plot, Fig_3$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+
+ggsave("Figures/Kaplan_Meier_plot_full.pdf", Fig_3_combined, width = 8, height = 6)
+
+#ADRB2
+
+
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR2_D0_median, data = df)
+
+Fig_3.1 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  # 🔹 Rimuove "Strata" dalla tabella
+  risk.table.title = "Number at Risk (number censored)",  # 🔹 Cambia il titolo della tabella
+  xlim = c(0, 28),         # 🔹 Tronca l'asse X a 28 giorni
+  break.time.by = 7,
+  legend.title = " ",       # 🔹 Rimuove "Strata" dalla legenda
+  palette = c("#E63946", "#457B9D"),  
+  ggtheme = theme_minimal(),
+  legend.labs = c("High", "Low")
+)
+
+Fig_3.1 <- Fig_3.1 + ggtitle("28-day Survival Curves for ADR2")
+print(Fig_3.1)
+Fig_3.1_combined <- plot_grid(Fig_3.1$plot, Fig_3.1$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+
+ggsave("Figures/Kaplan_Meier_plot_full.pdf", Fig_3.1_combined, width = 8, height = 6)
+
+
+Fig_3_combined <- Fig_3_combined + theme(plot.title = element_blank())
+Fig_3.1_combined <- Fig_3.1_combined + theme(plot.title = element_blank())
+Fig3_tot <- Fig_3_combined + Fig_3.1_combined +
+  plot_annotation(title = "28-day Survival Curves for ADR")
+print(Fig3_tot)
+
+ggsave("Figures/Kaplan_Meier_plot_full.pdf", Fig3_tot, width = 12, height = 6)
+
+```
+
+# Figure 4: ADR \~ beta blockers
+
+```{r,include=FALSE}
+
+#ADRB1
+F4 <- df %>%
+  dplyr::select(Betablocker,ADR1_J0,ADR1_J3_J5, ADR1_JS)
+
+mann_whitney_result <- wilcox.test(ADR1_J0 ~ Betablocker, data = F4, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot
+Fig_4 <- ggplot(F4, aes(x= Betablocker, y = ADR1_J0, fill = factor(Betablocker))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Betablocker and ADRB1 at baseline", x = "Betablocker", y = "ADR1 measured at day 0 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  +
+  annotate("text", x = 1.5, y = max(F4$ADR1_J0, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Fig_4)
+ggsave("Figures/boxplot_ADR1_BB.pdf", width = 8, height = 6)
+
+#ADRB2
+
+F4_1 <- df %>%
+  dplyr::select(Betablocker,ADR2_J0,ADR2_J3_J5, ADR2_JS)
+
+mann_whitney_result <- wilcox.test(ADR2_J0 ~ Betablocker, data = F4_1, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot
+Fig_4.1 <- ggplot(F4_1, aes(x= Betablocker, y = ADR2_J0, fill = factor(Betablocker))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Betablocker and ADRB2 at baseline", x = "Betablocker", y = "ADR2 measured at day 0 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  +
+  annotate("text", x = 1.5, y = max(F4_1$ADR2_J0, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Fig_4.1)
+ggsave("Figures/boxplot_ADR2_BB.pdf", width = 8, height = 6)
+
+
+
+Fig_4 <- Fig_4 + theme(plot.title = element_blank())
+Fig_4.1 <- Fig_4.1 + theme(plot.title = element_blank())
+
+Fig4_tot <- Fig_4 + Fig_4.1 +
+  plot_annotation(title = "Association between BB at weaning and ARB")
+print(Fig4_tot)
+
+ggsave("Figures/boxplot_ADR_BB_full.pdf", width = 8, height = 6)
+
+```
+
+# Figure 5: ADR \~ levosimendan
+
+```{r,include=FALSE}
+
+#Choice of ADRB1 at D3-D5
+
+#Time to levosimendan
+quantile(df$Time_levo,na.rm=T)
+
+F5 <- df %>%
+  dplyr::select(levo_in_icu,Levosimendan,ADR1_J0,ADR1_J3_J5, ADR1_JS)
+
+mann_whitney_result <- wilcox.test(ADR1_J3_J5 ~ Levosimendan, data = F5, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+###ADR1_J3_J5: attention peut etre il y en a plus en fait avec les JSEV qui arrivent avant ou pendant J3-J5
+#boxplot
+Fig_5 <- ggplot(F5, aes(x= Levosimendan, y = ADR1_J3_J5, fill = factor(Levosimendan))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Levosimendan administration and ADRB1", x = "Levosimendan", y = "ADR1 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(F5$ADR1_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+print(Fig_5)
+ggsave("Figures/boxplot_ADR1_Levosimendan.pdf", width = 8, height = 6)
+
+#ADRB2
+
+F5.1 <- df %>%
+  dplyr::select(Levosimendan,ADR2_J0,ADR2_J3_J5, ADR2_JS)
+
+mann_whitney_result <- wilcox.test(ADR2_J3_J5 ~ Levosimendan, data = F5.1, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+
+#boxplot
+Fig_5.1 <- ggplot(F5.1, aes(x= Levosimendan, y = ADR2_J3_J5, fill = factor(Levosimendan))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Levosimendan administration and ADRB2", x = "Levosimendan", y = "ADR2 measured at D3-D5 on ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(F5.1$ADR2_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+print(Fig_5.1)
+ggsave("Figures/boxplot_ADR2_Levosimendan.pdf", width = 8, height = 6)
+
+
+
+Fig_5 <- Fig_5 + theme(plot.title = element_blank())
+Fig_5.1 <- Fig_5.1 + theme(plot.title = element_blank())
+
+Fig5_tot <- Fig_5 + Fig_5.1 +
+  plot_annotation(title = "Association between Levosimendan and ARB at D3-D5")
+print(Fig5_tot)
+
+ggsave("Figures/boxplot_ADR_Levosimendan_full.pdf", width = 8, height = 6)
+
+```
+
+# Figure 5: ADR \~ dobutamin
+
+```{r,include=FALSE}
+
+F6 <- df %>%
+  dplyr::select(dose_tot_dobu,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  filter(!is.na(dose_tot_dobu))
+  
+#boxplot
+Fig_6 <- ggplot(F6, aes(x= dose_tot_dobu, y = ADR1_J0, fill = factor(dose_tot_dobu))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Dobutamin and ADRB1 at baseline", x = "Dobutamin", y = "ADR1 measured at day 0 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6)
+ggsave("Figures/boxplot_ADR1_Dobu.pdf", width = 8, height = 6)
+
+#ADRB2
+
+F6.1 <- df %>%
+  dplyr::select(dose_tot_dobu,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+   filter(!is.na(dose_tot_dobu))
+
+
+#boxplot
+Fig_6.1 <- ggplot(F6.1, aes(x= dose_tot_dobu, y = ADR2_J0, fill = factor(dose_tot_dobu))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Dobutamin and ADRB2 at baseline", x = "Dobutamin", y = "ADR2 measured at day 0 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6.1)
+ggsave("Figures/boxplot_ADR2_Dobutamin.pdf", width = 8, height = 6)
+
+
+
+Fig_6 <- Fig_6 + theme(plot.title = element_blank())
+Fig_6.1 <- Fig_6.1 + theme(plot.title = element_blank())
+
+Fig6_tot <- Fig_6 + Fig_6.1 +
+  plot_annotation(title = "Association between Dobutamin and ARB at Day 0 of ECMO")
+print(Fig6_tot)
+
+ggsave("Figures/boxplot_ADRbase_Dobutamin_full.pdf", width = 8, height = 6)
+
+## Dobu at JS
+
+#ADR1
+
+F6.2 <- df %>%
+  dplyr::select(dose_tot_dobu,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  mutate(dose_tot_dobu= case_when(dose_tot_dobu>0~ "YES",
+               dose_tot_dobu==0~ "NO"))%>%
+   filter(!is.na(ADR1_JS) & !is.na(dose_tot_dobu))
+
+
+#boxplot
+Fig_6.2.2 <- ggplot(F6.2, aes(x= dose_tot_dobu, y = ADR1_JS, fill = factor(dose_tot_dobu))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Dobutamin and ADRB1 at weaning", x = "Dobutamin", y = "ADR1 measured at dlast day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6.2.2)
+ggsave("Figures/boxplot_ADR1_Dobu_weaning.pdf", width = 8, height = 6)
+
+#ADRB2
+
+F6.3 <- df %>%
+  dplyr::select(dose_tot_dobu,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+  mutate(dose_tot_dobu= case_when(dose_tot_dobu>0~ "YES",
+               dose_tot_dobu==0~ "NO"))%>%
+   filter(!is.na(ADR2_JS) & !is.na(dose_tot_dobu))
+
+
+#boxplot
+Fig_6.3 <- ggplot(F6.3, aes(x= dose_tot_dobu, y = ADR2_JS, fill = factor(dose_tot_dobu))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Dobutamin and ADRB2 at weaning", x = "Dobutamin", y = "ADR2 measured at last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6.3)
+ggsave("Figures/boxplot_ADR2_Dobutamin_weaning.pdf", width = 8, height = 6)
+
+
+
+Fig_6.2.2 <- Fig_6.2.2 + theme(plot.title = element_blank())
+Fig_6.3 <- Fig_6.3 + theme(plot.title = element_blank())
+
+Fig6_tot_weaning <- Fig_6.2.2 + Fig_6.3 +
+  plot_annotation(title = "Association between Dobutamin and ARB at last Day of ECMO")
+print(Fig6_tot_weaning)
+
+ggsave("Figures/boxplot_ADR_Dobutamin_full.pdf", width = 8, height = 6)
+
+## ADR ~ cumulative dose dobu (median)
+
+#ADRB1
+
+F6.4 <- df %>%
+  dplyr::select(dose_tot_dobu,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  mutate(dobu_cut= case_when(dose_tot_dobu> median(ADR1_JS, na.rm=T)~"High",
+               dose_tot_dobu< median(ADR1_JS, na.rm=T)~"Low"))%>%
+   filter(!is.na(ADR1_JS) & !is.na(dose_tot_dobu))
+
+
+#boxplot
+Fig_6.4 <- ggplot(F6.4, aes(x= dobu_cut, y = ADR1_JS, fill = factor(dobu_cut))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between cumulative dose of dobutamina and ADRB1 at weaning", x = "dobutamin", y = "ADR1 measured the last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6.4)
+ggsave("Figures/boxplot_cumdobu_ADR1.pdf", width = 8, height = 6)
+
+#ADRB2
+
+F6.5 <- df %>%
+  dplyr::select(dose_tot_dobu,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+  mutate(dobu_cut= case_when(dose_tot_dobu> median(ADR2_JS, na.rm=T)~"High",
+               dose_tot_dobu< median(ADR2_JS, na.rm=T)~"Low"))%>%
+   filter(!is.na(ADR2_JS) & !is.na(dose_tot_dobu))
+
+
+#boxplot
+Fig_6.5 <- ggplot(F6.5, aes(x= dobu_cut, y = ADR2_JS, fill = factor(dobu_cut))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between cumulative dose of dobutamina and ADRB2 at weaning", x = "dobutamin", y = "ADR2 measured the last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6.5)
+ggsave("Figures/boxplot_cumdobu_ADR2.pdf", width = 8, height = 6)
+
+
+Fig_6.4 <- Fig_6.4 + theme(plot.title = element_blank())
+Fig_6.5 <- Fig_6.5 + theme(plot.title = element_blank())
+
+Fig6_tot_dobucum_weaning <- Fig_6.4 + Fig_6.5 +
+  plot_annotation(title = "Association between cumulative dose of Dobutamin and ARB at last Day of ECMO")
+print(Fig6_tot_dobucum_weaning)
+
+ggsave("Figures/boxplot_ADR_cum_Dobutamin_full.pdf", width = 8, height = 6)
+
+### Correlation between ADRB1 and total dobutamine dose
+
+F5_2 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5, dose_tot_dobu,Weight)%>%
+  mutate(dose_tot_dobu_poids = dose_tot_dobu/Weight)
+
+correlation <- sprintf("%.4f", cor(F5_2$ADR1_J0, F5_2$dose_tot_dobu,  method = "spearman",use = "complete.obs") )
+
+Fig_5_2 <- ggplot(F5_2, aes(x = dose_tot_dobu, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between dobutamine dose and ADRB1",
+       x = "dobutamine dose in microgrammes",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F5_2$dose_tot_dobu), y = max(F5_2$ADR1_J0), 
+           label = paste("Spearman correlation: ", correlation), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+
+### Correlation between ADRB1 and total dobutamine dose
+
+F5_2 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5, dose_tot_dobu,Weight)%>%
+  mutate(dose_tot_dobu_poids = dose_tot_dobu/Weight)
+
+correlation <- sprintf("%.4f", cor(F5_2$ADR1_J0, F5_2$dose_tot_dobu,  method = "spearman",use = "complete.obs") )
+
+Fig_5_2 <- ggplot(F5_2, aes(x = dose_tot_dobu, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between dobutamine dose and ADRB1",
+       x = "dobutamine dose in microgrammes",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F5_2$dose_tot_dobu), y = max(F5_2$ADR1_J0), 
+           label = paste("Spearman correlation: ", correlation), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+```
+
+# Figure 6: ADR \~ noradrenalin
+
+```{r,include=FALSE}
+
+#ADR1
+
+F7 <- df %>%
+  dplyr::select(dose_tot_NAd,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  mutate(dose_tot_NAd= case_when(dose_tot_NAd>0~ "YES",
+               dose_tot_NAd==0~ "NO"))%>%
+   filter(!is.na(ADR1_JS) & !is.na(dose_tot_NAd))
+
+
+#boxplot
+Fig_7 <- ggplot(F7, aes(x= dose_tot_NAd, y = ADR1_JS, fill = factor(dose_tot_NAd))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Noradrenalin and ADRB1 at weaning", x = "Noradrenalin", y = "ADR1 measured at last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_7)
+ggsave("Figures/boxplot_ADR1_Nora_weaning.pdf", width = 8, height = 6)
+
+#ADRB2
+
+F7.1 <- df %>%
+  dplyr::select(dose_tot_NAd,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+  mutate(dose_tot_NAd= case_when(dose_tot_NAd>0~ "YES",
+               dose_tot_NAd==0~ "NO"))%>%
+   filter(!is.na(ADR2_JS) & !is.na(dose_tot_NAd))
+
+
+#boxplot
+Fig_7.1 <- ggplot(F7.1, aes(x= dose_tot_NAd, y = ADR2_JS, fill = factor(dose_tot_NAd))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Noradrenalin and ADRB2 at weaning", x = "Noradrenalin", y = "ADR2 measured at last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_6.3)
+ggsave("Figures/boxplot_ADR2_Nora_weaning.pdf", width = 8, height = 6)
+
+
+
+Fig_7 <- Fig_7 + theme(plot.title = element_blank())
+Fig_7.1 <- Fig_7.1 + theme(plot.title = element_blank())
+
+Fig7_tot <- Fig_7 + Fig_7.1 +
+  plot_annotation(title = "Association between Noradrenalin and ARB at last Day of ECMO")
+print(Fig7_tot)
+
+ggsave("Figures/boxplot_ADR_Nora_full.pdf", width = 8, height = 6)
+
+
+
+F6_1 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5, NADcum_D0,Weight)%>%
+  mutate(NADcum_D0_weight = NADcum_D0/Weight)
+
+correlation <- sprintf("%.4f", cor(F6_1$ADR1_J0, F6_1$NADcum_D0,  method = "spearman",use = "complete.obs") )
+
+cor_test_result <- cor.test(F6_1$ADR1_J0, F6_1$NADcum_D0, method = "spearman", use = "complete.obs")
+
+
+Fig_6_1 <- ggplot(F6_1, aes(x = NADcum_D0, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between Noradrenaline cumulated dose and ADRB1 at D0",
+       x = "Noradrenaline dose in mg",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F6_1$NADcum_D0, na.rm=T), y = max(F6_1$ADR1_J0, na.rm=T)-1, 
+           label = paste("Spearman correlation: ", correlation), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+```
+
+#Figure 7 ADRB1 with VIS SCORE
+
+```{r}
+df$VIS_D0 <-  + df$DOBUcum_D0 + 
+    (100 * df$NADcum_D0)
+
+F7 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5,ADR2_J0, VIS_D0,Weight)%>%
+  mutate(VIS_D0_weight = VIS_D0/Weight)
+
+cor_test_result <- cor.test(F7$ADR1_J0, F7$VIS_D0, method = "spearman", use = "complete.obs")
+
+Fig_7 <- ggplot(F7, aes(x = VIS_D0, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between VIS cumulated dose and ADRB1 at D0",
+       x = "Cumulated VIS dose in mg",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F7$VIS_D0, na.rm=T), y = max(F7$ADR1_J0, na.rm=T)-1, 
+           label = paste("Spearman correlation: ", sprintf("%.2f",cor_test_result$estimate[[1]])), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+
+cor_test_result <- cor.test(F7$ADR2_J0, F7$VIS_D0, method = "spearman", use = "complete.obs")
+
+Fig_7_2 <- ggplot(F7, aes(x = VIS_D0, y = ADR2_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between VIS cumulated dose and ADRB2 at D0",
+       x = "Cumulated VIS dose in mg",
+       y = "ADRB2 expression on T helper lymphocytes") +
+   annotate("text", x = min(F7$VIS_D0, na.rm=T), y = max(F7$ADR2_J0, na.rm=T)-1, 
+           label = paste("Spearman correlation: ", sprintf("%.2f",cor_test_result$estimate[[1]])), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+```
+
+#Figure 8 ADRB1 and 2 with dobutamine at D3-D5
+
+```{r}
+df$dobu_D3_D5 <- if_else(df$jp2_dobu_cum>0, "YES", "NO")
+table(is.na(df$dobu_D3_D5))
+
+F8 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5,ADR2_J0,ADR2_J3_J5, dobu_D3_D5)%>%
+  filter(!is.na(dobu_D3_D5))
+
+mann_whitney_result <- wilcox.test(ADR1_J3_J5 ~ dobu_D3_D5, data = F8, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot
+Fig_8 <- ggplot(F8, aes(x= dobu_D3_D5, y = ADR1_J3_J5, fill = factor(dobu_D3_D5))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between dobutamine administration and ADRB1", x = "Dobutamine", y = "ADR1 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(F8$ADR1_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+print(F8)
+
+F8_1 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5,ADR2_J0,ADR2_J3_J5, dobu_D3_D5)%>%
+  filter(!is.na(dobu_D3_D5))
+
+mann_whitney_result <- wilcox.test(ADR2_J3_J5 ~ dobu_D3_D5, data = F8_1, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot
+Fig_8_1 <- ggplot(F8_1, aes(x= dobu_D3_D5, y = ADR2_J3_J5, fill = factor(dobu_D3_D5))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between dobutamine administration and ADRB2", x = "Dobutamine", y = "ADR2 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(F8$ADR1_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+####Version mieux#####
+df1 <- df%>%
+  mutate(jsev_bilan_date = str_replace_all(jsev_bilan_date, "\\.", "/"),
+         jp2_date = str_replace_all(jp2_date, "\\.", "/"),
+         jsev_bilan_date =dmy(jsev_bilan_date),
+           jp2_date =dmy(jp2_date),
+             Time_ECMOstart_jsev = time_length(interval(ecmo_start_date,jsev_bilan_date), "days"),
+    dobu_D3_D5_1 = case_when(!is.na(jp2_date)~jp2_dobu_cum,
+                             is.na(jp2_date) & !is.na(jsev_bilan_date)& Time_ECMOstart_jsev<6 ~ jsev_dobu_cum,
+                             is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA),
+    dobu_D3_D5_1_yes_no = case_when(dobu_D3_D5_1==0~"NO",
+                                    dobu_D3_D5_1!=0~"YES",
+                                    T~NA),
+    ADR1_J3_J5_r = case_when(!is.na(jp2_date)~ADR1_J3_J5,
+                              is.na(jp2_date)&!is.na(jsev_bilan_date)&Time_ECMOstart_jsev<6~ ADR1_JS,
+                              is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+                              ),
+      ADR2_J3_J5_r = case_when(!is.na(jp2_date)~ADR2_J3_J5,
+                              is.na(jp2_date)&!is.na(jsev_bilan_date)&Time_ECMOstart_jsev<6~ ADR2_JS,
+                              is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+                              ))%>%
+     filter(!is.na(dobu_D3_D5_1_yes_no))
+
+View(df1%>%
+  dplyr::select(jsev_bilan_date,jp2_date,Time_ECMOstart_jsev,dobu_D3_D5_1,jp2_dobu_cum,jsev_dobu_cum))
+
+
+mann_whitney_result <- wilcox.test(ADR1_J3_J5_r ~ dobu_D3_D5_1_yes_no, data = df1, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot
+Fig_8_2 <- ggplot(df1, aes(x= dobu_D3_D5_1_yes_no, y = ADR1_J3_J5_r, fill = factor(dobu_D3_D5_1_yes_no))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between dobutamine administration and ADRB1", x = "Dobutamine", y = "ADR1 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(df1$ADR1_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+mann_whitney_result <- wilcox.test(ADR2_J3_J5_r ~ dobu_D3_D5_1_yes_no, data = df1, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+
+Fig_8_3 <- ggplot(df1, aes(x= dobu_D3_D5_1_yes_no, y = ADR2_J3_J5_r, fill = factor(dobu_D3_D5_1_yes_no))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between dobutamine administration and ADRB2", x = "Dobutamine", y = "ADR1 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(df1$ADR2_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+```

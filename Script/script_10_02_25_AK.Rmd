@@ -1,0 +1,385 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+# Libraries
+
+```{r,include=FALSE}
+library(dplyr)
+library(lubridate)
+library(gtsummary)
+library(readr)
+library(ggplot2)
+library(tableone)
+library(flextable)
+library(sjlabelled)
+library(readxl)
+library(stringr)
+```
+
+# Load DATA
+
+```{r,include=FALSE}
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+
+ADR1 <- data_list[[1]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID =str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+     names_prefix = "ADR1_",
+    values_from = "value",
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (`ADR1_J3-5` = case_when(is.na(`ADR1_J3-5`)&!is.na(ADR1_J5)~ADR1_J5,
+                             T~`ADR1_J3-5`),
+          ADR1_JS = case_when(is.na(ADR1_JS)&!is.na(`ADR1_J3-5-S`)~`ADR1_J3-5-S`,
+                             T~ADR1_JS))%>%
+  rename(ADR1_J3_J5=`ADR1_J3-5`)%>%
+  dplyr::select(ID,
+                ADR1_J0,
+                ADR1_J3_J5,
+                ADR1_JS)
+
+
+ADR2 <- data_list[[2]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+    values_from = "value",
+     names_prefix = "ADR2_" ,
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (
+          ADR2_JS = case_when(is.na(ADR2_JS)&!is.na(`ADR2_J3-5-S`)~`ADR2_J3-5-S`,
+                             T~ADR2_JS))%>%
+  rename(ADR2_J3_J5=`ADR2_J3-5`)%>%
+  dplyr::select(ID,
+                ADR2_J0,
+                ADR2_J3_J5,
+                ADR2_JS)
+
+
+  #Chercher doublons
+ADR1%>%
+  group_by(Patient, ID, Jour) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1)
+ADR2%>%
+  group_by(Patient, ID, Jour) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  filter(n > 1)
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)%>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom,prenom))
+        
+df_list <- lst(DATA,ADR1,ADR2)
+
+df <- reduce(df_list, left_join, by="ID")
+```
+
+# LOAD FUNCTIONS
+
+```{r,include=FALSE}
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+```
+
+# DATA MANAGEMENT
+
+```{r,include=FALSE}
+
+df <- df %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+    Time_hosp = as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = as.numeric(ecmo_stop_date - ecmo_start_date)
+  )
+
+
+```
+
+# TABLE 1. Description of the population included
+
+```{r,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0", "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan", "Death")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "Preecmo_tte_diam_LV", "Preecmo_tte_tapse", "Preecmo_tte_vmax_s_mit_lat_LV", "NADcum_D0", "DOBUcum_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0","ADRtot_D0","ADRtot_D3", "ADRtot_w", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo","ADR1_J0","ADR2_J0")
+
+var.tot <- c(var.cat, var.cont)
+
+T1 <- df %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), #je transforme en numeric
+         across(all_of(var.cat), as.factor)) #je transforme en cat
+
+#verifier la normalité des variables, tu vas avoir un pdf dans FIGURES
+
+check_normality_pdf(data = T1, strata = NULL, vars = var.cont, labels = NULL, breaks = 15, path = "FIGURES", file = "check_test1", width = 12, height = 12)
+
+file.exists("FIGURES/check_test1.pdf")
+
+## function check_normality_pdf dosn't work
+
+pdf("FIGURES/test_pdf.pdf", width = 12, height = 12)
+hist(rnorm(100))  # Genera un istogramma casuale
+dev.off()
+file.exists("FIGURES/test_pdf.pdf")
+
+# PDF manual
+library(ggplot2)
+
+pdf("FIGURES/check_test1.pdf", width = 12, height = 12)
+
+for (var in var.cont) {
+  if (var %in% colnames(T1)) {
+    print(
+      ggplot(T1, aes_string(var)) +
+        geom_histogram(bins = 15, fill = "blue", alpha = 0.5) +
+        ggtitle(paste("Distribuzione di", var))
+    )
+  } else {
+    message(paste("❌ Variabile", var, "non trovata in T1"))
+  }
+}
+
+dev.off()
+
+file.exists("FIGURES/check_test1.pdf")
+
+--------------------------------------------------------
+--------------------------------------------------------
+# Data preparing for Table 1
+
+# Tercile
+
+tercile <- quantile(T1$ADRtot_D0, probs = c(0, 1/3, 2/3, 1), na.rm = TRUE)
+print(tercile)
+
+#       0% 33.33333% 66.66667%      100% 
+#    0.145     0.890     2.035     9.810 
+
+# Quartile
+quartile <- quantile(T1$ADRtot_D0, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+print(quartile)
+
+#     0%    25%    50%    75%   100% 
+# 0.1450 0.6775 1.3650 2.2275 9.8100
+
+library(tableone)
+
+## Check for NA
+install.packages("naniar")
+library(naniar)
+
+# Which variable missing
+missing_summary <- miss_var_summary(T1)
+
+# % variable missing
+gg_miss_var(T1)
+
+print(missing_summary)
+
+#ADRtot_w  25       50% miss
+#ADRtot_D3 21       42% miss
+
+## Table1 with strata ~ ADRtot_D0
+
+library(tableone)
+library(dplyr)
+library(naniar)
+library(tidyr)
+
+ADRtot_tertiles <- quantile(T1$ADRtot_D0, probs = c(1/3, 2/3), na.rm = TRUE)
+
+T1$ADRtot_D0_Strata <- ifelse(T1$ADRtot_D0 >= ADRtot_tertiles[2], "ADRtot% low", "ADRtot% high")
+###AK TU AS FAIT UNE ERREUR ICI  T1$ADRtot_D0 >= ADRtot_tertiles[2], le deuxième argument devrait etre "ADRtot% high" et pas low#####
+
+
+####Version avec mediane ADR1####
+ADR1_med <- median(T1$ADR1_J0, na.rm = TRUE)
+
+T1 <- T1%>%
+  mutate(ADR1_strata_med = case_when(ADR1_J0>ADR1_med ~ "HIGH",
+                                       ADR1_J0<=ADR1_med ~ "LOW",
+                                      T~NA))
+
+
+T1 <- CreateTableOne(vars = var.tot, 
+                                factorVars = var.cat, 
+                                strata = "ADR1_strata_med",  
+                                data = T1)
+
+table_1 <- as.data.frame(print(T1, nonnormal = var.cont))
+
+table_1$variables <-row.names(table_1)
+
+table_1 <- table_1[,c(5, 1,2,3)]
+
+names(table_1)
+TABLE1 <- flextable(table_1)
+
+save_as_docx(TABLE1, path = "TABLES/TABLE1_mediane_ADRB1.docx")
+
+#### ADRB2
+
+####Version avec mediane ADR1####
+ADR2_med <- median(df$ADR2_J0, na.rm = TRUE)
+
+#enlever les ADRB1_J0 manquants
+
+T2 <- df%>%
+  mutate(ADR2_strata_med = case_when(ADR2_J0>ADR2_med ~ "HIGH",
+                                       ADR2_J0<=ADR2_med ~ "LOW",
+                                      T~NA))
+
+
+T2 <- CreateTableOne(vars = var.tot, 
+                                factorVars = var.cat, 
+                                strata = "ADR2_strata_med",  
+                                data = T2)
+
+table_2 <- as.data.frame(print(T2, nonnormal = var.cont))
+
+table_2$variables <-row.names(table_2)
+
+table_2 <- table_2[,c(5, 1,2,3)]
+
+names(table_1)
+TABLE2 <- flextable(table_2)
+
+save_as_docx(TABLE2, path = "TABLES/TABLE2_mediane_ADRB2.docx")
+
+
+##########
+tableGendertable1_strata <- CreateTableOne(vars = var.tot, 
+                                factorVars = var.cat, 
+                                strata = "ADRtot_D0_Strata",  
+                                data = T1)
+
+print(table1_strata, nonnormal = var.cont)
+
+# eliminate level
+table1_strata_df <- as.data.frame(print(table1_strata, nonnormal = var.cont, showAllLevels = FALSE))
+
+table1_strata_df$Variables <- row.names(table1_strata_df)
+
+level_cols <- grep("level", colnames(table1_strata_df), ignore.case = TRUE, value = TRUE)
+
+if (length(level_cols) > 0) {
+  table1_strata_df <- table1_strata_df[, !colnames(table1_strata_df) %in% level_cols]
+}
+
+table1_strata_df <- table1_strata_df[, c(ncol(table1_strata_df), 1:(ncol(table1_strata_df) - 1))]
+
+colnames(table1_strata_df)[2:ncol(table1_strata_df)] <- paste("ADRtot_D0 =", colnames(table1_strata_df)[2:ncol(table1_strata_df)])
+
+# identification "test" colomn
+test_cols <- grep("test", colnames(table1_strata_df), ignore.case = TRUE, value = TRUE)
+
+# Remove it
+if (length(test_cols) > 0) {
+  table1_strata_df <- table1_strata_df[, !colnames(table1_strata_df) %in% test_cols]
+}
+
+
+head(table1_strata_df)
+
+
+
+
+# Add N for every variable
+missing_summary <- miss_var_summary(T1)
+var_counts <- nrow(T1) - missing_summary$n_miss
+names(var_counts) <- missing_summary$variable
+
+# Add colomn N
+table1_strata_df$N <- var_counts[match(table1_strata_df$Variables, names(var_counts))]
+
+# Aling N with table
+table1_strata_df$N <- var_counts[match(table1_strata_df$Variables, names(var_counts))]
+table1_strata_df$N[is.na(table1_strata_df$N)] <- 0  
+
+# N After variables
+table1_strata_df <- table1_strata_df[, c("Variables", "N", setdiff(names(table1_strata_df), c("Variables", "N")))]
+
+# Word output
+
+library(flextable)
+library(officer)
+
+# Creazione della flextable con miglior allineamento
+table1_flex <- flextable(table1_strata_df) %>%
+  theme_zebra() %>%  
+  fontsize(size = 8) %>%  
+  autofit() %>%  
+  set_table_properties(width = 0.9, layout = "autofit") %>%  
+  align(align = "center", part = "all") %>%  
+  bold(part = "header") %>%  
+  border_outer(border = fp_border(color="black", width = 1)) %>%  
+  set_caption("Table 1: Population at baseline according to ADRtot%")
+
+
+doc <- read_docx() %>%
+  body_add_flextable(table1_flex)
+
+print(doc, target = "TABLES/Table1_ADRtot_Strata.docx")
+
+browseURL("TABLES/Table1_ADRtot_Strata.docx")
+
+```
+
+# 
+
+```{r,include=FALSE}
+
+
+
+```

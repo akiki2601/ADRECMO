@@ -1,0 +1,1943 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+```{=html}
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+# markdown options depending on the output (html with R code and Word without)
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+options(max.print = .Machine$integer.max)
+```
+
+# Packages needed
+
+```{r,include=FALSE}
+library(dplyr)
+library(lubridate)
+library(gtsummary)
+library(readr)
+library(ggplot2)
+library(tableone)
+library(flextable)
+library(sjlabelled)
+library(readxl)
+library(stringr)
+library(tidyr)
+library(purrr)
+library(tableone)
+library(dplyr)
+library(naniar)
+library(tidyr)
+library(survival)
+library(survminer)
+library(patchwork)
+library(ggpmisc)
+library(cowplot)  
+library(officer)
+library(flextable)
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+```
+
+# Method
+
+This study is a monocentric, prospective, observational investigation conducted at XX Hospital between [Date] and [Date], enrolling 50 adult patients with refractory cardiogenic shock requiring veno-arterial extracorporeal membrane oxygenation (VA-ECMO) support (NCT03327493).
+
+The study was carried out in accordance with the Declaration of Helsinki and approved by the local institutional ethics committee. Written informed consent was obtained from all patients or their legal representatives prior to inclusion.
+
+Patient Population
+
+Cardiogenic shock was defined as a systolic blood pressure (SBP) <90 mmHg or a mean arterial pressure (MAP) <65 mmHg despite adequate volume resuscitation, accompanied by signs of peripheral hypoperfusion (e.g., cold extremities, oliguria, altered mental status) and a cardiac index <2.2 L/min/m². Refractoriness was defined as a state of persistent hypoperfusion despite optimal medical management, including the use of norepinephrine and/or other vasopressors.
+Eligible patients were adults (≥18 years old) affiliated with a national health insurance system. Patients were excluded if cardiogenic shock was secondary to cardiotoxic poisoning, if they were pregnant, had a known active HIV or HCV infection, or were under legal protective supervision (e.g., court-appointed guardianship).
+
+Data Collection
+
+Clinical, laboratory, and echocardiographic parameters were prospectively collected at three predefined timepoints:Day 0 (ECMO implantation), Day 3–5 (early course) and Day of ECMO weaning (ECMO explantation). Blood samples were drawn at each timepoint, immediately centrifuged, and plasma was stored at –80°C until analysis. Samples were then transferred to the XXX INSERM UMR942 laboratory (Paris, France) for centralized biomarker, cells and cytokine analysis. Quantification of adrenoreceptors (α1, α2, β1, β2, β3) on monocytes and CD4⁺ T lymphocytes was performed using flow cytometry, along with assessment of Th1/Th2 lymphocyte polarization. Cytokine concentrations in plasma, including interleukin (IL)-4, IL-12, IL-1, IL-6, IL-10, tumor necrosis factor alpha (TNF-α), and interferon gamma (IFN-γ), were measured using [XXX].
+
+Adrenoreceptor Analysis
+
+The expression of beta-1 (ADRB1) and beta-2 (ADRB2) adrenergic receptors on circulating T lymphocytes was assessed via flow cytometry. Peripheral blood mononuclear cells (PBMCs) were isolated from whole blood, stained with monoclonal antibodies targeting ADRB1 and ADRB2, and analyzed using a [XXX cytometer model] according to standardized protocols. Results were expressed as the percentage of T-helper lymphocytes expressing the respective receptors.
+
+Monocyte Phenotyping by Flow Cytometry
+
+Peripheral blood mononuclear cells (PBMCs) were isolated using density gradient centrifugation. Cells were incubated with fluorochrome-conjugated monoclonal antibodies targeting surface markers to identify monocytes (e.g., CD14, CD16) and assess adrenoreceptor expression. After washing steps, cells were acquired on a flow cytometer (XXX), and data were analyzed using XXX. Gating strategies were applied to identify classical, intermediate, and non-classical monocyte subsets, and receptor expression was quantified as median fluorescence intensity (MFI).
+
+Cytokine Quantification by ELISA
+
+Plasma concentrations of cytokines were measured using commercially available enzyme-linked immunosorbent assay (ELISA) kits (XXX). Plasma samples, stored at –80°C until analysis, were thawed and processed in duplicate according to the manufacturer’s protocol. Optical density was measured using a microplate reader, and cytokine levels were interpolated from standard curves. All assays were performed in the same central laboratory to ensure methodological consistency.
+
+ECMO Weaning Protocol
+
+A standardized weaning protocol was applied to all patients prior to ECMO explantation. At a constant mean arterial pressure (MAP) between 65 and 75 mmHg, cardiac output was assessed by transthoracic echocardiography at two predefined timepoints: 1. Baseline under full support (ECLS flow at 3.0 L/min) and 2. Low-flow test after 45 minutes of reduced ECMO flow (1.5 L/min).
+Measurements included velocity time integral (VTI) at the left ventricular outflow tract and left ventricular ejection fraction. Changes in norepinephrine dosage during this period were also documented. The decision to explant ECMO was based on clinical tolerance, hemodynamic stability, and echocardiographic parameters during the weaning trial.
+
+# Fonctions
+
+```{r,include=FALSE}
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+
+# Dummy function so the Rmd doesn't crash if linearity_test() was used
+linearity_test <- function(model) {
+  # Minimal placeholder that avoids crashing
+  message("linearity_test() was called - placeholder version")
+}
+
+```
+
+# DATA Load
+
+```{r,include=FALSE}
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+
+ADR1 <- data_list[[1]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID =str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+     names_prefix = "ADR1_",
+    values_from = "value",
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (`ADR1_J3-5` = case_when(is.na(`ADR1_J3-5`)&!is.na(ADR1_J5)~ADR1_J5,
+                             T~`ADR1_J3-5`),
+          ADR1_JS = case_when(is.na(ADR1_JS)&!is.na(`ADR1_J3-5-S`)~`ADR1_J3-5-S`,
+                             T~ADR1_JS))%>%
+  rename(ADR1_J3_J5=`ADR1_J3-5`)%>%
+  
+  dplyr::select(ID,
+                ADR1_J0,
+                ADR1_J3_J5,
+                ADR1_JS)
+
+
+ADR2 <- data_list[[2]] %>%
+  select( "Patient","Jour", "%Total")%>%
+  filter(!is.na(`%Total`))%>%
+  rename(value = `%Total`)%>%
+  mutate(ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"))%>%
+  pivot_wider(
+    names_from = "Jour",
+    values_from = "value",
+     names_prefix = "ADR2_" ,
+    values_fn = mean,  # Moyenne des doublons
+    values_fill = NA
+  )%>%
+  mutate (
+          ADR2_JS = case_when(is.na(ADR2_JS)&!is.na(`ADR2_J3-5-S`)~`ADR2_J3-5-S`,
+                             T~ADR2_JS))%>%
+  rename(ADR2_J3_J5=`ADR2_J3-5`)%>%
+  dplyr::select(ID,
+                ADR2_J0,
+                ADR2_J3_J5,
+                ADR2_JS)
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)%>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom,prenom))
+        
+df_list <- lst(DATA,ADR1,ADR2)
+
+df <- reduce(df_list, left_join, by="ID")%>%
+  filter(ID!="12-NANA")
+```
+
+# DATA Management
+
+```{r,include=FALSE}
+
+df <- df %>%
+  mutate(
+    # Basic formatting
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+
+    # Outcome recoding
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    
+    Outcome_censored = as.numeric(case_when(
+      Outcome == "Death" ~ "1",
+      Outcome %in% c("ECMO Weaning", "Bridge to Transplant", "Bridge to LVAD") ~ "0"
+    )),
+
+    outcome_date = str_replace_all(outcome_date, "\\.", "/"),
+    icu_admiss_date = str_replace_all(icu_admiss_date, "\\.", "/"),
+    icu_discharge_date = str_replace_all(icu_discharge_date, "\\.", "/"),
+
+    outcome_date = dmy(outcome_date),
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    date_levo = dmy(date_levo),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+
+    diff_days = time_length(interval(icu_admiss_date, outcome_date), "days"),
+    Time_hosp = time_length(interval(icu_admiss_date, icu_discharge_date), "days"),
+    as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = time_length(interval(ecmo_start_date, ecmo_stop_date), "days"),
+    Time_levo = time_length(interval(ecmo_start_date, date_levo), "days"),
+
+    diff_days_J28 = case_when(
+      diff_days > 28 ~ 28,
+      TRUE ~ diff_days
+    ),
+
+    Outcome_censored_28 = case_when(
+      diff_days > 28 & Outcome_censored == 1 ~ 0,
+      TRUE ~ Outcome_censored
+    ),
+
+    ADR1_D0_median = case_when(
+      ADR1_D0 > median(ADR1_D0, na.rm = TRUE) ~ "High",
+      ADR1_D0 <= median(ADR1_D0, na.rm = TRUE) ~ "Low"
+    ),
+
+    ADR2_D0_median = case_when(
+      ADR2_D0 > median(ADR2_D0, na.rm = TRUE) ~ "High",
+      ADR2_D0 <= median(ADR2_D0, na.rm = TRUE) ~ "Low"
+    ),
+
+    Betablocker = case_when(
+      Betablocker == 1 ~ "YES",
+      Betablocker == 0 ~ "NO"
+    ),
+
+    dose_tot_dobu_yes_no = droplevels(as.factor(case_when(
+      dose_tot_dobu > 0 ~ "YES",
+      dose_tot_dobu == 0 ~ "NO"
+    ))),
+
+    levo_in_icu = case_when(
+      Levosimendan == 1 & Time_levo >= 0 ~ "Yes",  
+      Levosimendan == 1 & Time_levo < 0 ~ "No",
+      Levosimendan == 0 ~ "No"
+    ),
+
+    Levosimendan = case_when(
+      Levosimendan == 1 ~ "YES",
+      Levosimendan == 0 ~ "NO"
+    )
+  )
+
+```
+
+# TABLE 1: description of baseline characteristics of the population at inclusion
+
+```{r,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0", "Intubation", "EER_D0", "Betablocker", "Alphablocker", "Levosimendan")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "Preecmo_tte_tapse", "Preecmo_tte_vmax_s_mit_lat_LV", "NADcum_D0", "DOBUcum_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "Plq_D0", "Lenght_vm", "Time_hosp", "Time_ecmo")
+
+var.tot <- c(var.cat, var.cont)
+
+T1 <- df %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), 
+         across(all_of(var.cat), as.factor))
+
+
+## Table 1 standard
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data =T1) # sans groupe de strata
+
+table1 <- print(table1, nonnormal =var.cont)
+
+table1_df <- as.data.frame(print(table1, nonnormal = var.cont, showAllLevels = TRUE))
+table1_df$Variables <- row.names(table1_df)
+
+row.names(table1_df)<-NULL
+table1_df <- table1_df[, c(2,1)]
+
+T1_n <- T1%>%
+  summarise(across(everything(), ~ sum(is.na(.))))%>%
+  pivot_longer(cols= everything(),
+    values_to = "n_missing",
+    names_to = "ID")%>%
+  mutate(n_missing = paste0(n_missing,"/50"),
+         ID = trimws(ID))
+
+table1_df1 <- table1_df %>%
+  mutate(ID = sub("\\(median \\[IQR\\]\\)|= 1 \\(\\%\\)|= Women \\(\\%\\)|\\(\\%\\)", "",Variables),
+         ID = trimws(ID))
+
+table_1_vf <- left_join(table1_df1,T1_n, by="ID")%>%
+  select(Variables,n_missing,Overall)%>%
+  mutate(n_missing = replace_na(n_missing,""))
+
+table_1_vf <- left_join(table1_df1, T1_n, by = "ID") %>%
+  mutate(N = 50 - as.numeric(sub("/50", "", replace_na(n_missing, "0")))) %>%  # Calcola N
+  select(Variables, N, Overall)  
+
+print(table_1_vf)
+table_1_vf <- table_1_vf%>%
+mutate(Variables= str_remove(Variables, " \\(median \\[IQR\\]\\)"))
+
+traduction <- c(
+  "n" = "n",
+  "Gender = Women (%)" = "Gender = Female (%)",
+  "HTN = 1 (%)" = "Hypertension (%)",
+  "DM = 1 (%)" = "Diabetes Mellitus (%)",
+  "Immunodepression = 1 (%)" = "Immunosuppression (%)",
+  "CKD = 1 (%)" = "Chronic Kidney Disease (%)",
+  "Neurologic_deficit = 1 (%)" = "Neurological Deficit (%)",
+  "Chronic_respiratory_disease = 1 (%)" = "Chronic Respiratory Disease (%)",
+  "HF = 1 (%)" = "Heart Failure (%)",
+  "Cardiac_arrest_before_canul = 1 (%)" = "Cardiac Arrest Before Cannulation (%)",
+  "IABP_D0 = 1 (%)" = "Intra-Aortic Balloon Pump (%)",
+  "Intubation = 1 (%)" = "Intubation (%)",
+  "EER_D0 = 1 (%)" = "Renal Replacement Therapy (%)",
+  "Outcome (%)" = "Outcome (%)",
+  "   Bridge to LVAD" = "Bridge to LVAD",
+  "   Bridge to Transplant" = "Bridge to Transplant",
+  "   Death" = "Death",
+  "   ECMO Weaning" = "ECMO Weaning",
+  "Betablocker = YES (%)" = "Beta-blocker (%)",
+  "Alphablocker = 1 (%)" = "Alpha-blocker (%)",
+  "Levosimendan = 1 (%)" = "Levosimendan (%)",
+  "Death = 1 (%)" = "Death (%)",
+  "Age" = "Age (years)",
+  "BMI" = "Body Mass Index (kg/m²)",
+  "PAS_D0" = "Systolic Blood Pressure (mmHg)",
+  "PAD_D0" = "Diastolic Blood Pressure (mmHg)",
+  "PAM_D0" = "Mean Arterial Pressure (mmHg)",
+  "Pulsepressure_D0" = "Pulse Pressure (mmHg)",
+  "HR_D0" = "Heart Rate (bpm)",
+  "Temp_D0" = "Temperature (°C)",
+  "Preecmo_tte_ef" = "Pre-ECMO Ejection Fraction (%)",
+  "Preecmo_tte_vtiao" = "Pre-ECMO Aortic Velocity Time Integral (cm)",
+  "Preecmo_tte_diam_LV" = "Pre-ECMO Left Ventricular Diameter (mm)",
+  "Preecmo_tte_tapse" = "Pre-ECMO TAPSE (mm)",
+  "Preecmo_tte_vmax_s_mit_lat_LV" = "Pre-ECMO Mitral Lateral Velocity (cm/s)",
+  "NADcum_D0" = "Cumulative Norepinephrine Dose (mg)",
+  "DOBUcum_D0" = "Cumulative Dobutamine Dose (mg)",
+  "pH_D0" = "pH",
+  "Sao2_D0" = "Oxygen Saturation (%)",
+  "Paco2_D0" = "PaCO2 (mmHg)",
+  "Lact_D0" = "Lactate (mmol/L)",
+  "Hco3_D0" = "Bicarbonate (mmol/L)",
+  "Creat_D0" = "Creatinine (μmol/L)",
+  "Urea_D0" = "Urea (mg/dL)",
+  "ALAT_D0" = "ALT (IU/L)",
+  "ASAT_D0" = "AST (IU/L)",
+  "Bili_D0" = "Bilirubin (mg/dL)",
+  "PT_D0" = "Prothrombin Time (s)",
+  "Tropo_i_hs_D0" = "High Sensitivity Troponin I (ng/L)",
+  "Ntprobnp_D0" = "NT-proBNP (pg/mL)",
+  "DPP3_D0" = "DPP3 (ng/mL)",
+  "Plq_D0" = "Platelet Count (10⁹/L)",
+  "Lenght_eer" = "Duration of Renal Replacement Therapy (days)",
+  "Lenght_vm" = "Duration of Mechanical Ventilation (days)",
+  "Time_hosp" = "Hospital Length of Stay (days)",
+  "Time_ecmo" = "ECMO Duration (days)"
+)
+
+table_1_vf <- table_1_vf %>%
+  mutate(Variables = recode(Variables, !!!traduction))
+
+variable_order <- c(
+  "n",
+  "Age (years)",
+  "Gender = Female (%)",
+  "Body Mass Index (kg/m²)",
+  "Hypertension (%)",
+  "Diabetes Mellitus (%)",
+  "Heart Failure (%)",
+  "Chronic Kidney Disease (%)",
+  "Immunosuppression (%)",
+  "Neurological Deficit (%)",
+  "Chronic Respiratory Disease (%)",
+  "Beta-blocker (%)",
+  "Alpha-blocker (%)",
+  "Cardiac Arrest Before Cannulation (%)",
+  "Intra-Aortic Balloon Pump (%)",
+  "Systolic Blood Pressure (mmHg)",
+  "Diastolic Blood Pressure (mmHg)",
+  "Mean Arterial Pressure (mmHg)",
+  "Pulse Pressure (mmHg)",
+  "Heart Rate (bpm)",
+  "Temperature (°C)",
+  "Pre-ECMO Ejection Fraction (%)",
+  "Pre-ECMO Aortic Velocity Time Integral (cm)",
+  "Pre-ECMO TAPSE (mm)",
+  "Pre-ECMO Mitral Lateral Velocity (cm/s)",
+  "Cumulative Norepinephrine Dose (mg)",
+  "Cumulative Dobutamine Dose (mg)",
+  "Levosimendan (%)",
+  "pH",
+  "Oxygen Saturation (%)",
+  "PaCO2 (mmHg)",
+  "Lactate (mmol/L)",
+  "Bicarbonate (mmol/L)",
+  "Creatinine (μmol/L)",
+  "Urea (mg/dL)",
+  "ALT (IU/L)",
+  "AST (IU/L)",
+  "Bilirubin (mg/dL)",
+  "Prothrombin Time (s)",
+  "High Sensitivity Troponin I (ng/L)",
+  "NT-proBNP (pg/mL)",
+  "Platelet Count (10⁹/L)",
+  "Intubation (%)",
+  "Duration of Mechanical Ventilation (days)",
+  "Renal Replacement Therapy (%)",
+  "Hospital Length of Stay (days)",
+  "ECMO Duration (days)"
+)
+
+table_1_vf <- table_1_vf %>%
+  mutate(Variables = factor(Variables, levels = variable_order)) %>%
+  arrange(Variables)
+
+table1 <- flextable(as.data.frame(table_1_vf)) %>% autofit() %>%
+      set_caption("Table 1: Baseline characteristics") %>% 
+     align(j = c(2:3), align = "center", part = "all")
+
+doc <- read_docx() %>%
+  body_add_flextable(table1)
+
+print(doc, target = "TABLES/Table1_def.docx")
+
+browseURL("TABLES/Table1_def.docx")
+
+```
+
+Baseline clinical, demographic and hemodynamic characteristics were summarized for the overall study population (n = 50). Categorical variables were reported as counts and percentages, while continuous variables were expressed as medians and interquartile ranges (IQR). The normality of continuous variables was assessed visually using histograms.
+
+# Check for normality
+
+```{r,include=FALSE}
+for (var in var.cont) {
+  if (var %in% colnames(T1)) {
+    print(
+      ggplot(T1, aes_string(var)) +
+        geom_histogram(bins = 15, fill = "blue", alpha = 0.5) +
+        ggtitle(paste("Distribuzione di", var))
+    )
+  } else {
+    message(paste("❌ Variabile", var, "non trovata in T1"))
+  }
+}
+```
+
+
+# Table 2a with hemodynamic parameters at weaning day
+
+```{r}
+
+## General information at weaning day
+
+df_long <- df %>%
+  select(
+    ID,
+    jsev_ecmo_debit,
+    jsev_dobu_cum,
+    jsev_NAd_cum,
+    jsev_pam,
+    jsev_freq,
+    jsev_ett_fevg,
+    jsev_ett_vmax_s_mit_lat_vg,
+    jsev_lact
+  ) %>%
+  rename(
+    `ECMO flow (l)` = jsev_ecmo_debit,
+    `Dobutamine cumulative (mg)` = jsev_dobu_cum,
+    `Noradrenaline cumulative (mg)` = jsev_NAd_cum,
+    `MAP_baseline (mmHg)` = jsev_pam,
+    `HR (bpm)` = jsev_freq,
+    `FEVG (%)` = jsev_ett_fevg,
+    `Mitral S' (cm/s)` = jsev_ett_vmax_s_mit_lat_vg,
+    `Lactate (mmol/L)` = jsev_lact
+  ) %>%
+  pivot_longer(
+    cols = -ID,
+    names_to = "Parameter",
+    values_to = "Value"
+  )
+
+# Define desired parameter order
+custom_order <- c(
+  "ECMO flow (l)",
+  "Dobutamine cumulative (mg)",
+  "Noradrenaline cumulative (mg)",
+  "MAP_baseline (mmHg)",
+  "HR (bpm)",
+  "FEVG (%)",
+  "Mitral S' (cm/s)",
+  "Lactate (mmol/L)"
+)
+
+# Apply ordering after summarising
+table2a <- df_long %>%
+  group_by(Parameter) %>%
+  summarise(
+    n = sum(!is.na(Value)),
+    Median = round(median(Value, na.rm = TRUE), 1),
+    Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 1),
+    Q3 = round(quantile(Value, 0.75, na.rm = TRUE), 1),
+    .groups = "drop"
+  ) %>%
+  mutate(`Median [IQR]` = paste0(Median, " [", Q1, "–", Q3, "]")) %>%
+  select(Parameter, n, `Median [IQR]`) %>%
+  slice(match(custom_order, Parameter))  # Reorder according to custom_order
+
+# View the ordered table
+print(table2a)
+
+```
+
+# Table 2b with hemodynamic parameters at weaning day
+
+```{r}
+
+# Create new variables for flow condition and unify variable names
+
+df_long <- df %>%
+  select(
+    ID,
+    jsev_epr_sev_t0_3l_itv,
+    jsev_epr_sev_t0_3l_pam,
+    jsev_epr_sev_t0_3l_NAd,
+    `jsev_epr_sev_t1_1,5l_itv`,
+    `jsev_epr_sev_t1_1,5l_pam`,
+    `jsev_epr_sev_t1_1,5l_NAd`
+  ) %>%
+  rename(
+    `VTI (cm)` = jsev_epr_sev_t0_3l_itv,
+    `MAP (mmHg)` = jsev_epr_sev_t0_3l_pam,
+    `Noradrenalin (mg/h)` = jsev_epr_sev_t0_3l_NAd,
+    `VTI_1.5L (cm)` = `jsev_epr_sev_t1_1,5l_itv`,
+    `MAP_1.5L (mmHg)` = `jsev_epr_sev_t1_1,5l_pam`,
+    `Noradrenalin_1.5L (mg/h)` = `jsev_epr_sev_t1_1,5l_NAd`
+  ) %>%
+  pivot_longer(
+    cols = -ID,
+    names_to = "Parameter_raw",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Value = as.numeric(Value),
+    Condition = case_when(
+      str_detect(Parameter_raw, "1.5L") ~ "1.5L",
+      TRUE ~ "3L"
+    ),
+    Condition = factor(Condition, levels = c("3L", "1.5L")),
+    Parameter = str_replace(Parameter_raw, "_1.5L", "")
+  )
+
+
+# Create summary table with n
+table2b_compact <- df_long %>%
+  group_by(Parameter, Condition) %>%
+  summarise(
+    n = sum(!is.na(Value)),
+    Median = round(median(Value, na.rm = TRUE), 2),
+    Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 2),
+    Q3 = round(quantile(Value, 0.75, na.rm = TRUE), 2),
+    .groups = "drop"
+  ) %>%
+  mutate(Summary = paste0("n = ", n, " | ", Median, " [", Q1, "–", Q3, "]")) %>%
+  select(Parameter, Condition, Summary) %>%
+  pivot_wider(names_from = Condition, values_from = Summary)
+
+# Visualizza tabella
+print(table2b_compact)
+
+
+```
+
+# Figure 1: Association between ADRB expressions and outcomes
+
+```{r,include=FALSE}
+
+F1 <- df %>%
+  select(ID,ADR1_J0, ADR1_J3_J5, ADR1_JS, Outcome)%>%
+  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("ECMO Weaning","Bridge to transplant or LVAD","Death")))%>%
+  pivot_longer(
+    cols = c(ADR1_J0, ADR1_J3_J5, ADR1_JS), 
+    names_to = "ADR1_time", 
+    values_to = "value"
+  )
+
+count_data <- F1 %>%
+  filter(!is.na(value))%>%
+  group_by(ADR1_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcomes))
+
+Figure_1 <- ggplot(F1, aes(x = ADR1_time, y = value, fill = Outcomes)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    title = "Association between ADRB1 and outcomes",
+    x = "times of measurement",
+    y = "Percentage of T4 lymphocyte expressing ADRB1",
+  ) +
+  geom_text(data = count_data, aes(x = ADR1_time, y = min(F1$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = Outcomes), 
+            position = position_dodge(0.7), size = 4, vjust = 1)+
+    scale_x_discrete(labels = c("ADR1_J0" = "implantation", "ADR1_J3_J5" = "day 3 to 5", "ADR1_JS" = "explantation")) +
+  theme(legend.position = "none")
+
+print(Figure_1)
+
+## ADRB2 
+
+F1_1 <- df %>%
+  select(ID,ADR2_J0, ADR2_J3_J5, ADR2_JS, Outcome)%>%
+  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("ECMO Weaning","Bridge to transplant or LVAD","Death")))%>%
+  pivot_longer(
+    cols = c(ADR2_J0, ADR2_J3_J5, ADR2_JS), 
+    names_to = "ADR2_time", 
+    values_to = "value"
+  )
+
+count_data <- F1_1 %>%
+  filter(!is.na(value))%>%
+  group_by(ADR2_time, Outcomes) %>%
+  summarise(n = n(), .groups = "drop")%>%
+  filter(!is.na(Outcomes))
+
+Figure_1.1 <- ggplot(F1_1, aes(x = ADR2_time, y = value, fill = Outcomes)) +
+  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
+  scale_y_log10() +  
+  labs(
+    title = "Association between ADRB2 and outcomes",
+    x = "times of measurement",
+    y = "Percentage of T4 lymphocyte expressing ADRB2",
+  ) +
+  geom_text(data = count_data, aes(x = ADR2_time, y = min(F1_1$value, na.rm = TRUE) * 0.8, 
+                                   label = paste0("n=", n), group = Outcomes), 
+            position = position_dodge(0.7), size = 4, vjust = 1)+
+      scale_x_discrete(labels = c("ADR2_J0" = "implantation", "ADR2_J3_J5" = "day 3 to 5", "ADR2_JS" = "explantation"))
+
+print(Figure_1.1)
+
+Fig_1 <- Figure_1 + theme(plot.title = element_blank())
+Fig_1.1 <- Figure_1.1 + theme(plot.title = element_blank())
+
+Figure1_tot <- Fig_1 + Fig_1.1 +
+  plot_annotation(title = "Association between percentage of T4 lymphocyte expressing ADRB and Outcome")
+print(Fig1_tot)
+
+```
+
+Statistical Analysis
+
+To explore the distribution of ADRB1 and ADRB2 expression over time in relation to clinical outcomes, boxplots were generated at three timepoints (implantation, day 3–5, and explantation). 
+Results
+
+Results
+
+In patients who were successfully weaned from ECMO, both ADRB1 and ADRB2 showed a visual increase from implantation to explantation. In contrast, expression levels remained relatively stable or decreased in patients who died during ECMO support. 
+
+# Figure 2: Association between VTI and ADRB
+
+```{r,include=FALSE}
+
+#ADRB1
+
+F2_1 <- df %>%
+  mutate(
+    # Clean and convert dates from string format to Date objects
+    jsev_bilan_date = str_replace_all(jsev_bilan_date, "\\.", "/"),
+    jp2_date = str_replace_all(jp2_date, "\\.", "/"),
+    jsev_bilan_date = dmy(jsev_bilan_date),
+    jp2_date = dmy(jp2_date),
+
+    # Calculate time difference between ECMO start and bilan date
+    Time_ECMOstart_jsev = time_length(interval(ecmo_start_date, jsev_bilan_date), "days"),
+
+    # Define VTI value to use (based on available date)
+    VTI_J3_J5_r = case_when(
+      !is.na(jp2_date) ~ `jsev_epr_sev_t1_1,5l_itv`,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ `jsev_epr_sev_t1_1,5l_itv`,
+      TRUE ~ NA_real_
+    ),
+
+    # Define ADRB1 value to use (based on available date)
+    ADR1_J3_J5_r = case_when(
+      !is.na(jp2_date) ~ ADR1_J3_J5,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ ADR1_JS,
+      TRUE ~ NA_real_
+    ),
+
+    # Categorize VTI according to clinical cut-off of 12 cm
+    VTI_J3_J5_r_cut = case_when(
+      VTI_J3_J5_r > 12 ~ ">12 cm",
+      VTI_J3_J5_r <= 12 ~ "<=12 cm"
+    )
+  ) %>%
+  # Keep only rows with valid ADR1_JS and VTI values
+  filter(!is.na(ADR1_JS) & !is.na(VTI_J3_J5_r)) %>%
+  # Select only relevant columns for the plot/analysis
+  dplyr::select(VTI_J3_J5_r, VTI_J3_J5_r_cut, ADR1_J0, ADR1_J3_J5, ADR1_JS, ADR1_J3_J5_r)
+
+
+ # Mann-Whitney test for VTI and ADRB1
+mann_whitney_VTI <- wilcox.test(ADR1_J3_J5_r ~ VTI_J3_J5_r_cut, data = F2_1, exact = FALSE)
+
+# Extract and format the p-value
+p_value_VTI <- sprintf("%.4g", mann_whitney_VTI$p.value)
+
+# Boxplot for ADRB1 with p-value annotation 
+Figure2a <- ggplot(F2_1, aes(x = VTI_J3_J5_r_cut, y = ADR1_J3_J5_r, fill = VTI_J3_J5_r_cut)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  scale_fill_manual(values = c("<=12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "Association between VTI at weaning and ADRB1",
+    x = "VTI measured at 1.5L/min",
+    y = "ADRB1 measured at D3-D5 of ECMO"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(F2_1$ADR1_J3_J5_r, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value_VTI), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+# Print the boxplot
+print(Figure2a)
+
+ ## ADRB2
+
+F2_2 <- df %>%
+  mutate(
+    # Clean and convert dates from string format to Date objects
+    jsev_bilan_date = str_replace_all(jsev_bilan_date, "\\.", "/"),
+    jp2_date = str_replace_all(jp2_date, "\\.", "/"),
+    jsev_bilan_date = dmy(jsev_bilan_date),
+    jp2_date = dmy(jp2_date),
+
+    # Calculate time difference between ECMO start and bilan date
+    Time_ECMOstart_jsev = time_length(interval(ecmo_start_date, jsev_bilan_date), "days"),
+
+    # Define VTI value to use (based on available date)
+    VTI_J3_J5_r = case_when(
+      !is.na(jp2_date) ~ `jsev_epr_sev_t1_1,5l_itv`,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ `jsev_epr_sev_t1_1,5l_itv`,
+      TRUE ~ NA_real_
+    ),
+
+    # Define ADRB2 value to use (based on available date)
+    ADR2_J3_J5_r = case_when(
+      !is.na(jp2_date) ~ ADR2_J3_J5,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ ADR2_JS,
+      TRUE ~ NA_real_
+    ),
+
+    # Categorize VTI according to clinical cut-off of 12 cm
+    VTI_J3_J5_r_cut = case_when(
+      VTI_J3_J5_r > 12 ~ ">12 cm",
+      VTI_J3_J5_r <= 12 ~ "<=12 cm"
+    )
+  ) %>%
+  # Keep only rows with valid ADR2_JS and VTI values
+  filter(!is.na(ADR2_JS) & !is.na(VTI_J3_J5_r)) %>%
+  # Select only relevant columns for the plot/analysis
+  dplyr::select(VTI_J3_J5_r, VTI_J3_J5_r_cut, ADR2_J3_J5, ADR2_JS, ADR2_J3_J5_r)
+
+
+
+# Mann-Whitney test for VTI and ADRB2
+mann_whitney_VTI_ADRB2 <- wilcox.test(ADR2_J3_J5_r ~ VTI_J3_J5_r_cut, data = F2_2, exact = FALSE)
+
+# Extract and format the p-value
+p_value_VTI_ADRB2 <- sprintf("%.4g", mann_whitney_VTI_ADRB2$p.value)
+
+# Boxplot for ADRB2 with p-value annotation
+Figure2b <- ggplot(F2_2, aes(x = VTI_J3_J5_r_cut, y = ADR2_J3_J5_r, fill = VTI_J3_J5_r_cut)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  scale_fill_manual(values = c("<=12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "Association between VTI at weaning and ADRB2",
+    x = "VTI measured at 1.5L/min",
+    y = "ADRB2 measured at D3-D5 of ECMO"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(F2_2$ADR2_J3_J5_r, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value_VTI_ADRB2), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+# Print the boxplot
+print(Figure2b)
+
+
+# Boxplot ADRB1 & ADRB2
+Fig_VTI_ADRB1 <- Figure2a + theme(plot.title = element_blank())
+Fig_VTI_ADRB2 <- Figure2b + theme(plot.title = element_blank())  
+
+
+Figure2_tot <- Fig_VTI_ADRB1 | Fig_VTI_ADRB2 + 
+  plot_annotation(title = "Association between VTI at weaning and ADRB1/ADRB2 expression")
+
+print(Figure2_tot)
+
+```
+
+## ADR and inotropics
+
+# Figure 3: ADR \~ dobutamin
+
+```{r,include=FALSE}
+
+## ADR ~ cumulative dose dobu (median)
+
+#ADRB1
+
+F3a <- df %>%
+  dplyr::select(dose_tot_dobu,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  mutate(dobu_cut= case_when(dose_tot_dobu> median(ADR1_JS, na.rm=T)~"High",
+               dose_tot_dobu< median(ADR1_JS, na.rm=T)~"Low"))%>%
+   filter(!is.na(ADR1_JS) & !is.na(dose_tot_dobu))
+
+
+#boxplot
+Fig_3a <- ggplot(F3a, aes(x= dobu_cut, y = ADR1_JS, fill = factor(dobu_cut))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between cumulative dose of dobutamina and ADRB1 at weaning", x = "dobutamin", y = "ADR1 measured the last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_3a)
+
+#ADRB2
+
+F3b <- df %>%
+  dplyr::select(dose_tot_dobu,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+  mutate(dobu_cut= case_when(dose_tot_dobu> median(ADR2_JS, na.rm=T)~"High",
+               dose_tot_dobu< median(ADR2_JS, na.rm=T)~"Low"))%>%
+   filter(!is.na(ADR2_JS) & !is.na(dose_tot_dobu))
+
+#boxplot
+Fig_3b <- ggplot(F3b, aes(x= dobu_cut, y = ADR2_JS, fill = factor(dobu_cut))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between cumulative dose of dobutamina and ADRB2 at weaning", x = "dobutamin", y = "ADR2 measured the last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Fig_3b)
+
+
+Fig_3a <- Fig_3a + theme(plot.title = element_blank())
+Fig_3b <- Fig_3b + theme(plot.title = element_blank())
+
+Figure3_tot_dobucum_weaning <- Fig_3a + Fig_3b +
+  plot_annotation(title = "Association between cumulative dose of Dobutamin and ARB at last Day of ECMO")
+print(Fig6_tot_dobucum_weaning)
+
+
+### Correlation between ADRB1 and total dobutamine dose
+
+F3c <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5, dose_tot_dobu,Weight)%>%
+  mutate(dose_tot_dobu_poids = dose_tot_dobu/Weight)
+
+correlation <- sprintf("%.4f", cor(F3c$ADR1_J0, F3c$dose_tot_dobu,  method = "spearman",use = "complete.obs") )
+
+Fig_3c <- ggplot(F3c, aes(x = dose_tot_dobu, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between dobutamine dose and ADRB1",
+       x = "dobutamine dose in microgrammes",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F5_2$dose_tot_dobu), y = max(F5_2$ADR1_J0), 
+           label = paste("Spearman correlation: ", correlation), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+print(Fig_3c)
+
+```
+
+#Figure 4 ADRB1 and ADRB2 with dobutamine at D3-D5
+
+```{r}
+
+df$dobu_D3_D5 <- if_else(df$jp2_dobu_cum>0, "YES", "NO")
+table(is.na(df$dobu_D3_D5))
+
+####Version mieux#####
+df4 <- df%>%
+  mutate(jsev_bilan_date = str_replace_all(jsev_bilan_date, "\\.", "/"),
+         jp2_date = str_replace_all(jp2_date, "\\.", "/"),
+         jsev_bilan_date =dmy(jsev_bilan_date),
+           jp2_date =dmy(jp2_date),
+             Time_ECMOstart_jsev = time_length(interval(ecmo_start_date,jsev_bilan_date), "days"),
+    dobu_D3_D5_1 = case_when(!is.na(jp2_date)~jp2_dobu_cum,
+                             is.na(jp2_date) & !is.na(jsev_bilan_date)& Time_ECMOstart_jsev<6 ~ jsev_dobu_cum,
+                             is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA),
+    dobu_D3_D5_1_yes_no = case_when(dobu_D3_D5_1==0~"NO",
+                                    dobu_D3_D5_1!=0~"YES",
+                                    T~NA),
+    ADR1_J3_J5_r = case_when(!is.na(jp2_date)~ADR1_J3_J5,
+                              is.na(jp2_date)&!is.na(jsev_bilan_date)&Time_ECMOstart_jsev<6~ ADR1_JS,
+                              is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+                              ),
+      ADR2_J3_J5_r = case_when(!is.na(jp2_date)~ADR2_J3_J5,
+                              is.na(jp2_date)&!is.na(jsev_bilan_date)&Time_ECMOstart_jsev<6~ ADR2_JS,
+                              is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+                              ))%>%
+     filter(!is.na(dobu_D3_D5_1_yes_no))
+
+View(df1%>%
+  dplyr::select(jsev_bilan_date,jp2_date,Time_ECMOstart_jsev,dobu_D3_D5_1,jp2_dobu_cum,jsev_dobu_cum))
+
+
+mann_whitney_result <- wilcox.test(ADR1_J3_J5_r ~ dobu_D3_D5_1_yes_no, data = df4, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot ADRB1
+Fig_4a <- ggplot(df4, aes(x= dobu_D3_D5_1_yes_no, y = ADR1_J3_J5_r, fill = factor(dobu_D3_D5_1_yes_no))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between dobutamine administration and ADRB1", x = "Dobutamine", y = "ADRB1 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(df4$ADR1_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Fig_4a)
+
+# ADRB2
+
+mann_whitney_result <- wilcox.test(ADR2_J3_J5_r ~ dobu_D3_D5_1_yes_no, data = df4, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+Fig_4b <- ggplot(df4, aes(x= dobu_D3_D5_1_yes_no, y = ADR2_J3_J5_r, fill = factor(dobu_D3_D5_1_yes_no))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  #scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between dobutamine administration and ADRB2", x = "Dobutamine", y = "ADRB2 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(df4$ADR2_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+
+print(Fig_4b)
+
+Fig_4a <- Fig_4a + theme(plot.title = element_blank())
+Fig_4b <- Fig_4b + theme(plot.title = element_blank())
+
+Figure4_totdobu_D3_D5 <- Fig_4a + Fig_4b +
+  plot_annotation(title = "Association between cumulative dose of Dobutamin and ARB at last Day of ECMO")
+print(Fig6_tot_dobucum_weaning)
+
+```
+
+Statistical Analysis
+
+As evolution of some patients allowed an early weaning before D5, we considered that D3-D5 and D weaning are the same time point.
+
+# Figure 5: ADR \~ noradrenalin
+
+```{r,include=FALSE}
+
+df5 <- df %>%
+  mutate(
+    jsev_bilan_date = str_replace_all(jsev_bilan_date, "\\.", "/"),
+    jp2_date = str_replace_all(jp2_date, "\\.", "/"),
+    jsev_bilan_date = dmy(jsev_bilan_date),
+    jp2_date = dmy(jp2_date),
+
+    Time_ECMOstart_jsev = time_length(interval(ecmo_start_date, jsev_bilan_date), "days"),
+
+    nora_D3_D5_1 = case_when(
+      !is.na(jp2_date) ~ jp2_NAd_cum,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ jsev_NAd_cum,
+      is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+    ),
+
+    nora_D3_D5_1_yes_no = case_when(
+      nora_D3_D5_1 == 0 ~ "NO",
+      nora_D3_D5_1 != 0 ~ "YES",
+      TRUE ~ NA
+    ),
+
+    ADR1_J3_J5_r = case_when(
+      !is.na(jp2_date) ~ ADR1_J3_J5,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ ADR1_JS,
+      is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+    ),
+
+    ADR2_J3_J5_r = case_when(
+      !is.na(jp2_date) ~ ADR2_J3_J5,
+      is.na(jp2_date) & !is.na(jsev_bilan_date) & Time_ECMOstart_jsev < 6 ~ ADR2_JS,
+      is.na(jp2_date) & is.na(jsev_bilan_date) ~ NA
+    )
+  ) %>%
+  filter(!is.na(nora_D3_D5_1_yes_no))
+
+
+#ADR1
+
+Figure_5a <- df5 %>%
+  dplyr::select(dose_tot_NAd,ADR1_J0,ADR1_J3_J5, ADR1_JS)%>%
+  mutate(dose_tot_NAd= case_when(dose_tot_NAd>0~ "YES",
+               dose_tot_NAd==0~ "NO"))%>%
+   filter(!is.na(ADR1_JS) & !is.na(dose_tot_NAd))
+
+
+#boxplot
+Figure_5a <- ggplot(Fig_5a, aes(x= dose_tot_NAd, y = ADR1_JS, fill = factor(dose_tot_NAd))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Noradrenalin and ADRB1 at weaning", x = "Noradrenalin", y = "ADR1 measured at last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Figure_5a)
+
+#ADRB2
+
+Fig_5b <- df5 %>%
+  dplyr::select(dose_tot_NAd,ADR2_J0,ADR2_J3_J5, ADR2_JS)%>%
+  mutate(dose_tot_NAd= case_when(dose_tot_NAd>0~ "YES",
+               dose_tot_NAd==0~ "NO"))%>%
+   filter(!is.na(ADR2_JS) & !is.na(dose_tot_NAd))
+
+
+#boxplot
+Figure_5b <- ggplot(Fig_5b, aes(x= dose_tot_NAd, y = ADR2_JS, fill = factor(dose_tot_NAd))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_fill_manual(values = c("white", "gray70")) +
+  labs(title = "Association between Noradrenalin and ADRB2 at weaning", x = "Noradrenalin", y = "ADRB2 measured at last day of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+
+print(Figure_5b)
+
+Figure_5a <- Figure_5a + theme(plot.title = element_blank())
+Figure_5b <- Figure_5b + theme(plot.title = element_blank())
+
+Figure_5tot <- Figure_5a + Figure_5b +
+  plot_annotation(title = "Association between Noradrenalin and ADRB at last Day of ECMO")
+print(Figure_5tot)
+
+
+F5c <- df5 %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5, NADcum_D0,Weight)%>%
+  mutate(NADcum_D0_weight = NADcum_D0/Weight)
+
+correlation <- sprintf("%.4f", cor(F6_1$ADR1_J0, F6_1$NADcum_D0,  method = "spearman",use = "complete.obs") )
+
+cor_test_result <- cor.test(F6_1$ADR1_J0, F6_1$NADcum_D0, method = "spearman", use = "complete.obs")
+
+
+Figure_5c <- ggplot(F5c, aes(x = NADcum_D0, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between Noradrenaline cumulated dose and ADRB1 at D0",
+       x = "Noradrenaline dose in mg",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F6_1$NADcum_D0, na.rm=T), y = max(F6_1$ADR1_J0, na.rm=T)-1, 
+           label = paste("Spearman correlation: ", correlation), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+print(Figure_5c)
+
+```
+
+#Figure 6 ADRB1 and 2 with noradrenaline at D3-D5
+
+```{r,include=FALSE}
+
+# Mann-Whitney test for ADRB1 and Noradrenaline
+mann_whitney_NAd_ADRB1 <- wilcox.test(ADR1_J3_J5_r ~ nora_D3_D5_1_yes_no, data = df5, exact = FALSE)
+
+# Extract and format the p-value
+p_value_NAd_ADRB1 <- sprintf("%.4g", mann_whitney_NAd_ADRB1$p.value)
+
+# Boxplot for ADRB1 with p-value annotation
+Figure_6a <- ggplot(df5, aes(x = nora_D3_D5_1_yes_no, y = ADR1_J3_J5_r, fill = factor(nora_D3_D5_1_yes_no))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(
+    title = "Association between Noradrenaline and ADRB1 at weaning",
+    x = "Noradrenaline administration (D3-D5)",
+    y = "ADRB1 measured at D3-D5 of ECMO"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(df5$ADR1_J3_J5_r, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value_NAd_ADRB1), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Figure_6a)
+
+# Mann-Whitney test for ADRB2 and Noradrenaline
+mann_whitney_NAd_ADRB2 <- wilcox.test(ADR2_J3_J5_r ~ nora_D3_D5_1_yes_no, data = df5, exact = FALSE)
+
+# Extract and format the p-value
+p_value_NAd_ADRB2 <- sprintf("%.4g", mann_whitney_NAd_ADRB2$p.value)
+
+# Boxplot for ADRB2 with p-value annotation
+Figure_6b <- ggplot(df5, aes(x = nora_D3_D5_1_yes_no, y = ADR2_J3_J5_r, fill = factor(nora_D3_D5_1_yes_no))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(
+    title = "Association between Noradrenaline and ADRB2 at weaning",
+    x = "Noradrenaline administration (D3-D5)",
+    y = "ADRB2 measured at D3-D5 of ECMO"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(df5$ADR2_J3_J5_r, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value_NAd_ADRB2), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Figure_6b)
+
+
+Figure_6a <- Figure_6a + theme(plot.title = element_blank())
+Figure_6b <- Figure_6b + theme(plot.title = element_blank())
+
+Figure6_tot <- Figure_6a + Figure_6b +
+  plot_annotation(title = "Association between Noradrenaline administration and ADRB")
+
+print(Figure6_tot)
+
+```
+
+# Figure 7: ADR \~ levosimendan
+
+```{r,include=FALSE}
+
+#Choice of ADRB1 at D3-D5
+
+F7 <- df %>%
+  dplyr::select(levo_in_icu,Levosimendan,ADR1_J0,ADR1_J3_J5, ADR1_JS)
+
+mann_whitney_result <- wilcox.test(ADR1_J3_J5 ~ Levosimendan, data = F7, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+
+#boxplot
+Figure_7 <- ggplot(F7, aes(x= Levosimendan, y = ADR1_J3_J5, fill = factor(Levosimendan))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(title = "Association between Levosimendan administration and ADRB1", x = "Levosimendan", y = "ADRB1 measured at D3-D5 of ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  annotate("text", x = 1.5, y = max(F7$ADR1_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Figure_7)
+
+
+#ADRB2
+
+F7.1 <- df %>%
+  dplyr::select(Levosimendan,ADR2_J0,ADR2_J3_J5, ADR2_JS)
+
+mann_whitney_result <- wilcox.test(ADR2_J3_J5 ~ Levosimendan, data = F7.1, exact = FALSE)
+
+p_value <- sprintf("%.4g", mann_whitney_result$p.value)
+
+#boxplot
+Figure_7.1 <- ggplot(F7.1, aes(x= Levosimendan, y = ADR2_J3_J5, fill = factor(Levosimendan))) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(title = "Association between Levosimendan administration and ADRB2", x = "Levosimendan", y = "ADRB2 measured at D3-D5 on ECMO") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(F7.1$ADR2_J3_J5, na.rm = TRUE), 
+           label = paste("Mann-Whitney p-value:", p_value), 
+           size = 5, color = "black", hjust = 0.5)
+
+print(Figure_7.1)
+
+
+Figure_7 <- Figure_7 + theme(plot.title = element_blank())
+Figure_7.1 <- Figure_7.1 + theme(plot.title = element_blank())
+
+Figure7_tot <- Figure_7 + Figure_7.1 +
+  plot_annotation(title = "Association between Levosimendan and ADRB")
+
+print(Figure7_tot)
+
+```
+
+Results 
+
+ADRB2 expression at D3-D5 is significantly different between patients who received Levosimendan and those who did not
+
+#Figure 8 ADRB1 with VIS SCORE
+
+```{r}
+df$VIS_D0 <-  + df$DOBUcum_D0 + 
+    (100 * df$NADcum_D0)
+
+F8 <- df %>%
+  dplyr::select(ADR1_J0,ADR1_JS,ADR1_J3_J5,ADR2_J0, VIS_D0,Weight)%>%
+  mutate(VIS_D0_weight = VIS_D0/Weight)
+
+cor_test_result <- cor.test(F8$ADR1_J0, F8$VIS_D0, method = "spearman", use = "complete.obs")
+
+Figure_8 <- ggplot(F8, aes(x = VIS_D0, y = ADR1_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between VIS cumulated dose and ADRB1 at D0",
+       x = "Cumulated VIS dose in mg",
+       y = "ADRB1 expression on T helper lymphocytes") +
+   annotate("text", x = min(F8$VIS_D0, na.rm=T), y = max(F8$ADR1_J0, na.rm=T)-1, 
+           label = paste("Spearman correlation: ", sprintf("%.2f",cor_test_result$estimate[[1]])), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+print(Figure_8)
+
+cor_test_result <- cor.test(F8$ADR2_J0, F8$VIS_D0, method = "spearman", use = "complete.obs")
+
+Figure_8_2 <- ggplot(F8, aes(x = VIS_D0, y = ADR2_J0,)) +
+  geom_point(color = "blue", alpha = 0.6) +  # Nuage de points
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Droite de régression
+  labs(title = "corelation between VIS cumulated dose and ADRB2 at D0",
+       x = "Cumulated VIS dose in mg",
+       y = "ADRB2 expression on T helper lymphocytes") +
+   annotate("text", x = min(F8$VIS_D0, na.rm=T), y = max(F8$ADR2_J0, na.rm=T)-1, 
+           label = paste("Spearman correlation: ", sprintf("%.2f",cor_test_result$estimate[[1]])), 
+           hjust = 0, size = 5, color = "black")+
+  theme_minimal()
+
+print(Figure_8_2)
+
+```
+
+# Statistic Test - Mixed linear model for ADRB1 in fonction of days to predict outcome (choose of this model because of non normality of variable and to consider aleatory effect)
+
+```{r}
+# --- Prepare ADRB1 data in long format ---
+df_ADRB1 <- df %>%
+  select(ID, Outcome, ADR1_D0, ADR1_J3_J5, ADR1_JS) %>%
+  pivot_longer(
+    cols = starts_with("ADR1_"),
+    names_to = "timepoint",
+    values_to = "ADRB1"
+  ) %>%
+  mutate(
+    timepoint = case_when(
+      timepoint == "ADR1_D0" ~ "Day_0",
+      timepoint == "ADR1_J3_J5" ~ "Day_3_5",
+      timepoint == "ADR1_JS" ~ "Last_Day"
+    ),
+    timepoint = factor(timepoint, levels = c("Day_0", "Day_3_5", "Last_Day")),
+    Outcome = factor(Outcome)
+  )
+
+# --- Mixed linear model for ADRB1 ---
+mod_ADRB1 <- lmer(ADRB1 ~ timepoint * Outcome + (1 | ID), data = df_ADRB1)
+summary(mod_ADRB1)
+
+# --- Check for normality of residuals ---
+hist(residuals(mod_ADRB1), main = "Distribution of residuals", xlab = "Residuals")
+
+# --- Post-hoc comparisons: ADRB1 across timepoints by Outcome ---
+emmeans(mod_ADRB1, pairwise ~ timepoint | Outcome)
+
+# --- Filter only 'Death' and 'ECMO Weaning' outcomes for plotting ---
+df_death_weaning <- df_ADRB1 %>%
+  filter(Outcome %in% c("Death", "ECMO Weaning"))
+
+# --- Line plot of ADRB1 over time for Death and ECMO Weaning patients ---
+ggplot(df_death_weaning, aes(x = timepoint, y = ADRB1, color = Outcome, group = ID)) +
+  geom_line(alpha = 0.4) +  # individual patient trajectories
+  stat_summary(fun = mean, geom = "line", aes(group = Outcome), size = 1.5) +  # group mean
+  labs(title = "ADRB1 evolution over time in Death and ECMO Weaning patients",
+       x = "Timepoint",
+       y = "ADRB1 (pg/mL)") +
+  theme_minimal()
+
+```
+
+# Statistic Test - Mixed linear model for ADRB2 in fonction of days to predict outcome
+
+```{r}
+# Prepare ADRB2 dataset in long format (if not already done)
+df_ADRB2 <- df %>%
+  select(ID, Outcome, ADR2_D0, ADR2_J3_J5, ADR2_JS) %>%
+  pivot_longer(
+    cols = starts_with("ADR2_"),
+    names_to = "timepoint",
+    values_to = "ADRB2"
+  ) %>%
+  mutate(
+    timepoint = case_when(
+      timepoint == "ADR2_D0" ~ "Day_0",
+      timepoint == "ADR2_J3_J5" ~ "Day_3_5",
+      timepoint == "ADR2_JS" ~ "Last_Day"
+    ),
+    timepoint = factor(timepoint, levels = c("Day_0", "Day_3_5", "Last_Day")),
+    Outcome = factor(Outcome)
+  )
+
+# --- Fit the mixed model for ADRB2 ---
+mod_ADRB2 <- lmer(ADRB2 ~ timepoint * Outcome + (1 | ID), data = df_ADRB2)
+summary(mod_ADRB2)
+
+# --- Check for normality of residuals ---
+hist(residuals(mod_ADRB2), main = "Distribution of residuals", xlab = "Residuals")
+
+# --- Post-hoc comparisons: ADRB2 across timepoints by Outcome ---
+emmeans(mod_ADRB2, pairwise ~ timepoint | Outcome)
+
+# --- Filter only 'Death' and 'ECMO Weaning' outcomes for ADRB2 ---
+df_death_weaning_ADRB2 <- df_ADRB2 %>%
+  filter(Outcome %in% c("Death", "ECMO Weaning"))
+
+# --- Line plot of ADRB2 over time for Death and ECMO Weaning patients ---
+ggplot(df_death_weaning_ADRB2, aes(x = timepoint, y = ADRB2, color = Outcome, group = ID)) +
+  geom_line(alpha = 0.4) +  # individual patient trajectories
+  stat_summary(fun = mean, geom = "line", aes(group = Outcome), size = 1.5) +  # group mean
+  labs(title = "ADRB2 evolution over time in Death and ECMO Weaning patients",
+       x = "Timepoint",
+       y = "ADRB2 (pg/mL)") +
+  theme_minimal()
+
+```
+
+Statistical Analysis
+
+Linear mixed-effects models were used to evaluate the temporal evolution of ADRB1 and ADRB2 plasma levels across three timepoints (Day_0, Day_3_5, and Last_Day) and their interaction with clinical outcome (ECMO Weaning, Bridge to LVAD, Bridge to Transplant, Death). Data were reshaped into long format. Timepoint and outcome were included as fixed effects, with patient ID as a random intercept to account for repeated measures. Estimated marginal means and Tukey-adjusted post-hoc comparisons were computed using the emmeans package. Model assumptions were assessed via visual inspection of residuals.
+
+Results
+
+In the global linear mixed-effects model for ADRB1, no significant timepoint × outcome interaction was observed. However, estimated means suggested a gradual increase in ADRB1 over time in the ECMO Weaning group (from 2.27 pg/mL at baseline to 3.39 pg/mL at Last_Day), although this change did not reach statistical significance (p = 0.18). 
+For ADRB2, the main effect of timepoint was statistically significant at day 3-5 compared to baseline in the overall model (estimate = +2.67 pg/mL, p = 0.045). In stratified analysis by outcome, none of the timepoint comparisons reached significance after adjustment.
+
+# Figure 9: Survival \~ ADR
+
+```{r,include=FALSE}
+
+#ADRB1
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR1_D0_median, data = df)
+
+Fig_9 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  # 🔹 Rimuove "Strata" dalla tabella
+  risk.table.title = "Number at Risk (number censored)",  
+  xlim = c(0, 28),         
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),
+  ggtheme = theme_minimal(),
+    legend.labs = c("High", "Low")
+)
+
+Fig_9 <- Fig_9 + ggtitle("28-day Survival Curves for ADRB1")
+print(Fig_9)
+
+#ADRB2
+
+
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ ADR2_D0_median, data = df)
+
+Fig_9.1 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  # 🔹 Rimuove "Strata" dalla tabella
+  risk.table.title = "Number at Risk (number censored)",  # 🔹 Cambia il titolo della tabella
+  xlim = c(0, 28),         # 🔹 Tronca l'asse X a 28 giorni
+  break.time.by = 7,
+  legend.title = " ",       # 🔹 Rimuove "Strata" dalla legenda
+  palette = c("#E63946", "#457B9D"),  
+  ggtheme = theme_minimal(),
+  legend.labs = c("High", "Low")
+)
+
+Fig_9.1 <- Fig_9.1 + ggtitle("28-day Survival Curves for ADRB2")
+print(Fig_9.1)
+
+Fig_9.1_combined <- plot_grid(Fig_9.1$plot, Fig_9.1$table, ncol = 1, align = "v", rel_heights = c(3, 1))
+
+
+Fig_9_combined <- Fig_9_combined + theme(plot.title = element_blank())
+Fig_9.1_combined <- Fig_9.1_combined + theme(plot.title = element_blank())
+Fig9_tot <- Fig_9_combined + Fig_9.1_combined +
+  plot_annotation(title = "28-day Survival Curves for ADRB")
+print(Fig9_tot)
+
+```
+
+# HR analysis
+
+```{r,include=FALSE}
+
+## Evolution of HF per ADRB1
+
+df_HR_long <- df %>%
+  select(ID, ADR1_D0_median, HR_D0, jp2_freq, jsev_freq) %>%
+  rename(
+    HR_D3_J5 = jp2_freq,
+    HR_JS = jsev_freq
+  ) %>%
+  pivot_longer(cols = c(HR_D0, HR_D3_J5, HR_JS), names_to = "Time", values_to = "HR") %>%
+  mutate(
+    Time = recode(Time,
+                  "HR_D0" = "Day 0",
+                  "HR_D3_J5" = "Day 3-5",
+                  "HR_JS" = "Weaning"),
+    Time = factor(Time, levels = c("Day 0", "Day 3-5", "Weaning"))
+  )
+
+df_HR_long %>%
+  filter(!is.na(HR), !is.na(ADR1_D0_median)) %>%
+  ggplot(aes(x = Time, y = HR, group = ID, color = ADR1_D0_median)) +
+  geom_line(alpha = 0.3) +
+  stat_summary(fun = mean, geom = "line", aes(group = ADR1_D0_median), size = 1.2) +
+  labs(
+    title = "Heart Rate Evolution by ADRB1",
+    y = "Heart Rate",
+    x = "Timepoint"
+  ) +
+  theme_minimal()
+
+# Patients with high ADRB1 expression at Day 0 exhibited a progressive decrease in heart rate over time. Low ADRB1 show an opposite trend. Although a substantial intra-group variability, these divergent trajectories may suggest a more efficient adrenergic control in individuals with higher baseline ADRB1 expression (higher ADRB1 availability at Day 0 might reflect a better ability to adaptively modulate sympathetic tone, contributing to greater hemodynamic stability as reflected by the gradual decrease in HR).
+
+## Evolution of HR per ADRB2
+
+df_HR_long_b2 <- df %>%
+  select(ID, ADR2_D0_median, HR_D0, HR_D3_J5, HR_JS) %>%
+  pivot_longer(cols = c(HR_D0, HR_D3_J5, HR_JS), names_to = "Time", values_to = "HR") %>%
+  mutate(
+    Time = recode(Time,
+                  "HR_D0" = "Day 0",
+                  "HR_D3_J5" = "Day 3-5",
+                  "HR_JS" = "Weaning"),
+    Time = factor(Time, levels = c("Day 0", "Day 3-5", "Weaning"))
+  )
+
+df_HR_long_b2 %>%
+  filter(!is.na(HR), !is.na(ADR2_D0_median)) %>%
+  ggplot(aes(x = Time, y = HR, group = ID, color = ADR2_D0_median)) +
+  geom_line(alpha = 0.3) +
+  stat_summary(fun = mean, geom = "line", aes(group = ADR2_D0_median), size = 1.2) +
+  labs(
+    title = "Heart Rate Evolution by ADRB2",
+    y = "Heart Rate",
+    x = "Timepoint"
+  ) +
+  theme_minimal()
+
+#Same trend for high ADRB2.
+
+
+## Difference in HR between high/low ADRB1?
+
+df_box <- df %>%
+  filter(!is.na(HR_D0), !is.na(ADR1_D0_median))
+
+p_val <- wilcox.test(HR_D0 ~ ADR1_D0_median, data = df)$p.value
+p_lab <- paste0("Mann–Whitney p = ", signif(p_val, 3))
+
+# Boxplot 
+ggplot(df_box, aes(x = ADR1_D0_median, y = HR_D0, fill = ADR1_D0_median)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box$HR_D0, na.rm = TRUE) * 1.05,
+           label = p_lab,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "Heart Rate at Day 0 by ADRB1 Expression",
+    x = "ADRB1 Group",
+    y = "Heart Rate"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# There is no difference is HR at day 0 between low and high ADRB 1.
+
+
+## Boxplot HR at Day 3–5 by ADRB1 expression group
+df_box_d35 <- df %>%
+  filter(!is.na(HR_D3_J5), !is.na(ADR1_D0_median))
+
+# Calcolo p-value
+p_val_d35 <- wilcox.test(HR_D3_J5 ~ ADR1_D0_median, data = df_box_d35)$p.value
+p_lab_d35 <- paste0("Mann–Whitney p = ", signif(p_val_d35, 3))
+
+# Plot
+ggplot(df_box_d35, aes(x = ADR1_D0_median, y = HR_D3_J5, fill = ADR1_D0_median)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box_d35$HR_D3_J5, na.rm = TRUE) * 1.05,
+           label = p_lab_d35,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "Heart Rate at Day 3–5 by ADRB1 Expression",
+    x = "ADRB1",
+    y = "Heart Rate"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# There is no difference is HR at day D3-D5 between low and high ADRB 1.
+
+## Boxplot HR at Day 3–5 by ADRB2 expression group
+
+df_box_hr_3_5_b2 <- df %>%
+  filter(!is.na(HR_D3_J5), !is.na(ADR2_J3_J5)) %>%
+  mutate(HR_group = if_else(HR_D3_J5 >= 100, "≥100 bpm", "<100 bpm"))
+
+# p-value
+p_val_3_5_b2 <- wilcox.test(ADR2_J3_J5 ~ HR_group, data = df_box_hr_3_5_b2)$p.value
+p_lab_3_5_b2 <- paste0("Mann–Whitney p = ", signif(p_val_3_5_b2, 3))
+
+# Boxplot
+ggplot(df_box_hr_3_5_b2, aes(x = HR_group, y = ADR2_J3_J5, fill = HR_group)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box_hr_3_5_b2$ADR2_J3_J5, na.rm = TRUE) * 1.05,
+           label = p_lab_3_5_b2,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "ADRB2 Levels by Heart Rate Group (Day 3–5)",
+    x = "Heart Rate",
+    y = "ADRB2 Expression"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# There is no difference is HR at day D3-D5 between low and high ADRB 2.
+
+------------------------------------------------
+
+## HR group (cut-off 100 bpm)
+df_box_hr <- df %>%
+  filter(!is.na(HR_D0), !is.na(ADR1_D0)) %>%
+  mutate(HR_group = if_else(HR_D0 >= 100, "≥100 bpm", "<100 bpm"))
+
+# p-value
+p_val <- wilcox.test(ADR1_D0 ~ HR_group, data = df_box_hr)$p.value
+p_lab <- paste0("Mann–Whitney p = ", signif(p_val, 3))
+
+# boxplot
+ggplot(df_box_hr, aes(x = HR_group, y = ADR1_D0, fill = HR_group)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box_hr$ADR1_D0, na.rm = TRUE) * 1.05,
+           label = p_lab,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "ADRB1 Levels by Heart Rate Group (Day 0)",
+    x = "Heart Rate",
+    y = "ADRB1 Expression"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# I find this analysis less utile: how can we determinate a good stratification for HR in x axis? We know that high HR is realted to mortality but a shock patient has to be tachycardic (so stratification for HR 100/min doesn't make sense). In the HR trend we see a clear distinction between the HR trajectory high/low ADRB1 (< and > to 100 bpm). So I testet in D3-D5.
+
+df_box_hr_3_5 <- df %>%
+  filter(!is.na(HR_D3_J5), !is.na(ADR1_J3_J5)) %>%
+  mutate(HR_group = if_else(HR_D3_J5 >= 100, "≥100 bpm", "<100 bpm"))
+
+# p-value
+p_val_3_5 <- wilcox.test(ADR1_J3_J5 ~ HR_group, data = df_box_hr_3_5)$p.value
+p_lab_3_5 <- paste0("Mann–Whitney p = ", signif(p_val_3_5, 3))
+
+# Boxplot D3–5
+ggplot(df_box_hr_3_5, aes(x = HR_group, y = ADR1_J3_J5, fill = HR_group)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box_hr_3_5$ADR1_J3_J5, na.rm = TRUE) * 1.05,
+           label = p_lab_3_5,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "ADRB1 Levels by Heart Rate Group (Day 3–5)",
+    x = "Heart Rate",
+    y = "ADRB1 Expression"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# No difference between ADRB1 at D3-D5 in respect to HR.
+
+
+-------------------------------------------------------
+-------------------------------------------------------
+  
+## Difference in HR between high/low ADRB2?
+
+df_box2 <- df %>%
+  filter(!is.na(HR_D0), !is.na(ADR2_D0_median))
+
+# Calcolo del p-value
+p_val2 <- wilcox.test(HR_D0 ~ ADR2_D0_median, data = df_box2)$p.value
+p_lab2 <- paste0("Mann–Whitney p = ", signif(p_val2, 3))
+
+# Boxplot
+ggplot(df_box2, aes(x = ADR2_D0_median, y = HR_D0, fill = ADR2_D0_median)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box2$HR_D0, na.rm = TRUE) * 1.05,
+           label = p_lab2,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "Heart Rate at Day 0 by ADRB2 Expression",
+    x = "ADRB2",
+    y = "Heart Rate"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+# There is no difference is HR at day 0 between low and high ADRB 2.
+
+
+## Boxplot HR at Day 3–5 by ADRB2 expression group
+df_box_d35_adrb2 <- df %>%
+  filter(!is.na(HR_D3_J5), !is.na(ADR2_D0_median))
+
+# Calcolo p-value
+p_val_d35_adrb2 <- wilcox.test(HR_D3_J5 ~ ADR2_D0_median, data = df_box_d35_adrb2)$p.value
+p_lab_d35_adrb2 <- paste0("Mann–Whitney p = ", signif(p_val_d35_adrb2, 3))
+
+# Plot
+ggplot(df_box_d35_adrb2, aes(x = ADR2_D0_median, y = HR_D3_J5, fill = ADR2_D0_median)) +
+  geom_boxplot(alpha = 0.7, width = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.5, size = 2) +
+  annotate("text",
+           x = 1.5,
+           y = max(df_box_d35_adrb2$HR_D3_J5, na.rm = TRUE) * 1.05,
+           label = p_lab_d35_adrb2,
+           size = 5,
+           hjust = 0.5
+  ) +
+  labs(
+    title = "Heart Rate at Day 3–5 by ADRB2 Expression",
+    x = "ADRB2 Group",
+    y = "Heart Rate"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+# There is no difference is HR at day D3-D5 between low and high ADRB 2.
+
+
+```
+
+# Correaltion between HR and ADRB
+
+```{r,include=FALSE}
+
+df <- df %>%
+  rename(
+    HR_D3_J5 = jp2_freq,
+    HR_JS = jsev_freq
+  )
+
+cor.test(df$HR_D0, df$ADR1_D0, method = "spearman")
+#p-value = 0.9323
+cor.test(df$HR_D3_J5, df$ADR1_J3_J5, method = "spearman")
+#p-value = 0.7051
+cor.test(df$HR_JS, df$ADR1_JS, method = "spearman")
+#p-value = 0.8886
+
+# No significant correlation was observed between ADRB1 and heart rate. This suggests that, in this context, the expression of β1-adrenoreceptors on T lymphocytes is not associated with variations in heart rate at any time.
+
+# Correlation Day 0
+corr_d0 <- cor.test(df$HR_D0, df$ADR1_D0, method = "spearman", use = "complete.obs")
+ggplot(df, aes(x = ADR1_D0, y = HR_D0)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  annotate("text", x = min(df$ADR1_D0, na.rm=TRUE), 
+           y = max(df$HR_D0, na.rm=TRUE), 
+           label = paste0("rho = ", round(corr_d0$estimate, 2), 
+                          ", p = ", signif(corr_d0$p.value, 3)), 
+           hjust = 0, size = 5) +
+  labs(title = "Correlation between ADRB1 and HR at Day 0", 
+       x = "ADRB1 at Day 0", y = "Heart Rate (bpm)") +
+  theme_minimal()
+
+
+# Correlation Day 3–5
+corr_3_5 <- cor.test(df$HR_D3_J5, df$ADR1_J3_J5, method = "spearman", use = "complete.obs")
+
+# Scatterplot with line reegression 
+ggplot(df, aes(x = ADR1_J3_J5, y = HR_D3_J5)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  annotate("text", 
+           x = min(df$ADR1_J3_J5, na.rm = TRUE), 
+           y = max(df$HR_D3_J5, na.rm = TRUE), 
+           label = paste0("rho = ", round(corr_3_5$estimate, 2), 
+                          ", p = ", signif(corr_3_5$p.value, 3)), 
+           hjust = 0, size = 5) +
+  labs(
+    title = "Correlation between ADRB1 and HR at Day 3–5", 
+    x = "ADRB1 at Day 3–5", 
+    y = "Heart Rate (bpm)"
+  ) +
+  theme_minimal()
+
+-------------------------------------------------------
+-------------------------------------------------------
+#Correlation between HR and ADRB2
+
+cor.test(df$HR_D0, df$ADR2_D0, method = "spearman")  
+#0.9303
+cor.test(df$HR_D3_J5, df$ADR2_J3_J5, method = "spearman") 
+#0.5219
+cor.test(df$HR_JS, df$ADR2_JS, method = "spearman")   
+#0.7901
+
+# No significant correlation was observed between ADRB2 and heart rate.
+
+# --- Correlation Day 0 ---
+corr_d0_adrb2 <- cor.test(df$HR_D0, df$ADR2_D0, method = "spearman", use = "complete.obs")
+
+ggplot(df, aes(x = ADR2_D0, y = HR_D0)) +
+  geom_point(color = "darkgreen", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  annotate("text",
+           x = min(df$ADR2_D0, na.rm = TRUE),
+           y = max(df$HR_D0, na.rm = TRUE),
+           label = paste0("rho = ", round(corr_d0_adrb2$estimate, 2),
+                          ", p = ", signif(corr_d0_adrb2$p.value, 3)),
+           hjust = 0, size = 5) +
+  labs(
+    title = "Correlation between ADRB2 and HR at Day 0",
+    x = "ADRB2 at Day 0",
+    y = "Heart Rate (bpm)"
+  ) +
+  theme_minimal()
+
+# --- Correlation Day 3–5 ---
+corr_d35_adrb2 <- cor.test(df$HR_D3_J5, df$ADR2_J3_J5, method = "spearman", use = "complete.obs")
+
+ggplot(df, aes(x = ADR2_J3_J5, y = HR_D3_J5)) +
+  geom_point(color = "darkgreen", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  annotate("text",
+           x = min(df$ADR2_J3_J5, na.rm = TRUE),
+           y = max(df$HR_D3_J5, na.rm = TRUE),
+           label = paste0("rho = ", round(corr_d35_adrb2$estimate, 2),
+                          ", p = ", signif(corr_d35_adrb2$p.value, 3)),
+           hjust = 0, size = 5) +
+  labs(
+    title = "Correlation between ADRB2 and HR at Day 3–5",
+    x = "ADRB2 at Day 3–5",
+    y = "Heart Rate (bpm)"
+  ) +
+  theme_minimal()
+
+```
+
+
+```{r,include=FALSE}
+
+#Does ADRB1 influence HR?
+
+df <- df %>%
+  rename(
+    HR_D3_J5 = jp2_freq,
+    HR_JS = jsev_freq
+  )
+
+df_HR_long <- df %>%
+  select(ID, ADR1_D0_median, HR_D0, HR_D3_J5, HR_JS) %>%
+  pivot_longer(cols = starts_with("HR_"), names_to = "Timepoint", values_to = "HR") %>%
+  mutate(
+    Timepoint = recode(Timepoint,
+                       "HR_D0" = "Day 0",
+                       "HR_D3_J5" = "Day 3–5",
+                       "HR_JS" = "Weaning"),
+    Timepoint = factor(Timepoint, levels = c("Day 0", "Day 3–5", "Weaning"))
+  )
+
+df_HR_long_clean <- df_HR_long %>%
+  filter(!is.na(HR), !is.na(Timepoint), !is.na(ADR1_D0_median), !is.na(ID))
+
+mod_HR_ADRB1 <- lmer(HR ~ Timepoint * ADR1_D0_median + (1 | ID), data = df_HR_long_clean)
+
+summary(mod_HR_ADRB1)
+
+
+#Patients with high ADRB1 expression at Day 0 showed a slight, non-significant decrease in heart rate over time. Conversely, patients with low ADRB1 exhibited a transient increase in heart rate at Days 3–5, which tended to normalize by the time of ECMO weaning. However, none of the timepoint or interaction effects reached statistical significance (all p > 0.2), likely due to intra-group variability and the limited sample size.
+
+#Does ADRB2 influence HR?
+
+df_HR_long_ADRB2 <- df %>%
+  select(ID, ADR2_D0_median, HR_D0, HR_D3_J5, HR_JS) %>%
+  pivot_longer(cols = starts_with("HR_"), names_to = "Timepoint", values_to = "HR") %>%
+  mutate(
+    Timepoint = recode(Timepoint,
+                       "HR_D0" = "Day 0",
+                       "HR_D3_J5" = "Day 3–5",
+                       "HR_JS" = "Weaning"),
+    Timepoint = factor(Timepoint, levels = c("Day 0", "Day 3–5", "Weaning"))
+  )
+
+df_HR_long_ADRB2_clean <- df_HR_long_ADRB2 %>%
+  filter(!is.na(HR), !is.na(Timepoint), !is.na(ADR2_D0_median), !is.na(ID))
+
+mod_HR_ADRB2 <- lmer(HR ~ Timepoint * ADR2_D0_median + (1 | ID), data = df_HR_long_ADRB2_clean)
+
+summary(mod_HR_ADRB2)
+
+
+emmeans(mod_HR_ADRB2, pairwise ~ Timepoint | ADR2_D0_median)
+
+emmeans(mod_HR_ADRB2, pairwise ~ ADR2_D0_median | Timepoint)
+
+# A significant interaction was found between time and ADRB2 expression at baseline (p = 0.042), suggesting that heart rate evolved differently across the two groups. In particular, a transient increase in heart rate at Day 3–5 was observed in patients with low ADRB2 levels. However, post-hoc comparisons between timepoints did not reach statistical significance, likely due to interindividual variability and limited sample size.
+
+#These results suggest a differential autonomic response based on ADRB2 expression at baseline. The transient rise in heart rate observed in patients with low ADRB2 levels might reflect a dysregulated adrenergic state, whereas patients with higher ADRB2 expression exhibited a more stable profile over time.
+
+```
+
+# Does this results have an influence on outcome?
+
+```{r,include=FALSE}
+
+# KM
+df$group_combined <- interaction(df$ADR2_D0_median, ifelse(df$HR_D3_J5 >= 100, "≥100 bpm", "<100 bpm"))
+
+km_fit <- survfit(Surv(diff_days_J28, Outcome_censored_28) ~ group_combined, data = df)
+
+ggsurvplot(
+  km_fit, 
+  data = df,
+  pval = TRUE,
+  risk.table = TRUE,             # ⬅️ Mostra la tabella sotto
+  risk.table.title = "Number at Risk", 
+  risk.table.height = 0.25,
+  xlim = c(0, 28),
+  break.time.by = 7,
+  legend.title = "Group",
+  ggtheme = theme_minimal(),
+  palette = "Dark2"
+)
+
+Although not statistically significant (p = 0.41), Kaplan-Meier curves suggested that patients with low baseline ADRB2 expression and elevated heart rate at Day 3–5 had a trend toward worse 28-day survival.
+
+## I was just curious...very few patients....
+
+```
+
+Heart Rate Analysis 
+
+We investigated the association between heart rate (HR) and ADRB1/ADRB2 expression at different timepoints (Day 0, Day 3–5, ECMO weaning).
+
+Descriptive evolution over time was visualized using line plots stratified by ADRB1 and ADRB2 baseline expression (high vs. low). Patients with high ADRB1 or ADRB2 tended to show a slight HR decrease over time, while those with low expression exhibited a transient HR increase at Day 3–5. However, no statistically significant within- or between-group trends were detected in mixed-effects linear models.
+
+For ADRB2: A significant interaction between time and ADRB2 group (baseline) was observed (p = 0.042), indicating a divergent HR trajectory. However, post-hoc pairwise comparisons between timepoints did not reach significance (all adjusted p > 0.14), likely due to interindividual variability and limited sample size.
+
+Correlation analyses (Spearman) showed no significant associations between HR and ADRB1 or ADRB2 expression at any timepoint (all p > 0.5), suggesting no direct linear relationship. 
+
+Group comparisons (Mann–Whitney tests): No significant differences in HR were found between high and low ADRB1 or ADRB2 groups at Day 0 or Day 3–5. Similarly, no significant differences in ADRB1/ADRB2 levels were observed between patients with HR ≥100 vs. <100 bpm.
+
+Survival analysis (Kaplan-Meier): A combined stratification by ADRB2 baseline expression and HR ≥100 bpm at Day 3–5 did not show a statistically significant association with 28-day survival (log-rank p = 0.41), although a trend toward worse survival was seen in patients with low ADRB2 and elevated HR.

@@ -1,0 +1,241 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+# Libraries
+
+```{r,include=FALSE}
+
+options(repos = c(CRAN = "https://cran.r-project.org"))
+
+install.packages("cardx")
+
+library(dplyr)
+library(lubridate)
+library(gtsummary)
+library(readr)
+library(ggplot2)
+install.packages("tableone")
+library(tableone)
+install.packages("flextable")
+library(flextable)
+install.packages("sjlabelled")
+library(sjlabelled)
+
+```
+
+# Load DATA
+
+```{r,include=FALSE}
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+```
+
+# LOAD FUNCTIONS
+
+```{r,include=FALSE}
+source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+```
+
+# DATA MANAGEMENT
+
+```{r,include=FALSE}
+
+DATA <- DATA %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    BNP_D0 = as.numeric(BNP_D0),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+    Time_hosp = as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = as.numeric(ecmo_stop_date - ecmo_start_date)
+  )
+
+
+```
+
+# TABLE 1. Description of the population included
+
+```{r,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit",   "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "IABP_D0",          "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan", "Death")
+
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "sofa_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "Preecmo_tte_diam_LV", "Preecmo_tte_tapse", "Preecmo_tte_vmax_s_mit_lat_LV", "Preecmo_tte_vmax_s_tric_lat_rv", "Preecmo_tte_diam_rv", "Preecmo_tte_paps", "NADcum_D0", "DOBUcum_D0", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "BNP_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo")
+
+var.tot <- c(var.cat, var.cont)
+
+T1 <- DATA %>%
+  dplyr::select(all_of(var.tot))%>%
+  mutate(across(all_of(var.cont), as.numeric), #je transforme en numeric
+         across(all_of(var.cat), as.factor)) #je transforme en cat
+
+#verifier la normalité des variables, tu vas avoir un pdf dans FIGURES
+
+check_normality_pdf(data = T1, strata = NULL, vars = var.cont, labels = NULL, breaks = 15, path = "FIGURES", file = "check_test1", width = 12, height = 12)
+
+file.exists("FIGURES/check_test1.pdf")
+
+## function check_normality_pdf dosn't work
+
+pdf("FIGURES/test_pdf.pdf", width = 12, height = 12)
+hist(rnorm(100))  # Genera un istogramma casuale
+dev.off()
+file.exists("FIGURES/test_pdf.pdf")
+
+# PDF manual
+library(ggplot2)
+
+pdf("FIGURES/check_test1.pdf", width = 12, height = 12)
+
+for (var in var.cont) {
+  if (var %in% colnames(T1)) {
+    print(
+      ggplot(T1, aes_string(var)) +
+        geom_histogram(bins = 15, fill = "blue", alpha = 0.5) +
+        ggtitle(paste("Distribuzione di", var))
+    )
+  } else {
+    message(paste("❌ Variabile", var, "non trovata in T1"))
+  }
+}
+
+dev.off()
+
+file.exists("FIGURES/check_test1.pdf")
+
+
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data =T1) # sans groupe de strata
+
+#tres probablement c'est non normal
+
+table1 <- print(table1, nonnormal =var.cont)
+
+table1 <- as.data.frame(table1)
+
+table1$variables <- row.names(table1)
+
+table1 <- table1[,c(2,1)]
+
+table1 <- flextable(table1)
+
+----------------------------------------------------------
+## Word under Table
+  
+library(officer)
+library(flextable)
+
+# Word empty
+doc <- read_docx()
+
+# Add Table
+doc <- body_add_flextable(doc, table1)
+
+# Save
+print(doc, target = "TABLES/Table1_output.docx")
+
+# 
+browseURL("TABLES/Table1_output.docx")
+
+--------------------------------------------------------
+
+# Table1 with strata ~ Death
+
+library(tableone)
+
+table1_strata <- CreateTableOne(vars = var.tot, 
+                                factorVars = var.cat, 
+                                strata = "Death", 
+                                data = T1)
+
+print(table1_strata, nonnormal = var.cont)
+
+
+# Table 1 convert to DataFrame 
+table1_strata_df <- as.data.frame(print(table1_strata, nonnormal = var.cont, showAllLevels = TRUE))
+
+# name rows with "Variables" colomn
+table1_strata_df$Variables <- row.names(table1_strata_df)
+
+# "Variables" first colomn
+table1_strata_df <- table1_strata_df[, c(ncol(table1_strata_df), 1:(ncol(table1_strata_df) - 1))]
+
+head(table1_strata_df)
+
+# Export
+
+library(officer)
+library(flextable)
+
+# convert to flextable
+table1_flex <- flextable(table1_strata_df)
+
+doc <- read_docx() %>%
+  body_add_flextable(table1_flex)
+
+print(doc, target = "TABLES/Table1_stratified.docx")
+
+browseURL("TABLES/Table1_stratified.docx")
+
+------------------------------------------
+## Table1 strata without level
+
+table1_strata <- CreateTableOne(vars = var.tot, 
+                                factorVars = var.cat, 
+                                strata = "Death", 
+                                data = T1)
+table1_strata_df <- as.data.frame(print(table1_strata, nonnormal = var.cont, showAllLevels = TRUE))
+
+table1_strata_df$Variables <- row.names(table1_strata_df)
+
+# Remove "levell" 
+if ("level" %in% colnames(table1_strata_df)) {
+  table1_strata_df <- table1_strata_df[, !colnames(table1_strata_df) %in% "level"]
+}
+
+table1_strata_df <- table1_strata_df[, c(ncol(table1_strata_df), 1:(ncol(table1_strata_df) - 1))]
+
+# Name Death to colomn
+colnames(table1_strata_df)[2:ncol(table1_strata_df)] <- paste("Death =", colnames(table1_strata_df)[2:ncol(table1_strata_df)])
+
+```
+
+# 
+
+```{r,include=FALSE}
+
+
+
+```
