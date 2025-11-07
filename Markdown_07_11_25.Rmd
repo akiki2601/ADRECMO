@@ -943,598 +943,83 @@ No significant difference between VTI at 3 L and 1.5 L flow conditions at weanin
 
 ```{r,include=FALSE}
 
-# ===========================
-# DATA MANAGEMENT
-# ===========================
-F1_1 <- df %>%
-  select(ID,ADR1L_J0, ADR1L_J3_J5, ADR1L_JS, Outcome)%>%
-  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
-  pivot_longer(
-    cols = c(ADR1L_J0, ADR1L_J3_J5, ADR1L_JS), 
-    names_to = "ADR1L_time", 
-    values_to = "value"
-  )%>%
-  mutate(time = as.numeric(case_when(ADR1L_time=="ADR1L_J0"~1,
-                          ADR1L_time=="ADR1L_J3_J5"~2,
-                          ADR1L_time=="ADR1L_JS"~3)),
-         value_log = log1p(value))
-
-count_data <- F1_1 %>%
-  filter(!is.na(value))%>%
-  group_by(ADR1L_time, Outcomes) %>%
-  summarise(n = n(), .groups = "drop")%>%
-  filter(!is.na(Outcomes))
-
-
-# ===========================
-# Modélisation
-# ===========================
-
-# Modèle avec interaction
-mod1 <- lmerTest::lmer(
-  value_log ~ time * Outcomes + (1 | ID),
-  data = F1_1
-)
-
-# Résumé du modèle
-summary(mod1)
-
-# Modèle sans interaction (modèle réduit)
-mod_no_interaction <- lmerTest::lmer(
-  value_log ~ time + Outcomes + (1 | ID),
-  data = F1_1
-)
-
-# Comparaison des modèles (test de l'interaction)
-interact <- anova(mod_no_interaction, mod1)
-# Interprétation : p = 0.5842 → interaction non significative
-
-# ===========================
-# Tests des effets fixes
-# ===========================
-
-# ANOVA avec approximation de Kenward-Roger pour les p-values
-a <- anova(mod_no_interaction, ddf = "Kenward-Roger")
-print(a)
-pvals <- a$`Pr(>F)`
-p_time     <- pvals[1]
-p_outcomes <- pvals[2]
-p_time_fmt     <- format.pval(p_time,     digits = 3)
-p_outcomes_fmt <- format.pval(p_outcomes, digits = 3)
-label_text  <- paste0("time p = ", p_time_fmt, "\noutcomes p = ", p_outcomes_fmt)
-
-# ===========================
-# Vérification des hypothèses
-# ===========================
-
-# 1. Diagrammes de diagnostic généraux
-plot(mod_no_interaction)  # résidus vs prédictions par groupe
-
-# 2. Résidus vs valeurs ajustées (homoscédasticité)
-plot(fitted(mod_no_interaction), residuals(mod_no_interaction),
-     xlab = "Valeurs ajustées", ylab = "Résidus",
-     main = "Résidus vs ajustés")
-
-# 3. Normalité des résidus
-qqnorm(residuals(mod_no_interaction))
-qqline(residuals(mod_no_interaction), col = "blue")
-
-# 4. Autocorrélation des résidus (si données longitudinales)
-acf(residuals(mod_no_interaction), main = "ACF des résidus")
-
-# ===========================
-# Figure
-# ===========================
-Figure_1_1 <- ggplot(F1_1, aes(x = ADR1L_time, y = value_log, fill = Outcomes)) +
-  geom_boxplot(position = position_dodge(0.7), width = 0.6) + 
-  scale_y_continuous(name = "Percentage of T4 lymphocyte expressing ADRB1\n (log 10 scale)") +
-  labs(
-    title = "A",
-    x = "Time"  ) +
-  geom_text(data = count_data, aes(x = ADR1L_time, y = min(F1_1$value_log, na.rm = TRUE), 
-                                   label = paste0("n=", n), group = Outcomes), 
-            position = position_dodge(0.7), size = 4, vjust = 1)+
-    scale_x_discrete(labels = c("ADR1L_J0" = "implantation", "ADR1L_J3_J5" = "day 3 to 5", "ADR1L_JS" = "explantation")) +
-  scale_fill_manual(values = c(
-      "ECMO Weaning" = "#4DAF4A",                   
-    "Bridge to transplant or LVAD" = "#377EB8",   
-    "Death" = "#F8766D"                           
-  )) +
-  theme(legend.position = "none") + 
-  annotate(
-    "text",
-    x     = 1,  # ou la position souhaitée sur l'axe x
-    y     = max(F1_1$value_log, na.rm = TRUE) * 0.9,
-    label = label_text,
-    hjust = 0
-  )
-
-###############@
-F1_1b <- df %>%
-  select(ID, L_TH1_J0, L_TH1_J3_J5, L_TH1_JS,L_TH2_J0,L_TH2_J3_J5,L_TH2_JS,Outcome)%>%
-    mutate(TH1_TH2_ratio_J0 = L_TH1_J0/L_TH2_J0,
-           TH1_TH2_ratio_J3_J5 = L_TH1_J3_J5/L_TH2_J3_J5,
-           TH1_TH2_ratio_JS = L_TH1_JS/L_TH2_JS,
-           Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",
-                                       T~Outcome),
-                             levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
-  pivot_longer(
-    cols = c(TH1_TH2_ratio_J0, TH1_TH2_ratio_J3_J5, TH1_TH2_ratio_JS), 
-    names_to = "ADR1L_time", 
-    values_to = "value"
-  )%>%
-  mutate(time = as.numeric(case_when(ADR1L_time=="TH1_TH2_ratio_J0"~1,
-                          ADR1L_time=="TH1_TH2_ratio_J3_J5"~2,
-                          ADR1L_time=="TH1_TH2_ratio_JS"~3)),
-         value_log = log1p(value))%>%
-  filter(!is.na(value))%>%
-  select(ID, time,ADR1L_time, value,value_log, Outcomes)
-
-count_data <- F1_1b %>%
-  filter(!is.na(value))%>%
-  group_by(ADR1L_time, Outcomes) %>%
-  summarise(n = n(), .groups = "drop")%>%
-  filter(!is.na(Outcomes))
-
-
-# ===========================
-# Modélisation
-# ===========================
-
-# Modèle avec interaction
-mod1 <- lmerTest::lmer(
-  value_log ~ time * Outcomes + (1 + time | ID),
-  data = F1_1b
-)
-F1_1b$value_log
-# Résumé du modèle
-summary(mod1)
-
-# Modèle sans interaction (modèle réduit)
-mod_no_interaction <- lmerTest::lmer(
-  value_log ~ time + Outcomes + (1 + time | ID),
-  data = F1_1b
-)
-
-# Comparaison des modèles (test de l'interaction)
-interact <- anova(mod_no_interaction, mod1)
-# Interprétation : p = 0.6249 → interaction non significative
-
-# ===========================
-# Tests des effets fixes
-# ===========================
-
-# ANOVA avec approximation de Kenward-Roger pour les p-values
-a <- anova(mod_no_interaction, ddf = "Kenward-Roger")
-print(a)
-pvals <- a$`Pr(>F)`
-p_time     <- pvals[1]
-p_outcomes <- pvals[2]
-p_time_fmt     <- format.pval(p_time,     digits = 3)
-p_outcomes_fmt <- format.pval(p_outcomes, digits = 3)
-label_text  <- paste0("time p = ", p_time_fmt, "\noutcomes p = ", p_outcomes_fmt)
-
-# ===========================
-# Vérification des hypothèses
-# ===========================
-
-# 1. Diagrammes de diagnostic généraux
-plot(mod_no_interaction)  # résidus vs prédictions par groupe
-
-# 2. Résidus vs valeurs ajustées (homoscédasticité)
-plot(fitted(mod_no_interaction), residuals(mod_no_interaction),
-     xlab = "Valeurs ajustées", ylab = "Résidus",
-     main = "Résidus vs ajustés")
-
-# 3. Normalité des résidus
-qqnorm(residuals(mod_no_interaction))
-qqline(residuals(mod_no_interaction), col = "blue")
-
-# 4. Autocorrélation des résidus (si données longitudinales)
-acf(residuals(mod_no_interaction), main = "ACF des résidus")
-
-# 5. Normalité des pentes aléatoires (effets aléatoires sur time)
-qqnorm(ranef(mod_no_interaction)$ID[, "time"],
-       main = "QQ-plot des pentes aléatoires (time)")
-qqline(ranef(mod_no_interaction)$ID[, "time"], col = "blue")
-
-
-# ===========================
-# Figure
-# ===========================
-Figure_1_1b <- ggplot(F1_1b, aes(x = ADR1L_time, y = value, fill = Outcomes)) +
-  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
-  scale_y_log10() +  
-  labs(
-    title = "A",
-    x = "Time",
-    y = "Percentage of T4 lymphocyte expressing TH1/TH2\n ",
-  ) +
-  geom_text(data = count_data, aes(x = ADR1L_time, y =- min(F1_1$value_log, na.rm = TRUE) *0.1, 
-                                   label = paste0("n=", n), group = Outcomes), 
-            position = position_dodge(0.7), size = 4, vjust = 1)+
-    scale_x_discrete(labels = c("ADR1L_J0" = "implantation", "ADR1L_J3_J5" = "day 3 to 5", "ADR1L_JS" = "explantation")) +
-  scale_fill_manual(values = c(
-      "ECMO Weaning" = "#4DAF4A",                   
-    "Bridge to transplant or LVAD" = "#377EB8",   
-    "Death" = "#F8766D"                           
-  )) +
-  theme(legend.position = "none") + 
-  annotate(
-    "text",
-    x     = 1,  # ou la position souhaitée sur l'axe x
-    y     = max(F1_1$value_log, na.rm = TRUE) * 0.9,
-    label = label_text,
-    hjust = 0
-  )
-
-
-#####################
-## ADRB2 
-#####################
-
-# ===========================
-# DATA MANAGEMENT
-# ===========================
-
-F1_2 <- df %>%
-  select(ID,ADR2L_J0, ADR2L_J3_J5, ADR2L_JS, Outcome)%>%
-  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
-  pivot_longer(
-    cols = c(ADR2L_J0, ADR2L_J3_J5, ADR2L_JS), 
-    names_to = "ADR2L", 
-    values_to = "value"
-  )%>%
-  mutate(time = as.numeric(case_when(ADR2L=="ADR2L_J0"~1,
-                          ADR2L=="ADR2L_J3_J5"~2,
-                          ADR2L=="ADR2L_JS"~3)),
-         value_log = log1p(value))
-
-
-count_data <- F1_2 %>%
-  filter(!is.na(value))%>%
-  group_by(ADR2L, Outcomes) %>%
-  summarise(n = n(), .groups = "drop")%>%
-  filter(!is.na(Outcomes))
-
-# ===========================
-# Modélisation
-# ===========================
-
-# Modèle avec interaction
-mod1 <- lmerTest::lmer(
-  value_log ~ time * Outcomes + (1 + time | ID),
-  data = F1_2
-)
-
-# Résumé du modèle
-summary(mod1)
-
-# Modèle sans interaction (modèle réduit)
-mod_no_interaction <- lmerTest::lmer(
-  value_log ~ time + Outcomes + (1 + time | ID),
-  data = F1_2
-)
-
-# Comparaison des modèles (test de l'interaction)
-interact <- anova(mod_no_interaction, mod1)
-# Interprétation : p = 0.9579 → interaction non significative
-
-# ===========================
-# Tests des effets fixes
-# ===========================
-
-# ANOVA avec approximation de Kenward-Roger pour les p-values
-a <- anova(mod_no_interaction, ddf = "Kenward-Roger")
-print(a)
-pvals <- a$`Pr(>F)`
-p_time     <- pvals[1]
-p_outcomes <- pvals[2]
-p_time_fmt     <- format.pval(p_time,     digits = 3)
-p_outcomes_fmt <- format.pval(p_outcomes, digits = 3)
-label_text  <- paste0("time p = ", p_time_fmt, "\noutcomes p = ", p_outcomes_fmt)
-
-
-# ===========================
-# Vérification des hypothèses
-# ===========================
-
-# 1. Diagrammes de diagnostic généraux
-plot(mod_no_interaction)  # résidus vs prédictions par groupe
-
-# 2. Résidus vs valeurs ajustées (homoscédasticité)
-plot(fitted(mod_no_interaction), residuals(mod_no_interaction),
-     xlab = "Valeurs ajustées", ylab = "Résidus",
-     main = "Résidus vs ajustés")
-
-# 3. Normalité des résidus
-qqnorm(residuals(mod_no_interaction))
-qqline(residuals(mod_no_interaction), col = "blue")
-
-# 4. Autocorrélation des résidus (si données longitudinales)
-acf(residuals(mod_no_interaction), main = "ACF des résidus")
-
-# 5. Normalité des pentes aléatoires (effets aléatoires sur time)
-qqnorm(ranef(mod_no_interaction)$ID[, "time"],
-       main = "QQ-plot des pentes aléatoires (time)")
-qqline(ranef(mod_no_interaction)$ID[, "time"], col = "blue")
-
-#extrait P values
-annot_pvals <- data.frame(
-  ADR2L = "ADR2L_J0",
-  value_log = max(F1_2$value_log, na.rm = TRUE) * 1.1,
-  label = "p[time] == 0.07 * '\n' * p[outcomes] == 0.05"
-)
-
-Figure_1_2 <- ggplot(F1_2, aes(x = ADR2L, y = value_log, fill = Outcomes)) +
-  geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
-  labs(
-    title = "B",
-    x = "Time",
-    y = "Percentage of T4 lymphocyte expressing ADRB2\n(log 1p scale)",
-  ) +
-  geom_text(data = count_data, aes(x = ADR2L, y = -min(F1_2$value_log, na.rm = TRUE) * 0.01, 
-                                   label = paste0("n=", n), group = Outcomes), 
-            position = position_dodge(0.7), size = 4, vjust = 1)+
-      scale_x_discrete(labels = c("ADR2l_J0" = "implantation", "ADR2l_J3_J5" = "day 3 to 5", "ADR2l_JS" = "explantation"))+
-    scale_fill_manual(values = c(
-      "ECMO Weaning" = "#4DAF4A",                   
-    "Bridge to transplant or LVAD" = "#377EB8",   
-    "Death" = "#F8766D"                           
-  )) +
-  annotate(
-    "text",
-    x     = 1,  # ou la position souhaitée sur l'axe x
-    y     = max(F1_2$value_log, na.rm = TRUE) * 0.9,
-    label = label_text,
-    hjust = 0
-  )
-
-# ===========================
-# DATA MANAGEMENT
-# ===========================
-F1_3 <- df %>%
-  select(ID,M_ADR1_J0, M_ADR1_J3_J5, M_ADR1_JS, Outcome)%>%
-  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
-  pivot_longer(
-    cols = c(M_ADR1_J0, M_ADR1_J3_J5, M_ADR1_JS), 
-    names_to = "ADR1m_time", 
-    values_to = "value"
-  )%>%
-  mutate(time = as.numeric(case_when(ADR1m_time=="M_ADR1_J0"~1,
-                          ADR1m_time=="M_ADR1_J3_J5"~2,
-                          ADR1m_time=="ADR1m_JS"~3)),
-         value_log = log1p(value))%>%
-  filter(!is.na(value_log))
-
-# Count data for annotation
-count_data_m <- F1_3 %>%
-  filter(!is.na(value)) %>%
-  group_by(ADR1m_time, Outcomes) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  filter(!is.na(Outcomes))
-
-# ===========================
-# Mixed effects model
-# ===========================
-
-summary(F1_3$value_log)
-sum(is.na(F1_3$value_log))
-sum(is.infinite(F1_3$value_log))
-
-# Model with interaction
-mod1_m <- lmerTest::lmer(
-  value_log ~ time * Outcomes + (1 | ID),
-  data = F1_3
-)
-
-# Model without interaction
-mod_no_interaction_m <- lmerTest::lmer(
-  value_log ~ time + Outcomes + (1  | ID),
-  data = F1_3
-)
-
-# Interaction test
-interact_m <- anova(mod_no_interaction_m, mod1_m)
-# Interpretation : p = 0.4767 → interaction not significant
-
-# ANOVA for fixed effect (withouth interaction)
-a_m <- anova(mod_no_interaction_m, ddf = "Kenward-Roger")
-print(a_m)
-pvals <- a_m$`Pr(>F)`
-p_time     <- pvals[1]
-p_outcomes <- pvals[2]
-p_time_fmt     <- format.pval(p_time,     digits = 3)
-p_outcomes_fmt <- format.pval(p_outcomes, digits = 3)
-label_text  <- paste0("time p = ", p_time_fmt, "\noutcomes p = ", p_outcomes_fmt)
-
-# ===========================
-# Diagnostic plots
-# ===========================
-# 1. Residual diagnostic plots
-plot(mod_no_interaction_m)
-
-# 2. Residuals vs Fitted
-plot(fitted(mod_no_interaction_m), residuals(mod_no_interaction_m),
-     xlab = "Fitted values", ylab = "Residuals",
-     main = "Residuals vs Fitted")
-
-# 3. Normality of residuals
-qqnorm(residuals(mod_no_interaction_m))
-qqline(residuals(mod_no_interaction_m), col = "blue")
-
-# 4. Autocorrelation of residuals
-acf(residuals(mod_no_interaction_m), main = "ACF of residuals")
-
-# 5. Normality of random intercepts (optional)
-qqnorm(ranef(mod_no_interaction_m)$ID[, "(Intercept)"],
-       main = "QQ plot of random intercepts (ID)")
-qqline(ranef(mod_no_interaction_m)$ID[, "(Intercept)"], col = "blue")
-
-# ===========================
-# Figure
-# ===========================
-Figure_1_3 <- ggplot(F1_3, aes(
-    x = ADR1m_time,
-    y = value,
-    fill = Outcomes,
-    group = interaction(ADR1m_time, Outcomes)  
-)) +
-  geom_boxplot(position = position_dodge(0.7), width = 0.6) +
-  #scale_y_log10() +
-  labs(
-    title = "C",
-    x = "Time",
-    y = "Percentage of monocytes expressing ADRB1"
-  ) +
-  geom_text(data = count_data_m, aes(
-    x = ADR1m_time,
-    y = min(F1_3$value_log[F1_3$value_log > 0], na.rm = TRUE) * 0.2,
-    label = paste0("n=", n),
-    group = interaction(ADR1m_time, Outcomes)
-  ),
-  position = position_dodge(0.7),
-  size = 4,
-  vjust = 1) +
-  scale_x_discrete(labels = c(
-    "ADR1m_J0" = "implantation",
-    "ADR1m_J3_J5" = "day 3 to 5",
-    "ADR1m_JS" = "explantation"
-  )) +
-    scale_fill_manual(values = c(
-    "ECMO Weaning" = "#4DAF4A",                   
-    "Bridge to transplant or LVAD" = "#377EB8",   
-    "Death" = "#F8766D"                           
-  )) +
-  theme(legend.position = "none") +
-  annotate(
-    "text",
-    x     = 1,  # ou la position souhaitée sur l'axe x
-    y     = max(F1_3$value_log, na.rm = TRUE) * 6.5,
-    label = label_text,
-    hjust = 0
-  )
-
-#####################
-## ADRB2 (monocytes)
-#####################
-
-# ==========================
-# DATA MANAGEMENT
-# ==========================
-
-
-# colonnes à analyser
-vars_to_plot <- c("M_ADR2_J0", "M_ADR2_J3_J5", "M_ADR2_JS")
-
-# appel de la fonction
-plot_density_log10(df, vars_to_plot)
-F1_4 <- df %>%
-  select(ID,M_ADR2_J0, M_ADR2_J3_J5, M_ADR2_JS, Outcome, Time_ecmo)%>%
-  mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
-  pivot_longer(
-    cols = c(M_ADR2_J0, M_ADR2_J3_J5, M_ADR2_JS), 
-    names_to = "ADR2m_time", 
-    values_to = "value"
-  )%>%
-  mutate(time = as.numeric(case_when(ADR2m_time=="M_ADR2_J0"~1,
-                          ADR2m_time=="M_ADR2_J3_J5"~2,
-                          ADR2m_time=="M_ADR2_JS"~3)),
-         #value_log = log10(value)         
-         )%>%
-  filter(!is.na(value))
-
-
-
-# ==========================
-# Count available data
-# ==========================
-count_data_m2 <- F1_4 %>%
-  group_by(ADR2m_time, Outcomes) %>%
-  summarise(n = n(), .groups = "drop")
-
-
-library(glmmTMB)
-mod_gamma1 <- glmmTMB(
-  value ~ time * Outcomes + (1 | ID),
-  family = Gamma(link="log"),
-  data   = F1_4
-)
-summary(mod_gamma)
-
-mod_gamma2 <- glmmTMB(
-  value ~ time + Outcomes + (1 | ID),
-  family = Gamma(link="log"),
-  data   = F1_4
-)
-summary(mod_gamma)
-
-
-# Test interaction
-interact_m2 <- anova(mod_gamma1, mod_gamma2)
-# Interpretation : p = 0.5997 → interaction not significant
-
-# Fixed effect ANOVA (no interaction)
-library(car)
-
-# Type II (pas de correction pour interaction)
-a_m2<-Anova(mod_gamma, type = 2)
-
-# Type III (teste chaque effet en présence de tous les autres)
-Anova(mod_gamma, type = 3)
-print(a_m2)
-pvals <- a_m2$`Pr(>Chisq)`
-p_time     <- pvals[1]
-p_outcomes <- pvals[2]
-p_time_fmt     <- format.pval(p_time,     digits = 3)
-p_outcomes_fmt <- format.pval(p_outcomes, digits = 3)
-label_text  <- paste0("time p = ", p_time_fmt, "\noutcomes p = ", p_outcomes_fmt)
-
-# =
-# ==========================
-# FIGURE
-# ==========================
-Figure_1_4 <- ggplot(F1_4, aes(
-  x = ADR2m_time, y = value, fill = Outcomes,
-  group = interaction(ADR2m_time, Outcomes)
-)) +
-  geom_boxplot(position = position_dodge(0.7), width = 0.6) +
-  #scale_y_log10() +
-  labs(
-    title = "D",
-    x = "Time",
-    y = "Percentage of monocytes expressing ADRB2"
-  ) +
-  geom_text(data = count_data_m2, aes(
-    x = ADR2m_time,
-    y = min(F1_4$value, na.rm = TRUE),
-    label = paste0("n=", n),
-    group = interaction(ADR2m_time, Outcomes)
-  ),
-  position = position_dodge(0.7),
-  size = 4,
-  vjust = 1) +
-  scale_x_discrete(labels = c(
-    "ADR2m_J0" = "implantation",
-    "ADR2m_J3_5" = "day 3 to 5",
-    "ADR2m_JS" = "explantation"
-  )) +
-    scale_fill_manual(values = c(
-      "ECMO Weaning" = "#4DAF4A",                   
-    "Bridge to transplant or LVAD" = "#377EB8",   
-    "Death" = "#F8766D"                           
-  )) +
-  theme(legend.position = "none") +
-  annotate(
-    "text",
-    x     = 1, 
-    y     = max(F1_4$value, na.rm = TRUE)*0.8,
-    label = label_text,
-    hjust = 0
-  )
-
-
-Figure1_tot <- Figure_1_1 + Figure_1_2 +Figure_1_3+ Figure_1_4
+prep_A1 <- prep_marker_data(df, prefix = "ADR1L", log1p_y = TRUE)
+test_A1 <- test_marker(prep_A1$data)
+Figure_1_1 <- plot_marker(
+  dat      = prep_A1$data,
+  counts   = prep_A1$counts,
+  x_labels = prep_A1$x_labels,
+  panel_title = "A",
+  y_var    = "value_log",
+  y_lab    = "Percentage of T4 lymphocyte expressing ADRB1\n(log1p scale)"
+) +
+  annotate("text",
+           x = 1,
+           y = min(prep_A1$data$value_log, na.rm = TRUE) +1,
+           label = test_A1$label,
+           hjust = 0)
+
+
+# ADRB2 (lymphocytes) — log1p pour modèle & plot
+prep_A2 <- prep_marker_data(df, prefix = "ADR2L", log1p_y = TRUE)
+test_A2 <- test_marker(prep_A2$data)
+Figure_1_2 <- plot_marker(
+  dat      = prep_A2$data,
+  counts   = prep_A2$counts,
+  x_labels = prep_A2$x_labels,
+  panel_title = "B",
+  y_var    = "value_log",
+  y_lab    = "Percentage of T4 lymphocyte expressing ADRB2\n(log1p scale)"
+) +
+  annotate("text",
+           x = 1,
+           y = min(prep_A2$data$value_log, na.rm = TRUE) +1,
+           label = test_A2$label,
+           hjust = 0)
+
+# ADRB1 (monocytes) — on peut tracer en brut mais le modèle reste sur log1p
+prep_M1 <- prep_marker_data(df, prefix = "M_ADR1", log1p_y = TRUE)
+test_M1 <- test_marker(prep_M1$data)
+Figure_1_3 <- plot_marker(
+  dat      = prep_M1$data,
+  counts   = prep_M1$counts,
+  x_labels = prep_M1$x_labels,
+  panel_title = "C",
+  y_var    = "value_log",   # tracé en valeurs brutes si tu préfères
+  y_lab    = "Percentage of monocytes expressing ADRB1\n(log1p scale)"
+) +
+  annotate("text",
+           x = 2,
+           y = min(prep_M1$data$value, na.rm = TRUE),
+           label = test_M1$label,
+           hjust = 0)
+
+# ADRB2 (monocytes)
+prep_M2 <- prep_marker_data(df, prefix = "M_ADR2", log1p_y = TRUE)
+test_M2 <- test_marker(prep_M2$data)
+Figure_1_4 <- plot_marker(
+  dat      = prep_M2$data,
+  counts   = prep_M2$counts,
+  x_labels = prep_M2$x_labels,
+  panel_title = "D",
+  y_var    = "value_log",
+  y_lab    = "Percentage of monocytes expressing ADRB2\n(log1p scale)",
+   show_legend = TRUE   # 👈 ici seule cette figure garde la légende
+) +
+  annotate("text",
+           x = 1,
+           y = min(prep_M2$data$value, na.rm = TRUE)+1,
+           label = test_M2$label,
+           hjust = 0)
+
+F1_4<- prep_M2$data %>% filter(!is.finite(value_log)) %>% count(time, Outcomes)
+
+
+# Combine figures
+
+Figure1_tot <- (Figure_1_1 + Figure_1_2 + Figure_1_3 + Figure_1_4) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")   # ou "right"
 ```
 
 ```{r Figure1_tot, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
