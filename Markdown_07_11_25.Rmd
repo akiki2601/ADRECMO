@@ -117,6 +117,7 @@ To assess the association between ADRB1 and ADRB2 expression at the time of ECMO
 
 ```{r,include=FALSE}
 source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
+source("FUNCTIONS/Plot_cytokine.R")
 ```
 
 #DATA LOAD
@@ -285,7 +286,6 @@ df_1 <- reduce(df_list_1, full_join, by = "ID")%>%
     )
   )
 
-
 #IDENTIFY WHICH ID NOT PRESENT IN ONE AND PRESENT IN OTHER
 id_presence <- imap_dfr(df_list_1,           
   ~ tibble(ID      = .x$ID,   
@@ -308,101 +308,116 @@ DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, 
     filter(ID != "12-NANA")
 
 #CHECK AK OK
-
-
 df_list_2 <- lst(df_1,DATA)
 
 df_2 <- reduce(df_list_2, left_join, by = "ID")
 
 #CHECK AK OK
 
+# --- Constantes et chemins ---
 fichier_cyto <- "DATA/cytokines.xlsx"
-all_cols <- names(readxl::read_excel(fichier_cyto, n_max = 0))
-#CHECK AK OK
-ck_vars <- c("Sample ID number",
-             "[IL-33] in pg/mL",
-             "[IL1b] in pg/mL",
-             "[IL2] in pg/mL",
-             "[IL4] in pg/mL",
-             "[IL5] in pg/mL",
-             "[IL6] in pg/mL",
-             "[IL8/CXCL8]  in pg/mL",
-             "[IL10] in pg/mL",
-             "[GDF-15] in pg/mL",
-             "[IL12p70] in pg/mL",
-             "[IL17A/CTLA-8] in pg/mL",
-             "[IFNg] in pg/mL",
-             "[TNFa] in pg/mL",
-             "[Granzyme B]  in pg/mL")
+feuille_idx  <- 7  # on lit la 7e feuille
 
-stopR<-stopifnot(all(ck_vars %in% all_cols))
+# --- Variables attendues ---
+ck_vars <- c(
+  "Sample ID number",
+  "[IL-33] in pg/mL","[IL1b] in pg/mL","[IL2] in pg/mL","[IL4] in pg/mL",
+  "[IL5] in pg/mL","[IL6] in pg/mL","[IL8/CXCL8]  in pg/mL","[IL10] in pg/mL",
+  "[GDF-15] in pg/mL","[IL12p70] in pg/mL","[IL17A/CTLA-8] in pg/mL",
+  "[IFNg] in pg/mL","[TNFa] in pg/mL","[Granzyme B]  in pg/mL"
+)
 
-df_cyto_raw <- readxl::read_excel(fichier_cyto) %>%
-  dplyr::select(dplyr::all_of(ck_vars))
+# --- Fonctions utilitaires ---
+normalize_jour <- function(sample_id) {
+  raw <- sample_id %>%
+    str_extract("J[A-Z0-9\\-\\.]+") %>%
+    str_to_upper() %>%
+    str_replace_all("-", "_") %>%
+    str_replace_all("\\.", "")
+  case_when(
+    raw %in% c("J3","J4","J5","J3_5","J3_J5") ~ "J3_J5",
+    raw %in% c("JS","JSEVRAGE")               ~ "JS",
+    raw == "J0"                                ~ "J0",
+    TRUE                                       ~ NA_character_
+  )
+}
+
+clean_measure_names <- function(x) {
+  x %>%
+    str_remove_all("\\[|\\]") %>%
+    str_remove_all("\\s+in\\s+pg/mL") %>%
+    str_squish() %>%
+    str_replace_all("\\s+", "")
+}
+
+to_numeric_safe <- function(x) {
+  x %>%
+    as.character() %>%
+    str_replace_all(",", ".") %>%
+    str_remove_all("\\*") %>%
+    str_replace_all("OOR.*|<.*|undetectable|low|LOQ|ND", "0.0000001") %>%
+    as.numeric()
+}
+
+# --- Vérifications d’entrée ---
+all_cols <- names(read_excel(fichier_cyto, sheet = feuille_idx, n_max = 0))
+stopifnot(all(ck_vars %in% all_cols))
+
+# --- 1) Lecture de la feuille cytokines (7) ---
+df_cyto_raw <- read_excel(fichier_cyto, sheet = feuille_idx) %>%
+  select(all_of(ck_vars))
+
+# --- 2) Préparation / nettoyage ---
+df_ids <- df_2 %>%
+  select(ID) %>%
+  mutate(ID_num = str_extract(ID, "^\\d{1,2}") %>%
+           as.integer() %>%
+           as.character())
 
 df_cyto_clean <- df_cyto_raw %>%
-  dplyr::rename(SampleID = `Sample ID number`) %>%
-  dplyr::mutate(
-    ID_num = stringr::str_extract(SampleID, "\\d{2}"),
-    ID_num = stringr::str_remove(ID_num, "^0"),
-    Jour_raw = stringr::str_extract(SampleID, "J[A-Z0-9\\-\\.]+") %>%
-      stringr::str_to_upper() %>%
-      stringr::str_replace_all("-", "_") %>%
-      stringr::str_replace_all("\\.", ""),
-    Jour = dplyr::case_when(
-      Jour_raw %in% c("J3", "J4", "J5", "J3_5", "J3_J5") ~ "J3_J5",
-      Jour_raw %in% c("JS", "JSEVRAGE") ~ "JS",
-      Jour_raw == "J0" ~ "J0",
-      TRUE ~ NA_character_
-    )
+  rename(SampleID = `Sample ID number`) %>%
+  mutate(
+    ID_num = str_extract(SampleID, "\\d{2}") %>%
+      as.integer() %>%
+      as.character(),
+    Jour   = normalize_jour(SampleID)
   ) %>%
-  dplyr::left_join(
-    df_2 %>% dplyr::select(ID) %>%
-      dplyr::mutate(ID_num = stringr::str_extract(ID, "^\\d{1,2}")),
-    by = "ID_num"
-    ) %>%
-  dplyr::select(-Jour_raw, -ID_num) %>%
-  dplyr::rename_with(~ str_remove_all(., "\\[|\\]| in pg/mL") %>% str_squish() %>% str_replace_all(" ", ""), 
-            .cols = -c(SampleID, ID, Jour)) %>%
-  dplyr::mutate(dplyr::across(
-    -c(SampleID, ID, Jour),
-    ~ stringr::str_replace_all(., ",", ".") %>%
-      stringr::str_remove_all("\\*") %>%
-      stringr::str_replace_all("OOR.*|<.*|undetectable|low|LOQ|ND", "0.0000001") %>%
-      as.numeric()
-  ))
-#CHECK AK OK
+  left_join(df_ids, by = "ID_num") %>%
+  select(-ID_num) %>%
+  rename_with(clean_measure_names, .cols = -c(SampleID, ID, Jour)) %>%
+  mutate(across(-c(SampleID, ID, Jour), to_numeric_safe))
 
-# 4. Reshape: long → wide with variable names cytokine_timepoint
+# --- 3) Reshape long -> wide ---
 df_cyto_long <- df_cyto_clean %>%
-  dplyr::select(-SampleID) %>%
-  filter(!is.na(ID))%>%
-  tidyr::pivot_longer(cols = -c(ID, Jour),
-                      names_to = "cytokine",
-                      values_to = "value") %>%
-  dplyr::mutate(var_name = paste0(cytokine, "_", Jour)) %>%
-  dplyr::select(ID, var_name, value) %>%
-  tidyr::pivot_wider(names_from = var_name,
-                     values_from = value)
+  select(-SampleID) %>%
+  filter(!is.na(ID), !is.na(Jour)) %>%
+  pivot_longer(
+    cols      = -c(ID, Jour),
+    names_to  = "cytokine",
+    values_to = "value"
+  ) %>%
+  mutate(var_name = paste0(cytokine, "_", Jour)) %>%
+  select(ID, var_name, value) %>%
+  pivot_wider(names_from = var_name, values_from = value)
 
-# 5. Final merge into main dataframe
-df <- df_2 %>% dplyr::left_join(df_cyto_long, by = "ID")
-dim(df)
-#CHECK AK OK
+# --- 4) Fusion finale ---
+df <- df_2 %>%
+  left_join(df_cyto_long, by = "ID")
 
+# --- 5) Vérification optionnelle ---
+verif <- read_excel("DATA/ADRECMO_Verif.xlsx") %>%
+  mutate(
+    Initiales = sub("-", "", Initiales),
+    ID        = paste0(`N° patient`, "-", Initiales) %>%
+      str_remove("^0+")
+  ) %>%
+  rename(cause = `Origine du choc cardiogénique`) %>%
+  select(ID, cause, CA)
 
-#Verif
-verif <- readxl::read_excel("DATA/ADRECMO_Verif.xlsx")%>%
-   mutate(Initiales = sub("-","",Initiales),
-     ID = paste0(`N° patient`,"-",Initiales),
-     ID = str_remove(ID, "^0+"))%>%
-   rename(cause= `Origine du choc cardiogénique`)%>%
-   dplyr::select(ID,cause,CA)
+df <- df %>%
+  left_join(verif, by = "ID")
 
-df <- df%>% left_join(verif, by="ID") 
-table(is.na(df$cause))
-
-
+# --- 6) Sous-table bio + mapping outcomes ---
 df_bio <- df %>%
   select(
     ID, Outcome,
@@ -413,22 +428,23 @@ df_bio <- df %>%
     starts_with("L_TH2_"),
     starts_with("mixte_"),
     starts_with("bINFg"),
-    starts_with("IL"),          # toutes les cytokines IL…
+    starts_with("IL"),
     starts_with("IFNg"),
     starts_with("TNF"),
     starts_with("GDF-15"),
     starts_with("GranzymeB"),
     starts_with("M_"),
     starts_with("L_"),
-    starts_with("mix"),
-  )%>%
-  mutate(   Outcome = case_when(
-      Outcome == 1 ~ "ECMO Weaning",
-      Outcome == 2 ~ "Bridge to Transplant or LVAD",
-      Outcome == 3 ~ "Bridge to Transplant or LVAD",
-      Outcome == 4 ~ "Death",
-      TRUE ~ as.character(Outcome)
-    ))
+    starts_with("mix")
+  ) %>%
+  mutate(
+    Outcome = case_when(
+      Outcome %in% c(2, 3) ~ "Bridge to Transplant or LVAD",
+      Outcome == 1         ~ "ECMO Weaning",
+      Outcome == 4         ~ "Death",
+      TRUE                 ~ as.character(Outcome)
+    )
+  )
 ```
 
 # TIMEPOINT CHECK OF THE BLOOD SAMPLE AT DAY 0
@@ -941,7 +957,7 @@ F1_1 <- df %>%
   mutate(time = as.numeric(case_when(ADR1L_time=="ADR1L_J0"~1,
                           ADR1L_time=="ADR1L_J3_J5"~2,
                           ADR1L_time=="ADR1L_JS"~3)),
-         value_log = log10(value))
+         value_log = log1p(value))
 
 count_data <- F1_1 %>%
   filter(!is.na(value))%>%
@@ -1032,53 +1048,8 @@ Figure_1_1 <- ggplot(F1_1, aes(x = ADR1L_time, y = value_log, fill = Outcomes)) 
     label = label_text,
     hjust = 0
   )
-######
-vars_to_plot <- c("ADR1L_J0", "ADR1L_J3_J5","ADR1L_JS")
-plot_density_log10(df, vars_to_plot, breaks=30)
-
-res <- run_th1th2_analysis(
-  df,
-  time_cols = c("ADR1L_J0", "ADR1L_J3_J5","ADR1L_JS")
-)
-
-vars_to_plot <- c("ADR2L_J0", "ADR2L_J3_J5","ADR2L_JS")
-plot_density_log10(df, vars_to_plot, breaks=30)
-
-res <- run_th1th2_analysis(
-  df,
-  time_cols = c("ADR2L_J0", "ADR2L_J3_J5","ADR2L_JS")
-)
-
-res <- run_th1th2_analysis(
-  df,
-  time_cols = c("L_TH2_J0", "L_TH2_J3_J5","L_TH2_JS")
-)
-
-res <- run_th1th2_analysis(
-  df,
-  time_cols = c("ADR2L_J0", "ADR2L_J3_J5","ADR2L_JS")
-)
-
-names(df)
-res <- run_th1th2_analysis(
-  df,
-  time_cols = c("M_ADR1_J0", "M_ADR1_J3_J5","M_ADR1_JS")
-)
-
-res <- run_th1th2_analysis(
-  df,
-  time_cols = c("M_ADR2_J0", "M_ADR2_J3_J5","M_ADR2_JS")
-)
-
-# couleur du trait
-names(df)
-
-# Afficher la figure
-print(res$figure)
 
 ###############@
-
-names(df)
 F1_1b <- df %>%
   select(ID, L_TH1_J0, L_TH1_J3_J5, L_TH1_JS,L_TH2_J0,L_TH2_J3_J5,L_TH2_JS,Outcome)%>%
     mutate(TH1_TH2_ratio_J0 = L_TH1_J0/L_TH2_J0,
@@ -1207,22 +1178,22 @@ Figure_1_1b <- ggplot(F1_1b, aes(x = ADR1L_time, y = value, fill = Outcomes)) +
 # ===========================
 
 F1_2 <- df %>%
-  select(ID,ADR2l_J0, ADR2l_J3_J5, ADR2l_JS, Outcome)%>%
+  select(ID,ADR2L_J0, ADR2L_J3_J5, ADR2L_JS, Outcome)%>%
   mutate(Outcomes = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~ "Bridge to transplant or LVAD",T~Outcome), levels=c("Death","Bridge to transplant or LVAD","ECMO Weaning")))%>%
   pivot_longer(
-    cols = c(ADR2l_J0, ADR2l_J3_J5, ADR2l_JS), 
-    names_to = "ADR2l_time", 
+    cols = c(ADR2L_J0, ADR2L_J3_J5, ADR2L_JS), 
+    names_to = "ADR2L", 
     values_to = "value"
   )%>%
-  mutate(time = as.numeric(case_when(ADR2l_time=="ADR2l_J0"~1,
-                          ADR2l_time=="ADR2l_J3_J5"~2,
-                          ADR2l_time=="ADR2l_JS"~3)),
-         value_log = log10(value))
+  mutate(time = as.numeric(case_when(ADR2L=="ADR2L_J0"~1,
+                          ADR2L=="ADR2L_J3_J5"~2,
+                          ADR2L=="ADR2L_JS"~3)),
+         value_log = log1p(value))
 
 
 count_data <- F1_2 %>%
   filter(!is.na(value))%>%
-  group_by(ADR2l_time, Outcomes) %>%
+  group_by(ADR2L, Outcomes) %>%
   summarise(n = n(), .groups = "drop")%>%
   filter(!is.na(Outcomes))
 
@@ -1290,20 +1261,19 @@ qqline(ranef(mod_no_interaction)$ID[, "time"], col = "blue")
 
 #extrait P values
 annot_pvals <- data.frame(
-  ADR2l_time = "ADR2l_J0",
+  ADR2L = "ADR2L_J0",
   value_log = max(F1_2$value_log, na.rm = TRUE) * 1.1,
   label = "p[time] == 0.07 * '\n' * p[outcomes] == 0.05"
 )
 
-Figure_1_2 <- ggplot(F1_2, aes(x = ADR2l_time, y = value_log, fill = Outcomes)) +
+Figure_1_2 <- ggplot(F1_2, aes(x = ADR2L, y = value_log, fill = Outcomes)) +
   geom_boxplot(position = position_dodge(0.7), width = 0.6) +  
-  scale_y_log10() +  
   labs(
     title = "B",
     x = "Time",
-    y = "Percentage of T4 lymphocyte expressing ADRB2\n(log 10 scale)",
+    y = "Percentage of T4 lymphocyte expressing ADRB2\n(log 1p scale)",
   ) +
-  geom_text(data = count_data, aes(x = ADR2l_time, y = -min(F1_2$value_log, na.rm = TRUE) * 0.01, 
+  geom_text(data = count_data, aes(x = ADR2L, y = -min(F1_2$value_log, na.rm = TRUE) * 0.01, 
                                    label = paste0("n=", n), group = Outcomes), 
             position = position_dodge(0.7), size = 4, vjust = 1)+
       scale_x_discrete(labels = c("ADR2l_J0" = "implantation", "ADR2l_J3_J5" = "day 3 to 5", "ADR2l_JS" = "explantation"))+
@@ -2277,6 +2247,8 @@ Also IL-8 concentrations appeared clear lower in patients successfully weaned fr
 
 ```{r}
 plot_cytokine(df, "IL10")
+
+df$IL10_JS
 
 ```
 
