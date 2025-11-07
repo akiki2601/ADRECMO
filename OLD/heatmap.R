@@ -21,7 +21,7 @@ df_long <- df_bio %>%
          starts_with(cell_global),
          starts_with(cell_inflam),
          starts_with(cell_anti_inflam),
-         starts_with(cell_mixte),) %>%
+         starts_with(cell_mixte)) %>%
   pivot_longer(
     cols = -c(ID, Outcome),
     names_to  = c("BIO", "day"),
@@ -65,6 +65,7 @@ normality_results <- df_long %>%
     .groups = "drop"
   )
 
+df$L_TH1_J0
 # Visualiser ceux qui ne sont PAS normalement distribués
 normality_results %>%
   filter(p_value < 0.05)
@@ -73,7 +74,7 @@ normality_results %>%
 
 # 3) Optionnel : normaliser ou log-transformer
 df_long <- df_long %>% 
-  mutate(value_log = log2(value)) %>%         # évite log(0)
+  mutate(value_log = log1p(value)) %>%         # évite log(0)
   group_by(category) %>% 
   mutate(value_z = (value_log - mean(value_log, na.rm = TRUE)) /
            sd(value_log,  na.rm = TRUE)) %>% 
@@ -98,6 +99,7 @@ res <- normality_results %>%
   filter(p_value < 0.05)
 
 ####By evolution
+df_long$value
 
 df_heat <- df_long %>% 
   group_by(category, BIO, day, Outcome) %>% 
