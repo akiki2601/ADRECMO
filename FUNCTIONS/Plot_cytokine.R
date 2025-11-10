@@ -38,7 +38,7 @@ plot_cytokine <- function(df, cytokine_name) {
   
   # 3. Models
   mod_no_interaction <- lmerTest::lmer(
-    value_log ~ time + Outcomes + (1 + time | ID),
+    value_log ~ time + Outcomes + (1  | ID),
     data = data_plot
   )
   

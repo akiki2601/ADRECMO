@@ -28,53 +28,68 @@
 # 1) Préparation des données
 # ===========================
 prep_marker_data <- function(df,
-                             prefix,                 # ex: "ADR1L", "ADR2L", "M_ADR1", "M_ADR2"
+                             prefix,                 # "ADR1L", "ADR2L", "M_ADR1", "M_ADR2"
                              id_col = "ID",
                              outcome_col = "Outcome",
-                             times = c("_J0","_J3_J5","_JS"),   # ordre = 1,2,3
-                             log1p_y = TRUE) {
+                             times = c("_J0","_J3_J5","_JS"),
+                             transform = c("log1p","log10","none","log2"),
+                             eps = 1e-6) {
+  
+  transform <- match.arg(transform)
   
   stopifnot(all(paste0(prefix, times) %in% names(df)),
             id_col %in% names(df),
             outcome_col %in% names(df))
   
-  time_cols <- paste0(prefix, times)             # ex: c("ADR1L_J0","ADR1L_J3_J5","ADR1L_JS")
+  time_cols  <- paste0(prefix, times)                       # ex. ADR1L_J0 ...
   time_names <- c("implantation","day 3 to 5","explantation")
   names(time_names) <- time_cols
   
   out <- df %>%
-    select(all_of(c(id_col, outcome_col, time_cols))) %>%
-    mutate(
+    dplyr::select(dplyr::all_of(c(id_col, outcome_col, time_cols))) %>%
+    dplyr::mutate(
       Outcomes = factor(
         .map_outcomes(.data[[outcome_col]]),
         levels = c("Death","Bridge to transplant or LVAD","ECMO Weaning")
       )
     ) %>%
-    pivot_longer(
-      cols = all_of(time_cols),
-      names_to = "marker_time",
+    tidyr::pivot_longer(
+      cols      = dplyr::all_of(time_cols),
+      names_to  = "marker_time",
       values_to = "value"
     ) %>%
-    mutate(
+    dplyr::mutate(
       time = dplyr::case_when(
         marker_time == time_cols[1] ~ 1,
         marker_time == time_cols[2] ~ 2,
         marker_time == time_cols[3] ~ 3,
         TRUE ~ NA_real_
       ),
-      value_log = if (log1p_y) log1p(value) else value
+      # --- transformation choisie ---
+      value_log = dplyr::case_when(
+        transform == "log1p" ~ log1p(pmax(as.numeric(value), 0)),
+        transform == "log10" ~ log10(pmax(as.numeric(value), 0) + eps),
+        transform == "log2"  ~ log2 (pmax(as.numeric(value), 0) + eps),
+        TRUE                  ~ as.numeric(value)  # none
+      )
     )
   
+  # Compter après la même logique que celle tracée
   count_data <- out %>%
-    filter(!is.na(value)) %>%
-    group_by(marker_time, Outcomes) %>%
-    summarise(n = n(), .groups = "drop") %>%
-    filter(!is.na(Outcomes))
+    dplyr::filter(is.finite(value_log), !is.na(Outcomes)) %>%
+    dplyr::group_by(marker_time, Outcomes) %>%
+    dplyr::summarise(n = dplyr::n(), .groups = "drop")
   
   list(
-    data = out,
-    counts = count_data,
-    x_labels = time_names
+    data     = out,
+    counts   = count_data,
+    x_labels = time_names,
+    transform = transform,
+    y_label  = switch(transform,
+                      "log1p" = "Log1p-transformed value",
+                      "log10" = "Log10-transformed value",
+                      "log2"  = "Log2-transformed value",
+                      "none"  = "Value")
   )
 }
 

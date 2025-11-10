@@ -118,6 +118,7 @@ To assess the association between ADRB1 and ADRB2 expression at the time of ECMO
 ```{r,include=FALSE}
 source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
 source("FUNCTIONS/Plot_cytokine.R")
+
 ```
 
 #DATA LOAD
@@ -1026,12 +1027,14 @@ Figure1_tot <- (Figure_1_1 + Figure_1_2 + Figure_1_3 + Figure_1_4) +
 Figure1_tot
 ```
 
-# Figure 2: Association between VTI and ADRB in Lymphocyte at day of weaning
+# Figure 2: Association between VTI and ADRB in Lymphocyte at admission
 
 ```{r,include=TRUE}
 #ADRB1
+
+df$ADR1L_J0
 F2_1_a <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_JS)%>%
+select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_J0)%>%
   mutate(
     VTI_JS = case_when(
       `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
@@ -1042,7 +1045,7 @@ select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_JS)%>%
    
 
  # Mann-Whitney test for VTI and ADRB1
-mann_whitney_VTI <- wilcox.test(ADR1L_JS ~ VTI_JS, data = F2_1_a)
+mann_whitney_VTI <- wilcox.test(log1p(ADR1L_J0) ~ VTI_JS, data = F2_1_a)
 
 # Extract and format the p-value
 p_value_VTI <- sprintf("%.3f", mann_whitney_VTI$p.value)
@@ -1052,11 +1055,11 @@ count_data <- F2_1_a %>%
   summarise(n = n())
 
 # Boxplot for ADRB1 with p-value annotation 
-Figure2a <- ggplot(F2_1_a, aes(x = VTI_JS, y = log10(ADR1L_JS), fill = VTI_JS)) +
+Figure2a <- ggplot(F2_1_a, aes(x = VTI_JS, y = log1p(ADR1L_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   geom_text(data = count_data,
-            aes(x = VTI_JS, y = min(log10(F2_1_a$ADR1_JS), na.rm = TRUE) * 1.25,
+            aes(x = VTI_JS, y = min(log1p(F2_1_a$ADR1L_J0), na.rm = TRUE) * 1.25,
                 label = paste0("n=", n)),
             size = 4,
             inherit.aes = FALSE) +
@@ -1064,20 +1067,20 @@ Figure2a <- ggplot(F2_1_a, aes(x = VTI_JS, y = log10(ADR1L_JS), fill = VTI_JS)) 
   labs(
     title = "A",
     x = "VTI measured at 1.5 L/min",
-    y = "% of lymphocytes expressing ADRB2 at ECMO weaning \n (log10 scale)"
+    y = "% of lymphocytes expressing ADRB1 at ECMO weaning \n (log scale)"
   ) +
   theme_minimal() +
   theme(legend.position = "none") +
   annotate("text",
            x = 1.5,
-           y = max(log10(F2_1_a$ADR1_JS), na.rm = TRUE),
+           y = max(log1p(F2_1_a$ADR1L_J0), na.rm = TRUE),
            label = paste("p:", p_value_VTI),
            size = 5, color = "black", hjust = 0.5)
 
 
 #ADRB2
 F2_2_a <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, ADR2L_JS)%>%
+select(`jsev_epr_sev_t1_1,5l_itv`, ADR2L_J0)%>%
   mutate(
     VTI_JS = case_when(
       `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
@@ -1086,9 +1089,9 @@ select(`jsev_epr_sev_t1_1,5l_itv`, ADR2L_JS)%>%
   )%>%
   na.omit()
    
-df$ADR2l_JS
+
  # Mann-Whitney test for VTI and ADRB2
-mann_whitney_VTI_2 <- wilcox.test(log10(ADR2_JS) ~ VTI_JS, data = F2_2_a)
+mann_whitney_VTI_2 <- wilcox.test(log1p(ADR2L_J0) ~ VTI_JS, data = F2_2_a)
 
 # Extract and format the p-value
 p_value_VTI_2 <- sprintf("%.3f", mann_whitney_VTI_2$p.value)
@@ -1098,7 +1101,7 @@ count_data <- F2_2_a %>%
   summarise(n = n(), .groups = "drop")
 
 # Boxplot for ADRB2 with p-value annotation 
-Figure2b <- ggplot(F2_2_a, aes(x = VTI_JS, y = log10(ADR2_JS), fill = VTI_JS)) +
+Figure2b <- ggplot(F2_2_a, aes(x = VTI_JS, y = log1p(ADR2L_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
@@ -1112,7 +1115,7 @@ Figure2b <- ggplot(F2_2_a, aes(x = VTI_JS, y = log10(ADR2_JS), fill = VTI_JS)) +
   annotate(
     "text",
     x = 1.5,
-    y = max(log10(F2_2_a$ADR2_JS), na.rm = TRUE),
+    y = max(log1p(F2_2_a$ADR2L_J0), na.rm = TRUE),
     label = paste("p:", p_value_VTI_2),
     size = 5,
     color = "black",
@@ -1122,7 +1125,7 @@ Figure2b <- ggplot(F2_2_a, aes(x = VTI_JS, y = log10(ADR2_JS), fill = VTI_JS)) +
     data = count_data,
     aes(
       x = VTI_JS,
-      y = min(log10(F2_2_a$ADR2_JS), na.rm = TRUE) * 1.25,  
+      y = min(log1p(F2_2_a$ADR2L_J0), na.rm = TRUE) * 1.25,  
       label = paste0("n=", n)
     ),
     inherit.aes = FALSE,
@@ -1141,14 +1144,13 @@ Figure2_tot <- Figure2a | Figure2b +
 Figure2_tot
 ```
 
-
-
-# Figure 3: Association between VTI and % of expression of ADRB on monocyte at day of weaning
+# Figure 3: Association between VTI and % of expression of ADRB on monocyte at admission
 
 ```{r,include=TRUE}
 #ADRB1
+
 F3_1 <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_JS)%>%
+select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR1_J0)%>%
   mutate(
     VTI_JS = case_when(
       `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
@@ -1158,7 +1160,7 @@ select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_JS)%>%
   na.omit()
    
  # Mann-Whitney test for VTI and ADRB1
-mann_whitney_VTI <- wilcox.test(log2(ADR1L_JS) ~ VTI_JS, data = F3_1)
+mann_whitney_VTI <- wilcox.test(log1p(M_ADR1_J0) ~ VTI_JS, data = F3_1)
 
 # Extract and format the p-value
 p_value_VTI <- sprintf("%.3f", mann_whitney_VTI$p.value)
@@ -1168,7 +1170,7 @@ count_data <- F3_1 %>%
   summarise(n = n())
 
 # Boxplot for ADRB1 with p-value annotation 
-Figure3a <- ggplot(F3_1, aes(x = VTI_JS, y = log2(ADR1L_JS), fill = VTI_JS)) +
+Figure3a <- ggplot(F3_1, aes(x = VTI_JS, y = log1p(M_ADR1_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   geom_text(data = count_data,
@@ -1180,20 +1182,20 @@ Figure3a <- ggplot(F3_1, aes(x = VTI_JS, y = log2(ADR1L_JS), fill = VTI_JS)) +
   labs(
     title = "A",
     x = "VTI measured at 1.5 L/min",
-    y = "% of lymphocyte expressing ADRB1  measured at ECMO weaning \n (log2 scale)"
+    y = "% of Monocytes expressing ADRB1  measured at ECMO weaning \n (log1 scale)"
   ) +
   theme_minimal() +
   theme(legend.position = "none") +
   annotate("text",
            x = 1.5,
-           y = max(log2(F3_1$ADR1L_JS), na.rm = TRUE),
+           y = max(log1p(F3_1$M_ADR1_J0), na.rm = TRUE),
            label = paste("p:", p_value_VTI),
            size = 5, color = "black", hjust = 0.5)
 
 
 #ADRB2
 F3_2 <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, ADR2L_JS)%>%
+select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR2_J0)%>%
   mutate(
     VTI_JS = case_when(
       `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
@@ -1204,7 +1206,7 @@ select(`jsev_epr_sev_t1_1,5l_itv`, ADR2L_JS)%>%
    
 
  # Mann-Whitney test for VTI and ADRB2
-mann_whitney_VTI_2 <- wilcox.test(log2(ADR2L_JS) ~ VTI_JS, data = F3_2)
+mann_whitney_VTI_2 <- wilcox.test(log1p(M_ADR2_J0) ~ VTI_JS, data = F3_2)
 
 # Extract and format the p-value
 p_value_VTI_2 <- sprintf("%.3f", mann_whitney_VTI_2$p.value)
@@ -1214,21 +1216,21 @@ count_data <- F3_2 %>%
   summarise(n = n(), .groups = "drop")
 
 # Boxplot for ADRB2 with p-value annotation 
-Figure3b <- ggplot(F3_2, aes(x = VTI_JS, y = log2(ADR2L_JS), fill = VTI_JS)) +
+Figure3b <- ggplot(F3_2, aes(x = VTI_JS, y = log1p(M_ADR2_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(
     title = "B",
     x = "VTI measured at 1.5L /min",
-    y = "% of lymphocyte expressing ADRB2 at ECMO weaning \n (log2 scale)"
+    y = "% of Monocytes expressing ADRB2 at ECMO weaning \n (log scale)"
   ) +
   theme_minimal() +
   theme(legend.position = "none") +
   annotate(
     "text",
     x = 1.5,
-    y = max(log2(F3_2$ADR2L_JS), na.rm = TRUE),
+    y = max(log1p(F3_2$M_ADR2_J0), na.rm = TRUE),
     label = paste("p:", p_value_VTI_2),
     size = 5,
     color = "black",
@@ -1238,7 +1240,7 @@ Figure3b <- ggplot(F3_2, aes(x = VTI_JS, y = log2(ADR2L_JS), fill = VTI_JS)) +
     data = count_data,
     aes(
       x = VTI_JS,
-      y = min(log2(F3_2$ADR2L_JS), na.rm = TRUE) * 1.25,  
+      y = min(log1p(F3_2$M_ADR2_J0), na.rm = TRUE) * 1.25,  
       label = paste0("n=", n)
     ),
     inherit.aes = FALSE,
@@ -1256,10 +1258,11 @@ Figure3_tot <- Figure3a | Figure3b +
 ```{r}
 Figure3_tot
 ```
+#Figure4 :Association between IL6 at admission and VTI
 
 ```{r}
-F3_3 <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR1_JS)%>%
+F4_1 <- df %>%
+select(`jsev_epr_sev_t1_1,5l_itv`, IL6_J0)%>%
   mutate(
     VTI_JS = case_when(
       `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
@@ -1270,30 +1273,30 @@ select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR1_JS)%>%
    
 
  # Mann-Whitney test for VTI and ADRB2
-mann_whitney_VTI_3 <- wilcox.test(log2(M_ADR1_JS) ~ VTI_JS, data = F3_3)
+mann_whitney_VTI_3 <- wilcox.test(log1p(IL6_J0) ~ VTI_JS, data = F4_1)
 
 # Extract and format the p-value
 p_value_VTI_2 <- sprintf("%.3f", mann_whitney_VTI_2$p.value)
 
-count_data <- F3_3 %>%
+count_data <- F4_1 %>%
   group_by(VTI_JS) %>%
   summarise(n = n(), .groups = "drop")
 # Boxplot for ADRB2 with p-value annotation 
-Figure3c <- ggplot(F3_3, aes(x = VTI_JS, y = log2(M_ADR1_JS), fill = VTI_JS)) +
+Figure4 <- ggplot(F3_3, aes(x = VTI_JS, y = log1p(IL6_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(
     title = "B",
     x = "VTI measured at 1.5L /min",
-    y = "% of monocyte expressing ADRB2 at ECMO weaning \n (log2 scale)"
+    y = "IL6  at implantation \n (log scale)"
   ) +
   theme_minimal() +
   theme(legend.position = "none") +
   annotate(
     "text",
     x = 1.5,
-    y = max(log2(F3_3$M_ADR1_JS), na.rm = TRUE),
+    y = max(log1p(F4_1$IL6_J0), na.rm = TRUE),
     label = paste("p:", p_value_VTI_2),
     size = 5,
     color = "black",
@@ -1303,60 +1306,7 @@ Figure3c <- ggplot(F3_3, aes(x = VTI_JS, y = log2(M_ADR1_JS), fill = VTI_JS)) +
     data = count_data,
     aes(
       x = VTI_JS,
-      y = min(log2(F3_3$M_ADR1_JS), na.rm = TRUE) * 1.25,  
-      label = paste0("n=", n)
-    ),
-    inherit.aes = FALSE,
-    size = 4
-  )
-
-
-F3_4 <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR2_JS)%>%
-  mutate(
-    VTI_JS = case_when(
-      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
-      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
-    )
-  )%>%
-  na.omit()
-   
-
- # Mann-Whitney test for VTI and ADRB2
-mann_whitney_VTI_4 <- wilcox.test(log2(M_ADR2_JS) ~ VTI_JS, data = F3_4)
-
-# Extract and format the p-value
-p_value_VTI_4 <- sprintf("%.3f", mann_whitney_VTI_4$p.value)
-
-count_data <- F3_4 %>%
-  group_by(VTI_JS) %>%
-  summarise(n = n(), .groups = "drop")
-# Boxplot for ADRB2 with p-value annotation 
-Figure3d <- ggplot(F3_4, aes(x = VTI_JS, y = log2(M_ADR2_JS), fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(
-    title = "B",
-    x = "VTI measured at 1.5L /min",
-    y = "% of monocyte expressing ADRB2 at ECMO weaning \n (log2 scale)"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  annotate(
-    "text",
-    x = 1.5,
-    y = max(log2(F3_4$M_ADR2_JS), na.rm = TRUE),
-    label = paste("p:", p_value_VTI_4),
-    size = 5,
-    color = "black",
-    hjust = 0.5
-  ) +
-  geom_text(
-    data = count_data,
-    aes(
-      x = VTI_JS,
-      y = min(log2(F3_4$M_ADR2_JS), na.rm = TRUE) * 1.25,  
+      y = min(log1p(F4_1$IL6_J0), na.rm = TRUE) * 1.25,  
       label = paste0("n=", n)
     ),
     inherit.aes = FALSE,
@@ -1366,345 +1316,7 @@ Figure3d <- ggplot(F3_4, aes(x = VTI_JS, y = log2(M_ADR2_JS), fill = VTI_JS)) +
 ```
 
 
-```{r}
-
-F3_5 <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, L_TH2_JS)%>%
-  mutate(
-    VTI_JS = case_when(
-      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
-      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
-    )
-  )%>%
-  na.omit()
-   
-
- # Mann-Whitney test for VTI and ADRB2
-mann_whitney_VTI_5 <- wilcox.test(log2(L_TH2_JS) ~ VTI_JS, data = F3_5)
-
-# Extract and format the p-value
-p_value_VTI_5 <- sprintf("%.3f", mann_whitney_VTI_5$p.value)
-
-count_data <- F3_5 %>%
-  group_by(VTI_JS) %>%
-  summarise(n = n(), .groups = "drop")
-# Boxplot for TH2 with p-value annotation 
-
-Figure3d <- ggplot(F3_5, aes(x = VTI_JS, y = log2(L_TH2_JS), fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(
-    title = "B",
-    x = "VTI measured at 1.5L /min",
-    y = "% of LT TH2 expressing at ECMO weaning \n (log2 scale)"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  annotate(
-    "text",
-    x = 1.5,
-    y = max(log2(F3_5$L_TH2_JS), na.rm = TRUE),
-    label = paste("p:", p_value_VTI_5),
-    size = 5,
-    color = "black",
-    hjust = 0.5
-  ) +
-  geom_text(
-    data = count_data,
-    aes(
-      x = VTI_JS,
-      y = min(log2(F3_5$L_TH2_JS), na.rm = TRUE) * 1.25,  
-      label = paste0("n=", n)
-    ),
-    inherit.aes = FALSE,
-    size = 4
-  )
-```
-
-
-```{r}
-F3_6 <- df %>%
-select(`jsev_epr_sev_t1_1,5l_itv`, L_TH1_JS)%>%
-  mutate(
-    VTI_JS = case_when(
-      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
-      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
-    )
-  )%>%
-  na.omit()
-   
-
- # Mann-Whitney test for VTI and ADRB2
-mann_whitney_VTI_6 <- wilcox.test(log2(L_TH1_JS) ~ VTI_JS, data = F3_6)
-
-# Extract and format the p-value
-p_value_VTI_6 <- sprintf("%.3f", mann_whitney_VTI_6$p.value)
-
-count_data <- F3_6 %>%
-  group_by(VTI_JS) %>%
-  summarise(n = n(), .groups = "drop")
-# Boxplot for ADRB2 with p-value annotation 
-Figure3e <- ggplot(F3_6, aes(x = VTI_JS, y = log2(L_TH1_JS), fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(
-    title = "B",
-    x = "VTI measured at 1.5L /min",
-    y = "% of LT TH1 expressing at ECMO weaning \n (log2 scale)"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  annotate(
-    "text",
-    x = 1.5,
-    y = max(log2(F3_6$L_TH1_JS), na.rm = TRUE),
-    label = paste("p:", p_value_VTI_4),
-    size = 5,
-    color = "black",
-    hjust = 0.5
-  ) +
-  geom_text(
-    data = count_data,
-    aes(
-      x = VTI_JS,
-      y = max(log2(F3_6$L_TH1_JS), na.rm = TRUE),  
-      label = paste0("n=", n)
-    ),
-    inherit.aes = FALSE,
-    size = 4
-  )
-```
-
-
-# Figure 6: Survival \~ ADR in Lymphocyte
-
-```{r,include=TRUE}
-
-# ADRB1
-km_fit <- survfit(Surv(diff_days, j90_deces) ~ ADR1_D0_median, data = df)
-summary(km_fit)
-
-Figure_6 <- ggsurvplot(km_fit, data = df, 
-  pval = TRUE,               
-  pval.coord = c(10, 0.1),   
-  conf.int = FALSE,           
-  risk.table = TRUE,         
-  risk.table.height = 0.2,   
-  risk.table.y.text = TRUE,  
-  risk.table.title = "Number at Risk (number censored)",  
-  xlim = c(0, 90),         
-  break.time.by = 7,
-  legend.title = " ",       
-  palette = c("#E63946", "#457B9D"),
-  ggtheme = theme_minimal(),
-  legend.labs = c("High", "Low")
-)
-
-Figure_6 <- Figure_6 + ggtitle("90-day Survival Curves for ADRB1")
-
-# ADRB2
-km_fit <- survfit(Surv(diff_days, j90_deces) ~ ADR2_D0_median, data = df)
-
-Figure_6.1 <- ggsurvplot(km_fit, data = df, 
-  pval = TRUE,               
-  pval.coord = c(10, 0.1),   
-  conf.int = FALSE,           
-  risk.table = TRUE,         
-  risk.table.height = 0.2,   
-  risk.table.y.text = TRUE,  
-  risk.table.title = "Number at Risk (number censored)",  
-  xlim = c(0, 90),         
-  break.time.by = 7,
-  legend.title = " ",       
-  palette = c("#E63946", "#457B9D"),  
-  ggtheme = theme_minimal(),
-  legend.labs = c("High", "Low")
-)
-
-Figure_6.1 <- Figure_6.1 + ggtitle("90-day Survival Curves for ADRB2")
-
-# Combine the plots (ADR1 and ADR2) side by side with the risk tables
-Figure_6_combined <- plot_grid(Figure_6$plot, Figure_6$table, ncol = 1, align = "v", rel_heights = c(3, 1))
-Figure_6.1_combined <- plot_grid(Figure_6.1$plot, Figure_6.1$table, ncol = 1, align = "v", rel_heights = c(3, 1))
-
-# Remove titles from individual plots
-Figure_6_combined <- Figure_6_combined + theme(plot.title = element_blank())
-Figure_6.1_combined <- Figure_6.1_combined + theme(plot.title = element_blank())
-
-# Combine both survival plots (ADR1 and ADR2) together with a title
-Figure6_tot <- plot_grid(Figure_6_combined, Figure_6.1_combined, ncol = 2, align = "h")
-
-# Add a title to the combined figure
-Figure6_tot <- Figure6_tot + plot_annotation(title = "90-day Survival Curves for % of Lymphocytes expressing ADRB")
-
-```
-
-```{r}
-Figure6_tot
-```
-
-# Figure 6m: Survival \~ ADR in Monocyte
-
-```{r,include=TRUE}
-
-df_surv_m1 <- df %>%
-  filter(!is.na(ADR1m_D0_median), !is.na(diff_days_J28), !is.na(Outcome_censored_28))
-
-# ADRB1 on Monocytes
-km_fit_m1 <- survfit(Surv(diff_days, j90_deces) ~ ADR1m_D0_median, data = df)
-
-
-Fig_m1 <- ggsurvplot(km_fit_m1, data = df, 
-  pval = TRUE,               
-  pval.coord = c(10, 0.1),   
-  conf.int = FALSE,           
-  risk.table = TRUE,         
-  risk.table.height = 0.2,   
-  risk.table.y.text = TRUE,  
-  risk.table.title = "Number at Risk (number censored)",  
-  xlim = c(0, 90),         
-  break.time.by = 7,
-  legend.title = " ",       
-  palette = c("#E63946", "#457B9D"),
-  ggtheme = theme_minimal(),
-  legend.labs = c("High", "Low")
-)
-
-Fig_m1 <- Fig_m1 + ggtitle("90-day Survival Curves for ADRB1")
-
-# ADRB2 on Monocytes
-km_fit_m2 <- survfit(Surv(diff_days, j90_deces) ~ ADR2m_D0_median, data = df)
-
-Fig_m2 <- ggsurvplot(km_fit_m2, data = df, 
-  pval = TRUE,               
-  pval.coord = c(10, 0.1),   
-  conf.int = FALSE,           
-  risk.table = TRUE,         
-  risk.table.height = 0.2,   
-  risk.table.y.text = TRUE,  
-  risk.table.title = "Number at Risk (number censored)",  
-  xlim = c(0, 90),         
-  break.time.by = 7,
-  legend.title = " ",       
-  palette = c("#E63946", "#457B9D"),  
-  ggtheme = theme_minimal(),
-  legend.labs = c("High", "Low")
-)
-
-Fig_m2 <- Fig_m2 + ggtitle("28-day Survival Curves for ADRB2")
-
-# Combine plots
-Fig_m1_combined <- plot_grid(Fig_m1$plot, Fig_m1$table, ncol = 1, align = "v", rel_heights = c(3, 1))
-Fig_m2_combined <- plot_grid(Fig_m2$plot, Fig_m2$table, ncol = 1, align = "v", rel_heights = c(3, 1))
-
-Fig_m1_combined <- Fig_m1_combined + theme(plot.title = element_blank())
-Fig_m2_combined <- Fig_m2_combined + theme(plot.title = element_blank())
-
-Fig_monocyte_survival <- Fig_m1_combined + Fig_m2_combined +
-  plot_annotation(title = "90-day Survival Curves for % of monocytes expressing ADRB")
-```
-
-```{r}
-Fig_monocyte_survival
-```
-
-## Statistical analysis
-
-To assess the prognostic significance of baseline β-adrenergic receptor expression, we stratified patients based on the median value of ADRB1 and ADRB2 measured at ECMO initiation (D0). Survival analysis was performed using Kaplan–Meier curves and the log-rank test to compare 28-day survival between patients with “High” vs “Low” expression. Patients were censored at the time of ECMO weaning, heart transplantation or LVAD implantation. 
-
-## Results
-
-Although the differences did not reach statistical significance, a trend was observed indicating that patients with higher ADRB expression in both lymphocytes and monocytes at ECMO initiation had lower 28-day survival probability. This pattern suggests a potential association between adrenergic receptor activation and worse short-term outcomes.
-
-# Cytokines
-
-```{r}
-plot_cytokine <- function(df, cytokine_name) {
-  
-  # Colomn name
-  col_J0 <- paste0(cytokine_name, "_J0")
-  col_J3_J5 <- paste0(cytokine_name, "_J3_J5")
-  col_JS <- paste0(cytokine_name, "_JS")
-
-  # 1. dataset
-  data_plot <- df %>%
-    select(ID, Outcome, all_of(c(col_J0, col_J3_J5, col_JS))) %>%
-    mutate(
-      Outcomes = factor(case_when(
-        Outcome %in% c("Bridge to LVAD", "Bridge to Transplant") ~ "Bridge to transplant or LVAD",
-        TRUE ~ as.character(Outcome)
-      ), levels = c("Death", "Bridge to transplant or LVAD", "ECMO Weaning"))
-    ) %>%
-    pivot_longer(
-      cols = c(all_of(c(col_J0, col_J3_J5, col_JS))),
-      names_to = "cyto_time",
-      values_to = "value"
-    ) %>%
-    mutate(
-      time = case_when(
-        cyto_time == col_J0 ~ 1,
-        cyto_time == col_J3_J5 ~ 2,
-        cyto_time == col_JS ~ 3,
-        TRUE ~ NA_real_
-      ),
-      value_log = log1p(value)
-    )
-
-  # 2. n
-  count_data <- data_plot %>%
-    filter(!is.na(value)) %>%
-    group_by(cyto_time, Outcomes) %>%
-    summarise(n = n(), .groups = "drop") %>%
-    filter(!is.na(Outcomes))
-
-  # 3. Models
-  mod_no_interaction <- lmerTest::lmer(
-    value_log ~ time + Outcomes + (1 + time | ID),
-    data = data_plot
-  )
-
-  p_anova <- anova(mod_no_interaction, ddf = "Kenward-Roger")
-  p_time <- format.pval(p_anova["time", "Pr(>F)"], digits = 3, eps = .001)
-  p_outcome <- format.pval(p_anova["Outcomes", "Pr(>F)"], digits = 3, eps = .001)
-
-  # 4. Plot
-  p <- ggplot(data_plot, aes(x = cyto_time, y = value_log, fill = Outcomes)) +
-    geom_boxplot(position = position_dodge(0.7), width = 0.6) +
-    labs(
-      title = paste("Association between", cytokine_name, "and outcomes"),
-      x = "Times of measurement",
-      y = paste("Log of", cytokine_name)
-    ) +
-    geom_text(data = count_data, aes(
-      x = cyto_time,
-      y = -min(data_plot$value_log, na.rm = TRUE) * 0.01,
-      label = paste0("n=", n),
-      group = Outcomes
-    ), position = position_dodge(0.7), size = 4, vjust = 1) +
-    scale_x_discrete(labels = setNames(
-  c("implantation", "day 3 to 5", "explantation"),
-  c(col_J0, col_J3_J5, col_JS)
-)) +
-    scale_fill_manual(values = c(
-      "ECMO Weaning" = "#4DAF4A",
-      "Bridge to transplant or LVAD" = "#377EB8",
-      "Death" = "#F8766D"
-    )) +
-    annotate(
-      "text",
-      x = 1,
-      y = max(data_plot$value_log, na.rm = TRUE) * 1.1,
-      label = paste0("p[time]: ", p_time, " p[outcomes]: ", p_outcome),
-      parse = FALSE,
-      size = 4,
-      hjust = 0
-    )
-
-  print(p)
-}
-```
+# Figure 5: Cytokines
 
 # IL-6
 
@@ -1718,7 +1330,6 @@ plot_cytokine(df, "IL6")
 plot_cytokine(df, "IL5")
 ```
 
-Among the cytokines measured, IL-5 concentrations appeared lower in patients successfully weaned from ECMO, although differences across timepoints and outcomes did not reach statistical significance.
 
 # IL-8
 
@@ -1726,18 +1337,12 @@ Among the cytokines measured, IL-5 concentrations appeared lower in patients suc
 plot_cytokine(df, "IL8/CXCL8")
 ```
 
-Also IL-8 concentrations appeared clear lower in patients successfully weaned from ECMO, although differences across timepoints and outcomes did not reach statistical significance.
 
 # IL-10
 
 ```{r}
 plot_cytokine(df, "IL10")
-
-
-
 ```
-
-IL-10 levels showed a statistically significant change over time (p < 0.05), indicating dynamic modulation during the clinical course. However, no significant differences were observed across the defined outcome groups. 
 
 # GDF-15
 
@@ -1745,4 +1350,174 @@ IL-10 levels showed a statistically significant change over time (p < 0.05), ind
 plot_cytokine(df, "GDF-15")
 ```
 
-GDF-15 concentrations appeared lower in patients successfully weaned from ECMO, although differences across timepoints and outcomes did not reach statistical significance.
+```{r}
+
+F5_1 <- df %>%
+select(`jsev_epr_sev_t1_1,5l_itv`, L_TH2_J0)%>%
+  mutate(
+    VTI_JS = case_when(
+      `jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm",
+      `jsev_epr_sev_t1_1,5l_itv` <= 12 ~ "≤12 cm"
+    )
+  )%>%
+  na.omit()
+   
+
+ # Mann-Whitney test for VTI and ADRB2
+mann_whitney_VTI_5 <- wilcox.test(log1p(L_TH2_J0) ~ VTI_JS, data = F5_1)
+
+# Extract and format the p-value
+p_value_VTI_5 <- sprintf("%.3f", mann_whitney_VTI_5$p.value)
+
+count_data <- F5_1 %>%
+  group_by(VTI_JS) %>%
+  summarise(n = n(), .groups = "drop")
+# Boxplot for TH2 with p-value annotation 
+
+Figure3d <- ggplot(F5_1, aes(x = VTI_JS, y = log1p(L_TH2_J0), fill = VTI_JS)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(
+    title = "B",
+    x = "VTI measured at 1.5L /min",
+    y = "% of LT TH2 at implantation \n (log scale)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  annotate(
+    "text",
+    x = 1.5,
+    y = max(log1p(F5_1$L_TH2_J0), na.rm = TRUE),
+    label = paste("p:", p_value_VTI_5),
+    size = 5,
+    color = "black",
+    hjust = 0.5
+  ) +
+  geom_text(
+    data = count_data,
+    aes(
+      x = VTI_JS,
+      y = min(log1p(F5_1$L_TH2_J0), na.rm = TRUE) * 1.25,  
+      label = paste0("n=", n)
+    ),
+    inherit.aes = FALSE,
+    size = 4
+  )
+```
+
+
+# Figure 6: Survival \~ IL6 admission
+
+```{r,include=FALSE}
+df <- df%>%
+  mutate(IL6_median = as.factor(if_else(df$IL6_J0<=median(df$IL6_J0), "<=median", ">median" )
+                                ),
+         outcome_censored = case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~0,
+                                Outcome=="ECMO Weaning"~ 0, T~1),
+         outcome_FG = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~2,
+                                Outcome=="ECMO Weaning"~ 0, T~1))
+  )  
+
+#IL6
+km_fit <- survfit(Surv(diff_days, j90_deces) ~ IL6_median , data = df)
+summary(km_fit)
+
+Figure_6 <- ggsurvplot(km_fit, data = df, 
+  pval = TRUE,               
+  pval.coord = c(10, 0.1),   
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  
+  risk.table.title = "Number at Risk",  
+  xlim = c(0, 90),
+  ylab = "90 day survival",
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),
+  ggtheme = theme_minimal(),
+  legend.labs = c("below median", "above median"),
+  legend.position= "none"
+)
+
+####MODELE CENSURE POUR TRANSPLANTATION ET LVAD 
+
+fg <- finegray(Surv(diff_days, outcome_FG) ~ IL6_median, data = df, etype = 1)
+fit_fg <- coxph(Surv(fgstart, fgstop, fgstatus) ~ IL6_median,
+                data = fg, weights = fgwt)
+summary(fit_fg)
+
+km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+summary(km_fit)
+
+mod_censored <-coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+
+summary(mod_censored)# similar
+
+library(broom)
+
+res_cox <- tidy(mod_censored, exponentiate = TRUE, conf.int = TRUE)
+lab <- res_cox %>%
+  filter(grepl("^IL6_median", term)) %>%
+  mutate(
+    label = sprintf(
+      "HR = %.2f (95%% CI %.2f–%.2f)",
+      estimate, conf.low, conf.high
+    )
+  ) %>%
+  pull(label)
+
+lab
+
+Figure_6_censored <- ggsurvplot(km_fit_comp, data = df, 
+  pval = F,               
+  conf.int = FALSE,           
+  risk.table = TRUE,         
+  risk.table.height = 0.2,   
+  risk.table.y.text = TRUE,  
+  risk.table.title = "Number at Risk",  
+  xlim = c(0, 90),
+  ylab = "90 day survival",
+  break.time.by = 7,
+  legend.title = " ",       
+  palette = c("#E63946", "#457B9D"),
+  ggtheme = theme_bw(),
+  legend.labs = c("below median", "above median"),
+  legend.position= "none"
+)
+
+xmax <- max(df$diff_days, na.rm = TRUE)
+Figure_6_censored$plot <- Figure_6_censored$plot +
+  annotate("text", x = 0.2 * xmax, y = 0.95, hjust = 0,
+           label = lab, size = 3.7)
+
+```
+
+```{r}
+Figure_6_censored
+```
+
+#Figure 7:Association between IL6 and vasopressor dose
+
+```{r}
+
+prep_A1 <- prep_marker_data(df, prefix = "T4",transform= "log1p")
+test_A1 <- test_marker(prep_A1$data)
+Figure_7 <- plot_marker(
+  dat      = prep_A1$data,
+  counts   = prep_A1$counts,
+  x_labels = prep_A1$x_labels,
+  panel_title = "A",
+  y_var    = "value_log",
+  y_lab    = "Percentage of T4 lymphocytes"
+) +
+  annotate("text",
+           x = 1,
+           y = min(prep_A1$data$value_log, na.rm = TRUE) +1,
+           label = test_A1$label,
+           hjust = 0)
+
+```
+
+
