@@ -34,17 +34,17 @@ prep_marker_data <- function(df,
                              times = c("_J0","_J3_J5","_JS"),
                              transform = c("log1p","log10","none","log2"),
                              eps = 1e-6) {
-  
+
   transform <- match.arg(transform)
   
   stopifnot(all(paste0(prefix, times) %in% names(df)),
             id_col %in% names(df),
             outcome_col %in% names(df))
-  
+
   time_cols  <- paste0(prefix, times)                       # ex. ADR1L_J0 ...
   time_names <- c("implantation","day 3 to 5","explantation")
   names(time_names) <- time_cols
-  
+
   out <- df %>%
     dplyr::select(dplyr::all_of(c(id_col, outcome_col, time_cols))) %>%
     dplyr::mutate(
@@ -73,13 +73,13 @@ prep_marker_data <- function(df,
         TRUE                  ~ as.numeric(value)  # none
       )
     )
-  
+
   # Compter après la même logique que celle tracée
   count_data <- out %>%
     dplyr::filter(is.finite(value_log), !is.na(Outcomes)) %>%
     dplyr::group_by(marker_time, Outcomes) %>%
     dplyr::summarise(n = dplyr::n(), .groups = "drop")
-  
+
   list(
     data     = out,
     counts   = count_data,

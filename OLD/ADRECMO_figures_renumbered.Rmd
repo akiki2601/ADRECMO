@@ -1,0 +1,316 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: default
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+```{=html}
+<style type="text/css">
+h1.title { font-size: 38px; text-align: center; }
+h4.author, h4.date {
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+# markdown options depending on the output (html with R code and Word without)
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+options(max.print = .Machine$integer.max)
+# ensure output folders
+if (!dir.exists("FIGURES")) dir.create("FIGURES", recursive = TRUE)
+if (!dir.exists("Tables"))  dir.create("Tables",  recursive = TRUE)
+```
+
+```{r, include=FALSE}
+# Packages
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+library(gtsummary)
+library(sjlabelled)
+library(readxl)
+library(purrr)
+library(tableone)
+library(naniar)
+library(survival)
+library(survminer)
+library(patchwork)
+library(ggpmisc)
+library(cowplot)
+library(officer)
+library(flextable)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(forcats)
+library(ggnewscale)
+library(grid) # for unit()
+```
+
+# Figures
+
+> **Note**: This file assumes your data objects (`df`, `df_bio`, etc.) and helper functions (`prep_marker_data`, `test_marker`, `plot_marker`, `plot_cytokine`) are already defined above (as in your previous .Rmd). Only the figure section is rebuilt with the new numbering.
+
+## Figure 1 — Inflammatory heatmap according to outcomes
+
+```{r fig1_heatmap}
+# Markers
+pro_markers       <- c("IL1b","IL2","IL6","IL12p70","IL-33","TNFa","IFNg","IL17A/CTLA-8","IL8/CXCL8")
+cell_anti_inflam  <- c("L_TH2","M_IL10")
+anti_markers      <- c("IL4","IL5","IL10","GDF-15")
+cell_inflam       <- c("L_TH1","M_TNF","M_IL1","L_IL17_pathogen","L_IL17")
+
+df_long <- df_bio %>%
+  dplyr::select(
+    ID, Outcome,
+    dplyr::starts_with(pro_markers),
+    dplyr::starts_with(cell_inflam),
+    dplyr::starts_with(anti_markers),
+    dplyr::starts_with(cell_anti_inflam)
+  ) %>%
+  tidyr::pivot_longer(
+    cols = -c(ID, Outcome),
+    names_to  = c("BIO", "day"),
+    names_pattern = "(.*)_(J0|J3_J5|JS)$",
+    values_to = "value"
+  ) %>%
+  dplyr::filter(!is.na(value)) %>%
+  dplyr::mutate(
+    category = forcats::fct_relevel(
+      factor(dplyr::case_when(
+        BIO %in% pro_markers      ~ "plasma Pro-inf cyt",
+        BIO %in% cell_inflam      ~ "pro inf immune cell",
+        BIO %in% anti_markers     ~ "plasma anti-inf cyt",
+        BIO %in% cell_anti_inflam ~ "anti inf
+ immune cell",
+        TRUE                      ~ NA_character_
+      )),
+      c("plasma Pro-inf cyt","pro inf immune cell","plasma anti-inf cyt","anti inf
+ immune cell")
+    ),
+    BIO = forcats::fct_relevel(BIO, sort(unique(BIO)))
+  ) %>%
+  dplyr::filter(!is.na(category))
+
+df_long <- df_long %>%
+  dplyr::mutate(value_log = log1p(value)) %>%
+  dplyr::group_by(category) %>%
+  dplyr::mutate(value_z = (value_log - mean(value_log, na.rm = TRUE)) /
+                           sd(value_log,  na.rm = TRUE)) %>%
+  dplyr::ungroup()
+
+df_heat <- df_long %>%
+  dplyr::group_by(category, BIO, day, Outcome) %>%
+  dplyr::summarise(value_z = median(value_z, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::mutate(
+    BIO = gsub("_", " ", BIO),
+    Outcome = factor(Outcome, levels = c("Death","Bridge to Transplant or LVAD","ECMO Weaning"))
+  )
+
+pro_cats  <- c("plasma Pro-inf cyt","pro inf immune cell")
+anti_cats <- c("plasma anti-inf cyt","anti inf
+ immune cell")
+
+Figure1_heatmap <- ggplot() +
+  geom_tile(
+    data = dplyr::filter(df_heat, category %in% pro_cats),
+    aes(x = day, y = BIO, fill = value_z), color = "white"
+  ) +
+  scale_fill_gradientn(
+    colours = c("white","#fde0dc","#f9bdbb","#f36c60","#d32f2f"),
+    name    = "Z-score
+(log₁₊ x)",
+    limits  = c(-3, 3), oob = scales::squish,
+    guide   = guide_colorbar(order = 1)
+  ) +
+  ggnewscale::new_scale("fill") +
+  geom_tile(
+    data = dplyr::filter(df_heat, category %in% anti_cats),
+    aes(x = day, y = BIO, fill = value_z), color = "white"
+  ) +
+  scale_fill_gradientn(
+    colours = c("white","#e1f5fe","#81d4fa","#0288d1","#01579b"),
+    name    = "Z-score
+(log₁₊ x)",
+    limits  = c(-3, 3), oob = scales::squish,
+    guide   = guide_colorbar(order = 2)
+  ) +
+  ggnewscale::new_scale("fill") +
+  facet_grid(
+    rows = vars(category),
+    cols = vars(Outcome),
+    scales = "free_y",
+    switch = "y"
+  ) +
+  labs(title = "Inflammatory heatmap according to outcomes",
+       x = "Time points", y = NULL) +
+  theme_minimal(base_size = 9) +
+  theme(
+    panel.grid        = element_blank(),
+    axis.text.x       = element_text(angle = 45, hjust = 1, vjust = 1),
+    strip.text.y      = element_text(face = "bold"),
+    strip.text.x      = element_text(face = "bold", size = 11),
+    legend.key.height = grid::unit(0.7, "cm")
+  )
+
+Figure1_heatmap
+
+ggsave("FIGURES/Figure1_Inflammatory_heatmap.pdf",
+       plot = Figure1_heatmap, width = 210, height = 180, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+## Figure 2 — ADRB expressions vs outcomes (A–D)
+
+```{r fig2_adrb_outcomes}
+# Requires prep_marker_data(), test_marker(), plot_marker()
+prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "log1p")
+test_A1 <- test_marker(prep_A1$data)
+F2A <- plot_marker(prep_A1$data, prep_A1$counts, prep_A1$x_labels, "A",
+                   y_var = "value_log",
+                   y_lab = "Percentage of T4 lymphocyte expressing ADRB1
+(log1p scale)") +
+  annotate("text", x = 1, y = min(prep_A1$data$value_log, na.rm = TRUE) + 1,
+           label = test_A1$label, hjust = 0)
+
+prep_A2 <- prep_marker_data(df, prefix = "ADR2L", transform = "log1p")
+test_A2 <- test_marker(prep_A2$data)
+F2B <- plot_marker(prep_A2$data, prep_A2$counts, prep_A2$x_labels, "B",
+                   y_var = "value_log",
+                   y_lab = "Percentage of T4 lymphocyte expressing ADRB2
+(log1p scale)") +
+  annotate("text", x = 1, y = min(prep_A2$data$value_log, na.rm = TRUE) + 1,
+           label = test_A2$label, hjust = 0)
+
+prep_M1 <- prep_marker_data(df, prefix = "M_ADR1", transform = "log1p")
+test_M1 <- test_marker(prep_M1$data)
+F2C <- plot_marker(prep_M1$data, prep_M1$counts, prep_M1$x_labels, "C",
+                   y_var = "value_log",
+                   y_lab = "Percentage of monocytes expressing ADRB1
+(log1p scale)") +
+  annotate("text", x = 2, y = min(prep_M1$data$value_log, na.rm = TRUE),
+           label = test_M1$label, hjust = 0)
+
+prep_M2 <- prep_marker_data(df, prefix = "M_ADR2", transform = "log1p")
+test_M2 <- test_marker(prep_M2$data)
+F2D <- plot_marker(prep_M2$data, prep_M2$counts, prep_M2$x_labels, "D",
+                   y_var = "value_log",
+                   y_lab = "Percentage of monocytes expressing ADRB2
+(log1p scale)",
+                   show_legend = TRUE) +
+  annotate("text", x = 1, y = min(prep_M2$data$value_log, na.rm = TRUE) + 1,
+           label = test_M2$label, hjust = 0)
+
+Figure2_ADRB <- (F2A + F2B + F2C + F2D) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+Figure2_ADRB
+
+ggsave("FIGURES/Figure2_ADRB_vs_outcomes.pdf",
+       plot = Figure2_ADRB, width = 210, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+## Figure 3 — VTI (1.5 L/min) vs ADRB in lymphocytes at admission
+
+```{r fig3_vti_lymph}
+Figure2_tot
+ggsave("FIGURES/Figure3_VTI_vs_ADRB_lymphocytes.pdf",
+       plot = Figure2_tot, width = 180, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+## Figure 4 — VTI (1.5 L/min) vs ADRB in monocytes at admission
+
+```{r fig4_vti_mono}
+Figure3_tot
+ggsave("FIGURES/Figure4_VTI_vs_ADRB_monocytes.pdf",
+       plot = Figure3_tot, width = 180, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+## Figure 5 — Association between IL-6 at admission and VTI
+
+```{r fig5_il6_vti}
+Figure4
+ggsave("FIGURES/Figure5_IL6_vs_VTI.pdf",
+       plot = Figure4, width = 140, height = 110, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+## Figure 6 — Cytokines over time (IL-6, IL-5, IL-8, IL-10, GDF-15)
+
+```{r fig6_cytokines}
+F6_IL6   <- plot_cytokine(df, "IL6")
+F6_IL5   <- plot_cytokine(df, "IL5")
+F6_IL8   <- plot_cytokine(df, "IL8/CXCL8")
+F6_IL10  <- plot_cytokine(df, "IL10")
+F6_GDF15 <- plot_cytokine(df, "GDF-15")
+
+F6_IL6;   ggsave("FIGURES/Figure6A_IL6_over_time.pdf",   F6_IL6,   width=140, height=110, units="mm", device=cairo_pdf, bg="white")
+F6_IL5;   ggsave("FIGURES/Figure6B_IL5_over_time.pdf",   F6_IL5,   width=140, height=110, units="mm", device=cairo_pdf, bg="white")
+F6_IL8;   ggsave("FIGURES/Figure6C_IL8_over_time.pdf",   F6_IL8,   width=140, height=110, units="mm", device=cairo_pdf, bg="white")
+F6_IL10;  ggsave("FIGURES/Figure6D_IL10_over_time.pdf",  F6_IL10,  width=140, height=110, units="mm", device=cairo_pdf, bg="white")
+F6_GDF15; ggsave("FIGURES/Figure6E_GDF15_over_time.pdf", F6_GDF15, width=140, height=110, units="mm", device=cairo_pdf, bg="white")
+```
+
+## Figure 7 — Survival ~ IL-6 at admission
+
+```{r fig7_survival}
+Figure_6_censored
+ggsave("FIGURES/Figure7_Survival_IL6.pdf",
+       plot = Figure_6_censored$plot, width = 180, height = 130, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+## Figure 8 — IL-6 vs cumulative norepinephrine dose (Spearman)
+
+```{r fig8_spearman}
+cor_test_result <- cor.test(df$IL6_J0, df$NADcum_D0, method = "spearman", use = "complete.obs")
+rho  <- round(unname(cor_test_result$estimate), 2)
+pval <- signif(cor_test_result$p.value, 2)
+
+P8 <- df %>%
+  mutate(rank_IL6 = rank(IL6_J0, ties.method = "average"),
+         rank_NAD = rank(NADcum_D0, ties.method = "average")) %>%
+  ggplot(aes(x = rank_IL6, y = rank_NAD)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "loess", se = TRUE) +
+  labs(title = "Rank–rank association (Spearman)",
+       x = "IL-6 rank", y = "Cumulative norepinephrine dose rank") +
+  theme_classic(base_size = 14) +
+  annotate("text", x = Inf, y = Inf,
+           label = paste0("Spearman ρ = ", rho, "
+P = ", pval),
+           hjust = 1.1, vjust = 1.5, size = 4.5)
+
+P8
+ggsave("FIGURES/Figure8_Spearman_IL6_NAD.pdf",
+       plot = P8, width = 150, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```

@@ -2,7 +2,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(forcats)
-names(df_bio)
+
 # 1) Identifiez vos marqueurs pro- et anti-inflammatoires
 # --- vecteurs de variables ---
 pro_markers  <- c("IL1b", "IL2", "IL6","IL12p70", "IL-33", "TNFa", "IFNg", "IL17A/CTLA-8", "IL8/CXCL8")
@@ -114,7 +114,7 @@ pro_cats    <- c("plasma Pro-inf cyt", "pro inf immmune cell")
 anti_cats   <- c("plasma anti-inf cyt", "anti inf\n immmune cell")
 neutral_cats<- c("cells")
 
-p <- ggplot() +
+FIGURE1 <- ggplot() +
   # --- PRO (rouge) ---
   geom_tile(
     data = df_heat %>% dplyr::filter(category %in% pro_cats),
