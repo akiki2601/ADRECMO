@@ -41,9 +41,11 @@ h4.date { /* Header 4 - and the author and data headers use this too  */
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 # markdown options depending on the output (html with R code and Word without)
 output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
-if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
-if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
-if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "90%")
+
+if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "110%")
+if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "110%")
+if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "110%")
+
 options(max.print = .Machine$integer.max)
 
 # Ensure export directories exist
@@ -51,8 +53,7 @@ dir.create("FIGURES", showWarnings = FALSE)
 dir.create("Tables",  showWarnings = FALSE)
 ```
 
-# Package
-```{r,include=FALSE}
+```{r load package,include=FALSE}
 library(tidyverse)
 library(dplyr)
 library(readr)
@@ -87,8 +88,7 @@ The study was carried out in accordance with the Declaration of Helsinki and app
 
 ## Patient Population
 
-Cardiogenic shock was defined as a systolic blood pressure (SBP) <90 mmHg or a mean arterial pressure (MAP) <65 mmHg despite adequate volume resuscitation, accompanied by signs of peripheral hypoperfusion (e.g., cold extremities, oliguria, altered mental status) and a cardiac index <2.2 L/min/m². Refractoriness was defined as a hyporesponsiveness to norepinephrine and/or the persistence of profound clinical signs of hypoperfusion despite optimal resuscitation efforts.
-Eligible patients were adults (≥18 years old) affiliated with a  health insurance system. Cardiogenic shock etiologies included acute ischemic coronary artery disease, primary or ischemic-related dilated cardiomyopathy, myocarditis and stress-induced cardiomyopathy. Patients were excluded if cardiogenic shock was secondary to cardiotoxic poisoning, if they were pregnant, or were under legal protective supervision (e.g., court-appointed guardianship).
+Cardiogenic shock was defined as a systolic blood pressure (SBP) \<90 mmHg or a mean arterial pressure (MAP) \<65 mmHg despite adequate volume resuscitation, accompanied by signs of peripheral hypoperfusion (e.g., cold extremities, oliguria, altered mental status) and a cardiac index \<2.2 L/min/m². Refractoriness was defined as a hyporesponsiveness to norepinephrine and/or the persistence of profound clinical signs of hypoperfusion despite optimal resuscitation efforts. Eligible patients were adults (≥18 years old) affiliated with a health insurance system. Cardiogenic shock etiologies included acute ischemic coronary artery disease, primary or ischemic-related dilated cardiomyopathy, myocarditis and stress-induced cardiomyopathy. Patients were excluded if cardiogenic shock was secondary to cardiotoxic poisoning, if they were pregnant, or were under legal protective supervision (e.g., court-appointed guardianship).
 
 ## Data Collection
 
@@ -104,8 +104,7 @@ The aforementioned panel of circulating cytokines and immune mediators was quant
 
 ## ECMO Weaning Protocol
 
-A standardized weaning protocol was applied to all patients prior to ECMO explantation. At a constant mean arterial pressure (MAP) between 65 and 75 mmHg, cardiac output was assessed by transthoracic echocardiography at two predefined timepoints: 1. Baseline under full support (ECLS flow at 3.0 L/min) and 2. Low-flow test after 45 minutes of reduced ECMO flow (1.5 L/min).
-Measurements included velocity time integral (VTI) at the left ventricular outflow tract and left ventricular ejection fraction. Changes in norepinephrine and dobutamin dosage during this period were also documented. The decision to explant ECMO was based on clinical tolerance, hemodynamic stability and echocardiographic parameters during the weaning trial.
+A standardized weaning protocol was applied to all patients prior to ECMO explantation. At a constant mean arterial pressure (MAP) between 65 and 75 mmHg, cardiac output was assessed by transthoracic echocardiography at two predefined timepoints: 1. Baseline under full support (ECLS flow at 3.0 L/min) and 2. Low-flow test after 45 minutes of reduced ECMO flow (1.5 L/min). Measurements included velocity time integral (VTI) at the left ventricular outflow tract and left ventricular ejection fraction. Changes in norepinephrine and dobutamin dosage during this period were also documented. The decision to explant ECMO was based on clinical tolerance, hemodynamic stability and echocardiographic parameters during the weaning trial.
 
 ## Statistical Analysis
 
@@ -113,20 +112,16 @@ Baseline clinical, demographic and hemodynamic characteristics were summarized f
 
 To explore the distribution of ADRB1 and ADRB2 expression over time in relation to clinical outcomes, boxplots were generated at three timepoints (implantation, day 3–5, and explantation). To evaluate the temporal dynamics of ADRB1 and ADRB2 expression across clinical outcomes, we used linear mixed-effects models with time, outcome group (ECMO weaning, bridge to LVAD/transplant, or death), and their interaction as fixed effects. Random intercepts and slopes for time were included to account for intra-patient variability. When appropriate, receptor expression values were log10-transformed. Interaction terms were tested using likelihood ratio tests between full and reduced models, and Type III ANOVA with Kenward-Roger approximation was used for fixed effects.
 
-To assess the association between ADRB1 and ADRB2 expression at the time of ECMO weaning and left ventricular outflow tract velocity-time integral (VTI) measured at 1.5 L/min ECMO flow, patients were stratified according to a VTI threshold of 12 cm. Mann–Whitney U tests were used to compare log-transformed ADRB expression between the two groups (≤12 cm vs >12 cm). Results were visualized using boxplots.
+To assess the association between ADRB1 and ADRB2 expression at the time of ECMO weaning and left ventricular outflow tract velocity-time integral (VTI) measured at 1.5 L/min ECMO flow, patients were stratified according to a VTI threshold of 12 cm. Mann–Whitney U tests were used to compare log-transformed ADRB expression between the two groups (≤12 cm vs \>12 cm). Results were visualized using boxplots.
 
-# FUNCTIONS
-
-```{r,include=FALSE}
+```{r source-functions,include=FALSE}
 #source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
 source("FUNCTIONS/Plot_cytokine.R")
 source("FUNCTIONS/FIGURE1 function.R")
 source("FUNCTIONS/test_linearité.R")
 ```
 
-# DATA LOAD
-
-```{r,include=FALSE}
+```{r data-load,include=FALSE}
 # ADR LYMPHOCYTES
 fichier <- "DATA/df_i_stabilized.xlsx"
 feuilles <- excel_sheets(fichier)
@@ -396,7 +391,7 @@ df_bio <- df %>%
   )
 ```
 
-# TIMEPOINT CHECK OF THE BLOOD SAMPLE AT DAY 0
+# Timepoint check of the blood sample at day 0
 
 ```{r,include=TRUE}
 # Blood sample at day 0 before ECMO implant?
@@ -444,9 +439,7 @@ summary_stats <- df_clean %>%
 
 Day-0 blood samples were collected on average `r round(summary_stats$mean_minutes, 2)` hours (SD `r round(summary_stats$sd_minutes, 2)` hours) before ECMO implantation, ranging from `r round(summary_stats$min, 1)` hours before to `r round(summary_stats$min, 1)` hours after ECMO cannulation.
 
-# DATA Management
-
-```{r,include=TRUE}
+```{r data-management,include=TRUE}
 df <- df %>%
   mutate(
     Temp_D0 = round(Temp_D0, 1),
@@ -563,7 +556,7 @@ var.tot <- c(var.cat, var.cont)
 
 # TABLE 1: Characteristics of the population
 
-```{r,include=FALSE}
+```{r table1,include=FALSE}
 T1 <- df %>%
   dplyr::select(all_of(var.tot)) %>%
   mutate(across(all_of(var.cont), as.numeric), 
@@ -726,16 +719,17 @@ table1 <- flextable(as.data.frame(table_1_vf2)) %>%
   align(j = c(2:3), align = "center", part = "all")
 
 # Export DOCX
+
+```
+
+```{r table1 display}
+table1
 save_as_docx(table1, path = "Tables/Table1_characteristics.docx")
 ```
 
-```{r}
-table1
-```
+# TABLE 2a: Hemodynamic parameters on weaning day
 
-# Table 2a: Hemodynamic parameters on weaning day
-
-```{r, include=FALSE}
+```{r table2a, include=FALSE}
 df_long <- df %>%
   select(
     ID,
@@ -794,13 +788,13 @@ ft2a <- flextable(as.data.frame(table2a)) %>%
 save_as_docx(ft2a, path = "Tables/Table2a_weaning_hemodynamics.docx")
 ```
 
-```{r}
+```{r table2a-display}
 table2a
 ```
 
-# Table 2b: Hemodynamic parameters during the weaning test
+# TABLE 2b: Hemodynamic parameters during the weaning test
 
-```{r, include=FALSE}
+```{r table2b, include=FALSE}
 df_long <- df %>%
   select(
     ID,
@@ -852,7 +846,7 @@ ft2b <- flextable(as.data.frame(table2b)) %>%
 save_as_docx(ft2b, path = "Tables/Table2b_weaning_test.docx")
 ```
 
-```{r}
+```{rtable2b-display}
 table2b
 ```
 
@@ -860,7 +854,7 @@ No significant difference between VTI at 3 L and 1.5 L flow conditions at weanin
 
 # Figure 1: Inflammatory heatmap according to outcomes
 
-```{r fig1_heatmap, echo=FALSE, warning=FALSE, message=FALSE}
+```{r FIGURE1, include=FALSE}
 # Source the user's heatmap script
 source("FUNCTIONS/heatmap_1.R")
 
@@ -870,9 +864,19 @@ ggsave("FIGURES/Figure1_Inflammatory_heatmap.pdf",
              device = cairo_pdf, bg = "white")
 ```
 
-# Figure 2: Association between ADRB expressions and outcomes
+```{r FIGURE1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-```{r,include=FALSE}
+FIGURE1
+
+ggsave("FIGURES/Figure1.pdf",
+             plot   = FIGURE1,
+             width  = 210, height = 180, units = "mm",
+             device = cairo_pdf, bg = "white")
+```
+
+# FIGURE 2: Association between ADRB expressions and outcomes
+
+```{r Figure2_tot,include=FALSE}
 prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "log1p")
 test_A1 <- test_marker(prep_A1$data)
 Figure_2_1 <- plot_marker(
@@ -931,7 +935,7 @@ Figure2_tot <- (Figure_2_1 + Figure_2_2 + Figure_2_3 + Figure_2_4) +
   theme(legend.position = "bottom")
 ```
 
-```{r Figure1_tot, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure2_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 Figure2_tot
 
 ggsave("FIGURES/Figure2_ADRB_outcomes.pdf",
@@ -940,9 +944,9 @@ ggsave("FIGURES/Figure2_ADRB_outcomes.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# Figure 3: Association between VTI and ADRB in Lymphocyte at admission
+# FIGURE 3: Association between VTI and ADRB in Lymphocyte at admission
 
-```{r,include=TRUE}
+```{r Figure3,include=F}
 # ADRB1
 F3_1_a <- df %>%
   select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_J0) %>%
@@ -990,7 +994,11 @@ Figure3b <- ggplot(F3_2_a, aes(x = VTI_JS, y = log1p(ADR2L_J0), fill = VTI_JS)) 
 Figure3_tot <- Figure3a | Figure3b +
   plot_annotation(title = "Association between VTI at weaning and ADRB1/ADRB2 expression in lymphocyte", tag_levels = c("A","B"))
 
-Figure2_tot
+
+```
+
+```{r Figure3_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+Figure3_tot
 
 ggsave("FIGURES/Figure3_VTI_Lymphocyte_ADRB.pdf",
        plot   = Figure3_tot,
@@ -998,9 +1006,9 @@ ggsave("FIGURES/Figure3_VTI_Lymphocyte_ADRB.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# Figure 4: Association between VTI and % of expression of ADRB on monocyte at admission
+# FIGURE 4: Association between VTI and % of expression of ADRB on monocyte at admission
 
-```{r,include=TRUE}
+```{r Figure4,include=F}
 # ADRB1
 F4_1 <- df %>%
   select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR1_J0) %>%
@@ -1044,6 +1052,10 @@ Figure4b <- ggplot(F4_2, aes(x = VTI_JS, y = log1p(M_ADR2_J0), fill = VTI_JS)) +
 Figure4_tot <- Figure4a | Figure4b +
   plot_annotation(title = "Association between VTI at weaning and % of monocytes expressing ADRB", tag_levels = c("A","B"))
 
+
+```
+
+```{r Figure4_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 Figure4_tot
 
 ggsave("FIGURES/Figure4_VTI_Monocyte_ADRB.pdf",
@@ -1052,9 +1064,9 @@ ggsave("FIGURES/Figure4_VTI_Monocyte_ADRB.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# Figure 5: Association between IL-6 at admission and VTI
+# FIGURE 5: Association between IL-6 at admission and VTI
 
-```{r}
+```{r Figure5, include =FALSE}
 F5_1 <- df %>%
   select(`jsev_epr_sev_t1_1,5l_itv`, IL6_J0) %>%
   mutate(VTI_JS = if_else(`jsev_epr_sev_t1_1,5l_itv` > 12, ">12 cm", "≤12 cm")) %>%
@@ -1080,6 +1092,10 @@ Figure5 <- ggplot(F5_1, aes(x = VTI_JS, y = log1p(IL6_J0), fill = VTI_JS)) +
             aes(x = VTI_JS, y = min(log1p(F5_1$IL6_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
             inherit.aes = FALSE, size = 4)
 
+
+```
+
+```{r Figure5-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 Figure5
 
 ggsave("FIGURES/Figure5_VTI_IL6.pdf",
@@ -1088,9 +1104,9 @@ ggsave("FIGURES/Figure5_VTI_IL6.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# Figure 6: Cytokines
+# FIGURE 6: Cytokines
 
-```{r}
+```{r Figure6,include=F}
 fig_IL6  <- plot_cytokine(df, "IL6")
 fig_IL5  <- plot_cytokine(df, "IL5")
 fig_IL8  <- plot_cytokine(df, "IL8/CXCL8")
@@ -1104,9 +1120,17 @@ ggsave("FIGURES/Figure6_IL10.pdf",     fig_IL10, width=160, height=120, units="m
 ggsave("FIGURES/Figure6_GDF15.pdf",    fig_GDF,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
 ```
 
-# Figure 7: Survival ~ IL-6 admission
+```{r Figure6-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+fig_IL6
+fig_IL5
+fig_IL8
+fig_IL10
+fig_GDF
+```
 
-```{r,include=FALSE}
+# FIGURE 7: Survival \~ IL-6 admission
+
+```{r Figure_7_censored,include=FALSE}
 F7 <- df
 
 km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = F7)
@@ -1114,10 +1138,13 @@ mod_censored <- coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = F7
 
 library(broom)
 res_cox <- tidy(mod_censored, exponentiate = TRUE, conf.int = TRUE)
+
 lab <- res_cox %>%
   filter(grepl("^IL6_median", term)) %>%
   mutate(label = sprintf("HR = %.2f (95%% CI %.2f–%.2f)", estimate, conf.low, conf.high)) %>%
   pull(label)
+
+lab2 <- median(df$IL6_J0)
 
 Figure_7_censored <- ggsurvplot(km_fit_comp, data = F7, 
   pval = FALSE, conf.int = FALSE, risk.table = TRUE, risk.table.height = 0.2,
@@ -1129,9 +1156,12 @@ Figure_7_censored <- ggsurvplot(km_fit_comp, data = F7,
 xmax <- max(df$diff_days, na.rm = TRUE)
 Figure_7_censored$plot <- Figure_7_censored$plot +
   annotate("text", x = 0.2 * xmax, y = 0.95, hjust = 0, label = lab, size = 3.7)
+
+Figure_7_censored$plot <- Figure_7_censored$plot +
+  annotate("text", x = 0.2 * xmax, y = 0.99, hjust = 0, label = paste0("Median IL-6 D0: ", lab2, " pg/ml"), size = 3.7)
 ```
 
-```{r}
+```{r Figure_7_censored-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 Figure_7_censored
 
 ggsave("FIGURES/Figure7_Survival_IL6_censored.pdf",
@@ -1140,16 +1170,16 @@ ggsave("FIGURES/Figure7_Survival_IL6_censored.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# Figure 8: Association between IL-6 and vasopressor dose
+# FIGURE 8: Association between IL-6 and vasopressor dose
 
-```{r,include=FALSE}
+```{r Figure8,include=FALSE}
 F8 <- df
 
 
 res_D0 <- test_linearity(
   data = F8,
   xvar = "log_value_IL6_D0",
-  yvar = "NADcum_D0_w"
+    yvar = "NADcum_D0_w"
 )
 res_D0
 
@@ -1216,8 +1246,7 @@ Figure8_JS <- make_il6_nad_plot(F8,
 
 ```
 
-
-```{r}
+```{r Figure8,display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 # Panel Figure 8 (3 temps côte à côte)
 Figure8 <- Figure8_D0 | Figure8_J3J5 | Figure8_JS
 Figure8
@@ -1229,10 +1258,9 @@ ggsave("FIGURES/Figure8.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
+# FIGURE 9: association between IL6 and ECMO flow
 
-# Figure 9: association between IL6 and Total flow
-
-```{r,include=FALSE}
+```{r Figure9,include=FALSE}
 
 # ------------------------------
 # 1) Préparation des données
@@ -1318,9 +1346,9 @@ F9_plot_3 <- ggplot(F9, aes(x = log_value_IL6_JS, y = jsev_ecmo_debit)) +
   theme_classic()
 ```
 
-```{r}
+```{r Figure9-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 # ------------------------------
-# 4) Panel final en ligne
+# 4) Panel final
 # ------------------------------
 F9_panel <- F9_plot | F9_plot_2 | F9_plot_3
 
@@ -1332,3 +1360,151 @@ ggsave("FIGURES/Figure9.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
+# Figure 10: IL6 and duration of Noradrenaline
+
+```{r Figure10, include=FALSE}
+
+F10 <- df
+
+cor_D0 <- cor.test(F10$log_value_IL6_D0,   F10$duree_NAd,    method = "spearman")
+rho_D0 <- round(cor_D0$estimate, 2); 
+p_D0  <- signif(cor_D0$p.value, 2)
+
+
+F10_plot <- ggplot(F10, aes(x = log_value_IL6_D0, y = duree_NAd)) +
+  geom_point(aes(color = factor(j90_deces)), alpha = 0.8, size = 2) +
+  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
+  annotate("text", x = Inf, y = Inf,
+           hjust = 1.1, vjust = 1.5, size = 5,
+           label = paste0("Spearman ρ = ", rho_JS, "\np = ", p_JS)) +
+  labs(x = "log(IL-6 + 1) D0", y = "Norepinephrine duration",
+       title = "") +
+  theme_classic()
+```
+
+```{r Figure10-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+F10_plot
+
+ggsave("FIGURES/Figure10.pdf",
+       plot   = F10_plot,
+       width  = 160, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+# FIGURE 11: IL6 at D0 and SOFA over-time
+
+```{r Figure11, include=FALSE}
+
+
+# Sous-donnée IL-6 + SOFA aux 3 temps
+F11 <- df %>%
+  select(
+    IL6_J0, IL6_J3_J5, IL6_JS,
+    sofa_D0, jp2_sofa, jsev_sofa
+  ) %>%
+  mutate(
+    log_IL6_D0    = log1p(IL6_J0),
+    log_IL6_J3J5  = log1p(IL6_J3_J5),
+    log_IL6_JS    = log1p(IL6_JS)
+  )
+data=F11
+il6_var ="log_IL6_D0"
+sofa_var = "sofa_D0"
+# Fonction utilitaire pour créer les terciles de SOFA + plot IL-6
+make_il6_sofa_panel <- function(data,
+                                il6_var,
+                                sofa_var,
+                                panel_label,
+                                time_label) {
+  
+  # On enlève les NA pour ce couple de variables
+  dat <- data %>%
+    select(all_of(c(il6_var, sofa_var))) %>%
+    filter(!is.na(.data[[il6_var]]), !is.na(.data[[sofa_var]]))
+  
+  if (nrow(dat) == 0) return(NULL)
+  
+  # Terciles de SOFA
+  qs <- quantile(dat[[sofa_var]], probs = c(0, 1/3, 2/3, 1), na.rm = TRUE)
+  # sécurisation des bornes entières
+  qs[1] <- floor(qs[1])
+  qs[4] <- ceiling(qs[4])
+  
+  dat <- dat %>%
+    mutate(
+      sofa_tercile = cut(
+        .data[[sofa_var]],
+        breaks = unique(qs),
+        include.lowest = TRUE,
+        right = TRUE
+      )
+    )
+  
+  # Labels propres pour les terciles
+  sofa_labels <- levels(dat$sofa_tercile)
+  dat$sofa_tercile <- factor(
+    dat$sofa_tercile,
+    levels = sofa_labels,
+    labels = paste0("T", seq_along(sofa_labels), " ", sofa_labels)
+  )
+  
+  # Test non paramétrique : Kruskal–Wallis (IL-6 ~ terciles de SOFA)
+  kw <- kruskal.test(dat[[il6_var]] ~ dat$sofa_tercile)
+  p_kw <- signif(kw$p.value, 2)
+  
+  ggplot(dat, aes(x = sofa_tercile, y = .data[[il6_var]], fill = sofa_tercile)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+    geom_jitter(width = 0.15, alpha = 0.7, size = 1.8) +
+    scale_fill_brewer(palette = "Blues", name = "SOFA terciles") +
+    labs(
+      title = paste0(panel_label, ": ", time_label),
+      x = "SOFA (terciles)",
+      y = "log(IL-6 + 1)"
+    ) +
+    annotate(
+      "text",
+      x = Inf, y = Inf,
+      hjust = 1.1, vjust = 1.5, size = 3.5,
+      label = paste0( "P = ", p_kw)
+    ) +
+    theme_classic(base_size = 11) +
+    theme(
+      legend.position = "none",
+      axis.text.x = element_text(angle = 30, hjust = 1)
+    )
+}
+
+
+# Construction des 3 panneaux
+F11_D0   <- make_il6_sofa_panel(F11,
+                                il6_var   = "log_IL6_D0",
+                                sofa_var  = "sofa_D0",
+                                panel_label = "A",
+                                time_label  = "D0")
+
+F11_J3J5 <- make_il6_sofa_panel(F11,
+                                il6_var   = "log_IL6_D0",
+                                sofa_var  = "jp2_sofa",
+                                panel_label = "B",
+                                time_label  = "D3–D5")
+
+F11_JS   <- make_il6_sofa_panel(F11,
+                                il6_var   = "log_IL6_D0",
+                                sofa_var  = "jsev_sofa",
+                                panel_label = "C",
+                                time_label  = "Weaning day")
+
+# Panel complet Figure 11
+Figure11 <- F11_D0 | F11_J3J5 | F11_JS
+```
+
+```{r Figure11-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+Figure11
+
+ggsave("FIGURES/Figure11.pdf",
+       plot   = Figure11,
+       width  = 160, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```

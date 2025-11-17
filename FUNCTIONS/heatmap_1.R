@@ -98,13 +98,22 @@ normality_results <- df_long %>%
 df_long_non_unique <- df_long %>%
   semi_join(normality_results, by = c("BIO", "day"))
 
+df_long_non_unique <- df_long_non_unique %>%
+  group_by(category, BIO, day, Outcome) %>%
+  mutate(n_case = n()) %>%   # <-- n calculé AVANT agrégation
+  ungroup()
+
 # Visualiser ceux qui ne sont PAS normalement distribués
 res <- normality_results %>%
   filter(p_value < 0.05)
 
 df_heat <- df_long_non_unique %>% 
   group_by(category, BIO, day, Outcome) %>% 
-  summarise(value_z = median(value_z, na.rm = TRUE), .groups = "drop")%>%
+  summarise(
+    value_z = median(value_z, na.rm = TRUE),
+    n       = first(n_case),     # <-- récupère le n calculé avant
+    .groups = "drop"
+  ) %>%
   mutate(BIO = gsub("_", " ", BIO))
 
 #### FIGURE#####
@@ -141,7 +150,14 @@ FIGURE1 <- ggplot() +
     oob     = scales::squish,
     guide   = guide_colorbar(order = 2)
   ) +
-  ggnewscale::new_scale("fill")  +
+  ggnewscale::new_scale("fill") +
+  
+  ## <<< ICI : nombre de sujets par case >>>
+  geom_text(
+    data = df_heat,
+    aes(x = day, y = BIO, label = n),
+    color = "black", size = 2.5
+  ) +
   
   facet_grid(
     rows = vars(category),
@@ -155,9 +171,9 @@ FIGURE1 <- ggplot() +
   ) +
   theme_minimal(base_size = 8) +
   theme(
-    panel.grid      = element_blank(),
-    axis.text.x     = element_text(angle = 45, hjust = 1),
-    strip.text.y    = element_text(face = "bold"),
-    strip.text.x    = element_text(face = "bold", size = 11),
+    panel.grid       = element_blank(),
+    axis.text.x      = element_text(angle = 45, hjust = 1),
+    strip.text.y     = element_text(face = "bold"),
+    strip.text.x     = element_text(face = "bold", size = 11),
     legend.key.height = unit(0.7, "cm")
   )
