@@ -1260,90 +1260,11 @@ ggsave("FIGURES/Figure8.pdf",
 
 # FIGURE 9: association between IL6 and ECMO flow
 
-```{r Figure9,include=FALSE}
+```{}
+```
 
-# ------------------------------
-# 1) Préparation des données
-# ------------------------------
+```{r}
 
-
-F9 <- df
-
-# ------------------------------
-# 1) Linéarité?
-# ------------------------------
-
-ggplot(F9, aes(x = log_value_IL6_D0, y = j0_ecmo_debit)) +
-  geom_point() +
-  geom_smooth(method = "lm", colour = "blue", se = FALSE) +       # modèle linéaire
-  geom_smooth(method = "loess", colour = "red", se = FALSE) +     # lissage non paramétrique
-  theme_classic()
-
-res_D0 <- test_linearity(
-  data = F9,
-  xvar = "log_value_IL6_D0",
-  yvar = "j0_ecmo_debit"
-)
-res_D0
-
-res_D3_D5 <- test_linearity(
-  data = F9,
-  xvar = "log_value_IL6_J3_J5",
-  yvar = "jp2_ecmo_debit"
-)
-res_D3_D5
-
-res_DW <- test_linearity(
-  data = F9,
-  xvar = "log_value_IL6_JS",
-  yvar = "jsev_ecmo_debit"
-)
-res_DW
-
-# ------------------------------
-# 2) Corrélations Spearman
-# ------------------------------
-cor_D0 <- cor.test(F9$j0_ecmo_debit,   F9$log_value_IL6_D0,    method = "spearman")
-cor_J3 <- cor.test(F9$jp2_ecmo_debit,  F9$log_value_IL6_J3_J5, method = "spearman")
-cor_JS <- cor.test(F9$jsev_ecmo_debit, F9$log_value_IL6_JS,    method = "spearman")
-
-rho_D0 <- round(cor_D0$estimate, 2); p_D0  <- signif(cor_D0$p.value, 2)
-rho_J3 <- round(cor_J3$estimate, 2); p_J3  <- signif(cor_J3$p.value, 2)
-rho_JS <- round(cor_JS$estimate, 2); p_JS  <- signif(cor_JS$p.value, 2)
-
-# ------------------------------
-# 3) Figures
-# ------------------------------
-
-F9_plot <- ggplot(F9, aes(x = log_value_IL6_D0, y = j0_ecmo_debit)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_D0, "\np = ", p_D0)) +
-  labs(x = "log(IL-6 + 1) D0", y = "ECMO Flow D0 (L/min)",
-       title = "A: D0") +
-  theme_classic()
-
-F9_plot_2 <- ggplot(F9, aes(x = log_value_IL6_J3_J5, y = jp2_ecmo_debit)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_J3, "\np = ", p_J3)) +
-  labs(x = "log(IL-6 + 1) D3-D5", y = "ECMO Flow D3–D5 (L/min)",
-       title = "B: D3–D5") +
-  theme_classic()
-
-F9_plot_3 <- ggplot(F9, aes(x = log_value_IL6_JS, y = jsev_ecmo_debit)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_JS, "\np = ", p_JS)) +
-  labs(x = "log(IL-6 + 1) weaning day", y = "ECMO Flow weaning day (L/min)",
-       title = "C: Weaning day") +
-  theme_classic()
 ```
 
 ```{r Figure9-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
@@ -1523,4 +1444,95 @@ Figure12 <- plot_marker(
   y_lab    = "Percentage of T4 lymphocyte (log transformed)"
 ) +
   annotate("text", x = 1, y = min(prep_A1$data$value_log, na.rm = TRUE) +1, label = test_A1$label, hjust = 0)
+```
+
+```{r Figure12-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+Figure12
+
+ggsave("FIGURES/Figure12.pdf",
+       plot   = Figure12,
+       width  = 160, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+# FIGURE 13: Renal function and IL6
+
+```{r}
+
+# ------------------------------
+# 1) Préparation des données
+# ------------------------------
+### --- Fonction CKD-EPI Créatinine 2009 --- ###
+ckd_epi_2021 <- function(creat_mgdl, age, gender) {
+  # si une info manque → NA
+  if (is.na(creat_mgdl) | is.na(age) | is.na(gender)) return(NA_real_)
+  
+  # paramètres selon le sexe et la créatinine
+  if (gender == "Women") {
+    A <- 0.7
+    B <- if (creat_mgdl <= 0.7) -0.241 else -1.2
+    sex_factor <- 1.012
+  } else if (gender == "Men") {
+    A <- 0.9
+    B <- if (creat_mgdl <= 0.9) -0.302 else -1.2
+    sex_factor <- 1
+  } else {
+    return(NA_real_)  # sexe non reconnu
+  }
+  
+  eGFR <- 142 *
+    (creat_mgdl / A)^B *
+    (0.9938 ^ age) *
+    sex_factor
+  
+  return(eGFR)
+}
+
+
+F13 <- df %>%
+  mutate(
+    # conversion µmol/L -> mg/dL
+    creat_D0_mgdl   = Creat_D0 / 88.4,
+    jp2_creat_mgdl  = jp2_creat / 88.4,
+    jsev_creat_mgdl = jsev_creat / 88.4,
+    
+    ### CKD-EPI calculé
+    CKD_D0_raw   = mapply(ckd_epi, creat_D0_mgdl,   Age, Gender),
+    CKD_J3J5_raw = mapply(ckd_epi, jp2_creat_mgdl,  Age, Gender),
+    CKD_JS_raw   = mapply(ckd_epi, jsev_creat_mgdl, Age, Gender),
+    
+    ### Règle : si EER = 1 → CKD = 15
+    CKD_D0   = ifelse(EER_D0   == 1, 15, CKD_D0_raw),
+    CKD_J3J5 = ifelse(jp2_eer  == 1, 15, CKD_J3J5_raw),
+    CKD_JS   = ifelse(jsev_eer == 1, 15, CKD_JS_raw)
+  ) %>%
+  select(-ends_with("_raw"), -ends_with("_mgdl"))
+ 
+
+
+make_il6_ckd_plot <- function(data, xvar, yvar, title_lab) {
+  # test Spearman
+  ct <- cor.test(data[[xvar]], data[[yvar]],
+                 method = "spearman", use = "complete.obs")
+  rho  <- round(unname(ct$estimate), 2)
+  pval <- signif(ct$p.value, 2)
+  
+  ggplot(data, aes(x = .data[[xvar]], y = .data[[yvar]])) +
+    geom_point(alpha = 0.7, color = "steelblue") +
+    geom_smooth(method = "loess", se = TRUE, span = 0.9,
+                color = "darkred") +
+    labs(
+      title = title_lab,
+      x = "log(IL-6 + 1)",
+      y = "CKD-EPI (ml/min/1.73m²)"
+    ) +
+    coord_cartesian(ylim = c(0, max(data[[yvar]],na.rm = T))) +   # <<< coupe en dessous de 0
+    theme_classic(base_size = 14) +
+    annotate("text", x = Inf, y = max(data[[yvar]],na.rm = T),
+             label = paste0("Spearman \u03C1 = ", rho, "\nP = ", pval),
+             hjust = 1.1, vjust = 1.5, size = 4.5)
+}
+
+
 ```
