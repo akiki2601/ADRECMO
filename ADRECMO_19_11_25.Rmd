@@ -78,6 +78,7 @@ library(lme4)
 library(lmerTest)
 library(emmeans)
 library(forcats)
+library(broom)
 ```
 
 # Method
@@ -115,10 +116,7 @@ To explore the distribution of ADRB1 and ADRB2 expression over time in relation 
 To assess the association between ADRB1 and ADRB2 expression at the time of ECMO weaning and left ventricular outflow tract velocity-time integral (VTI) measured at 1.5 L/min ECMO flow, patients were stratified according to a VTI threshold of 12 cm. Mann–Whitney U tests were used to compare log-transformed ADRB expression between the two groups (≤12 cm vs \>12 cm). Results were visualized using boxplots.
 
 ```{r source-functions,include=FALSE}
-#source("FUNCTIONS/Examples - RCS effect + interaction cont x factor + check normality 181224.R")
-source("FUNCTIONS/Plot_cytokine.R")
-source("FUNCTIONS/FIGURE1 function.R")
-source("FUNCTIONS/test_linearité.R")
+source("FUNCTIONS/fonctions.R")
 ```
 
 ```{r data-load,include=FALSE}
@@ -545,9 +543,29 @@ df <- df %>%
     outcome_censored = case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~0,
                                  Outcome=="ECMO Weaning"~ 0, TRUE~1),
     outcome_FG = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~2,
-                                  Outcome=="ECMO Weaning"~ 0, TRUE~1))
+                                  Outcome=="ECMO Weaning"~ 0, TRUE~1)),
+    # conversion µmol/L -> mg/dL
+    creat_D0_mgdl   = Creat_D0 / 88.4,
+    jp2_creat_mgdl  = jp2_creat / 88.4,
+    jsev_creat_mgdl = jsev_creat / 88.4,
+    
+    ### CKD-EPI calculé
+    CKD_D0_raw   = mapply(ckd_epi, creat_D0_mgdl,   Age, Gender),
+    CKD_J3J5_raw = mapply(ckd_epi, jp2_creat_mgdl,  Age, Gender),
+    CKD_JS_raw   = mapply(ckd_epi, jsev_creat_mgdl, Age, Gender),
+    
+    ### Règle : si EER = 1 → CKD = 15
+    CKD_D0   = ifelse(EER_D0   == 1, 15, CKD_D0_raw),
+    CKD_J3J5 = ifelse(jp2_eer  == 1, 15, CKD_J3J5_raw),
+    CKD_JS   = ifelse(jsev_eer == 1, 15, CKD_JS_raw),
+    
+    VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm")
+  ) %>%
+  select(-ends_with("_raw"), -ends_with("_mgdl")
   
   )
+
+
 
 var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF", "Cardiac_arrest_before_canul", "cause","ische", "IABP_D0", "Intubation", "EER_D0", "Outcome", "Betablocker", "Alphablocker", "Levosimendan", "j90_deces", "j28_deces")
 var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "Pulsepressure_D0", "HR_D0", "Temp_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "mean_NAD_24H", "mean_DOB_24H", "pH_D0", "Sao2_D0", "Paco2_D0", "Lact_D0", "Hco3_D0", "Creat_D0", "Urea_D0", "ALAT_D0", "ASAT_D0", "Bili_D0", "PT_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "DPP3_D0", "Plq_D0", "Lenght_eer", "Lenght_vm", "Time_hosp", "Time_ecmo")
@@ -852,24 +870,20 @@ table2b
 
 No significant difference between VTI at 3 L and 1.5 L flow conditions at weaning day (Wilcoxon test, p = `r format.pval(TEST$p.value, digits=3)`)
 
-# Figure 1: Inflammatory heatmap according to outcomes
+# FIGURE 1: Inflammatory heatmap according to outcomes
 
-```{r FIGURE1, include=FALSE}
+```{r Figure1, include=FALSE}
 # Source the user's heatmap script
 source("FUNCTIONS/heatmap_1.R")
 
-ggsave("FIGURES/Figure1_Inflammatory_heatmap.pdf",
-             plot   = FIGURE1,
-             width  = 210, height = 180, units = "mm",
-             device = cairo_pdf, bg = "white")
 ```
 
-```{r FIGURE1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-FIGURE1
+Figure1<-FIGURE1
 
 ggsave("FIGURES/Figure1.pdf",
-             plot   = FIGURE1,
+             plot   = Figure1,
              width  = 210, height = 180, units = "mm",
              device = cairo_pdf, bg = "white")
 ```
@@ -877,6 +891,7 @@ ggsave("FIGURES/Figure1.pdf",
 # FIGURE 2: Association between ADRB expressions and outcomes
 
 ```{r Figure2_tot,include=FALSE}
+
 prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "log1p")
 test_A1 <- test_marker(prep_A1$data)
 Figure_2_1 <- plot_marker(
@@ -886,7 +901,7 @@ Figure_2_1 <- plot_marker(
   panel_title = "A",
   y_var    = "value_log",
   y_lab    = "Percentage of T4 lymphocyte expressing ADRB1
-(log1p scale)"
+(log scale)"
 ) +
   annotate("text", x = 1, y = min(prep_A1$data$value_log, na.rm = TRUE) +1, label = test_A1$label, hjust = 0)
 
@@ -899,7 +914,7 @@ Figure_2_2 <- plot_marker(
   panel_title = "B",
   y_var    = "value_log",
   y_lab    = "Percentage of T4 lymphocyte expressing ADRB2
-(log1p scale)"
+(log scale)"
 ) +
   annotate("text", x = 1, y = min(prep_A2$data$value_log, na.rm = TRUE) +1, label = test_A2$label, hjust = 0)
 
@@ -912,7 +927,7 @@ Figure_2_3 <- plot_marker(
   panel_title = "C",
   y_var    = "value_log",
   y_lab    = "Percentage of monocytes expressing ADRB1
-(log1p scale)"
+(log scale)"
 ) +
   annotate("text", x = 2, y = min(prep_M1$data$value, na.rm = TRUE), label = test_M1$label, hjust = 0)
 
@@ -925,21 +940,22 @@ Figure_2_4 <- plot_marker(
   panel_title = "D",
   y_var    = "value_log",
   y_lab    = "Percentage of monocytes expressing ADRB2
-(log1p scale)",
+(log scale)",
   show_legend = TRUE
 ) +
   annotate("text", x = 1, y = min(prep_M2$data$value, na.rm = TRUE)+1, label = test_M2$label, hjust = 0)
 
-Figure2_tot <- (Figure_2_1 + Figure_2_2 + Figure_2_3 + Figure_2_4) +
+Figure2 <- (Figure_2_1 + Figure_2_2 + Figure_2_3 + Figure_2_4) +
   patchwork::plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 ```
 
 ```{r Figure2_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure2_tot
 
-ggsave("FIGURES/Figure2_ADRB_outcomes.pdf",
-       plot   = Figure2_tot,
+Figure2
+
+ggsave("FIGURES/Figure2.pdf",
+       plot   = Figure2,
        width  = 200, height = 150, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
@@ -947,61 +963,52 @@ ggsave("FIGURES/Figure2_ADRB_outcomes.pdf",
 # FIGURE 3: Association between VTI and ADRB in Lymphocyte at admission
 
 ```{r Figure3,include=F}
-# ADRB1
-F3_1_a <- df %>%
-  select(`jsev_epr_sev_t1_1,5l_itv`, ADR1L_J0) %>%
-  mutate(VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm")) %>%
-  tidyr::drop_na()
 
-mw_VTI1 <- wilcox.test(log1p(ADR1L_J0) ~ VTI_JS, data = F3_1_a)
+# ADRB1
+mw_VTI1 <- wilcox.test(log1p(ADR1L_J0) ~ VTI_JS, data = df)
 p_value_VTI <- sprintf("%.3f", mw_VTI1$p.value)
 
-count_data <- F3_1_a %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
+count_data <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
 
-Figure3a <- ggplot(F3_1_a, aes(x = VTI_JS, y = log1p(ADR1L_J0), fill = VTI_JS)) +
+Figure3a <- ggplot(df, aes(x = VTI_JS, y = log1p(ADR1L_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   geom_text(data = count_data,
-            aes(x = VTI_JS, y = min(log1p(F3_1_a$ADR1L_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
+            aes(x = VTI_JS, y = min(log1p(df$ADR1L_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
             size = 4, inherit.aes = FALSE) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(title = "A", x = "VTI measured at 1.5 L/min", y = "% of lymphocytes expressing ADRB1 at ECMO weaning \n (log scale)") +
   theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(F3_1_a$ADR1L_J0), na.rm = TRUE), label = paste("p:", p_value_VTI), size = 5)
+  annotate("text", x = 1.5, y = max(log1p(df$ADR1L_J0), na.rm = TRUE), label = paste("p:", p_value_VTI), size = 5)
 
 # ADRB2
-F3_2_a <- df %>%
-  select(`jsev_epr_sev_t1_1,5l_itv`, ADR2L_J0) %>%
-  mutate(VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm")) %>%
-  tidyr::drop_na()
 
-mw_VTI2 <- wilcox.test(log1p(ADR2L_J0) ~ VTI_JS, data = F3_2_a)
+mw_VTI2 <- wilcox.test(log1p(ADR2L_J0) ~ VTI_JS, data = df)
 p_value_VTI_2 <- sprintf("%.3f", mw_VTI2$p.value)
 
-count_data2 <- F3_2_a %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
+count_data2 <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
 
-Figure3b <- ggplot(F3_2_a, aes(x = VTI_JS, y = log1p(ADR2L_J0), fill = VTI_JS)) +
+Figure3b <- ggplot(df, aes(x = VTI_JS, y = log1p(ADR2L_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(title = "B", x = "VTI measured at 1.5 L/min", y = "% of lymphocytes expressing ADRB2 measured at ECMO weaning \n (log scale)") +
   theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(F3_2_a$ADR2L_J0), na.rm = TRUE), label = paste("p:", p_value_VTI_2), size = 5) +
+  annotate("text", x = 1.5, y = max(log1p(df$ADR2L_J0), na.rm = TRUE), label = paste("p:", p_value_VTI_2), size = 5) +
   geom_text(data = count_data2,
-            aes(x = VTI_JS, y = min(log1p(F3_2_a$ADR2L_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
+            aes(x = VTI_JS, y = min(log1p(df$ADR2L_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
             inherit.aes = FALSE, size = 4)
-
-Figure3_tot <- Figure3a | Figure3b +
-  plot_annotation(title = "Association between VTI at weaning and ADRB1/ADRB2 expression in lymphocyte", tag_levels = c("A","B"))
-
-
 ```
 
 ```{r Figure3_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure3_tot
+
+Figure3 <- Figure3a | Figure3b +
+  plot_annotation(title = "Association between VTI at weaning and ADRB1/ADRB2 expression in lymphocyte", tag_levels = c("A","B"))
+
+Figure3
 
 ggsave("FIGURES/Figure3_VTI_Lymphocyte_ADRB.pdf",
-       plot   = Figure3_tot,
+       plot   = Figure3,
        width  = 200, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
@@ -1010,56 +1017,47 @@ ggsave("FIGURES/Figure3_VTI_Lymphocyte_ADRB.pdf",
 
 ```{r Figure4,include=F}
 # ADRB1
-F4_1 <- df %>%
-  select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR1_J0) %>%
-  mutate(VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm")) %>%
-  tidyr::drop_na()
 
-mw_3a <- wilcox.test(log1p(M_ADR1_J0) ~ VTI_JS, data = F4_1)
+mw_3a <- wilcox.test(log1p(M_ADR1_J0) ~ VTI_JS, data = df)
 p_value_VTI <- sprintf("%.3f", mw_3a$p.value)
 
-count_data <- F4_1 %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
+count_data <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
 
-Figure4a <- ggplot(F4_1, aes(x = VTI_JS, y = log1p(M_ADR1_J0), fill = VTI_JS)) +
+Figure4a <- ggplot(df, aes(x = VTI_JS, y = log1p(M_ADR1_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   geom_text(data = count_data, aes(x = VTI_JS, y = -3, label = paste0("n=", n)), size = 4, inherit.aes = FALSE) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(title = "A", x = "VTI measured at 1.5 L/min", y = "% of Monocytes expressing ADRB1 measured at ECMO weaning \n (log scale)") +
   theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(F4_1$M_ADR1_J0), na.rm = TRUE), label = paste("p:", p_value_VTI), size = 5)
+  annotate("text", x = 1.5, y = max(log1p(df$M_ADR1_J0), na.rm = TRUE), label = paste("p:", p_value_VTI), size = 5)
 
 # ADRB2
-F4_2 <- df %>%
-  select(`jsev_epr_sev_t1_1,5l_itv`, M_ADR2_J0) %>%
-  mutate(VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm")) %>%
-  tidyr::drop_na()
 
-mw_3b <- wilcox.test(log1p(M_ADR2_J0) ~ VTI_JS, data = F4_2)
+mw_3b <- wilcox.test(log1p(M_ADR2_J0) ~ VTI_JS, data = df)
 p_value_VTI_2 <- sprintf("%.3f", mw_3b$p.value)
 
-count_data2 <- F4_2 %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
+count_data2 <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
 
-Figure4b <- ggplot(F4_2, aes(x = VTI_JS, y = log1p(M_ADR2_J0), fill = VTI_JS)) +
+Figure4b <- ggplot(df, aes(x = VTI_JS, y = log1p(M_ADR2_J0), fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(title = "B", x = "VTI measured at 1.5 L/min", y = "% of Monocytes expressing ADRB2 at ECMO weaning \n (log scale)") +
   theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(F4_2$M_ADR2_J0), na.rm = TRUE), label = paste("p:", p_value_VTI_2), size = 5) +
-  geom_text(data = count_data2, aes(x = VTI_JS, y = min(log1p(F4_2$M_ADR2_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)), inherit.aes = FALSE, size = 4)
-
-Figure4_tot <- Figure4a | Figure4b +
-  plot_annotation(title = "Association between VTI at weaning and % of monocytes expressing ADRB", tag_levels = c("A","B"))
-
-
+  annotate("text", x = 1.5, y = max(log1p(df$M_ADR2_J0), na.rm = TRUE), label = paste("p:", p_value_VTI_2), size = 5) +
+  geom_text(data = count_data2, aes(x = VTI_JS, y = min(log1p(df$M_ADR2_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)), inherit.aes = FALSE, size = 4)
 ```
 
 ```{r Figure4_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure4_tot
 
-ggsave("FIGURES/Figure4_VTI_Monocyte_ADRB.pdf",
-       plot   = Figure4_tot,
+Figure4 <- Figure4a | Figure4b +
+  plot_annotation(title = "Association between VTI at weaning and % of monocytes expressing ADRB", tag_levels = c("A","B"))
+
+Figure4
+
+ggsave("FIGURES/Figure4.pdf",
+       plot   = Figure4,
        width  = 200, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
@@ -1067,38 +1065,35 @@ ggsave("FIGURES/Figure4_VTI_Monocyte_ADRB.pdf",
 # FIGURE 5: Association between IL-6 at admission and VTI
 
 ```{r Figure5, include =FALSE}
-F5_1 <- df %>%
-  select(`jsev_epr_sev_t1_1,5l_itv`, IL6_J0) %>%
-  mutate(VTI_JS = if_else(`jsev_epr_sev_t1_1,5l_itv` > 12, ">12 cm", "≤12 cm")) %>%
-  tidyr::drop_na()
+mw  <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
+p  <- sprintf("%.3f", mw$p.value)
+n   <- df %>% count(VTI_JS)
 
-mw_F5  <- wilcox.test(log1p(IL6_J0) ~ VTI_JS, data = F5_1)
-p_F5  <- sprintf("%.3f", mw_F5$p.value)
-n_F5   <- F5_1 %>% count(VTI_JS)
+y_max <- max(df$log_value_IL6_JS, na.rm = TRUE)
+y_min <- min(df$log_value_IL6_JS, na.rm = TRUE)
 
-Figure5 <- ggplot(F5_1, aes(x = VTI_JS, y = log1p(IL6_J0), fill = VTI_JS)) +
+Figure5 <- ggplot(df, aes(x = VTI_JS, y = log_value_IL6_JS, fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
   labs(
-    title = "Association between VTI and IL-6 at implantation",
+    title = "Association between VTI and IL-6 at weaning",
     x = "VTI measured at 1.5 L/min",
-    y = "IL-6 at implantation (log scale)"
+    y = "log(IL-6 + 1) at weaning"
   ) +
   theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(F5_1$IL6_J0), na.rm = TRUE),
-           label = paste("p:", p_F5), size = 5, color = "black") +
-  geom_text(data = n_F5,
-            aes(x = VTI_JS, y = min(log1p(F5_1$IL6_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
+  annotate("text", x = 1.5, y = y_max,
+           label = paste("p:", p), size = 5, color = "black") +
+  geom_text(data = n,
+            aes(x = VTI_JS, y = y_min * 1.25, label = paste0("n=", n)),
             inherit.aes = FALSE, size = 4)
-
-
 ```
 
 ```{r Figure5-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
 Figure5
 
-ggsave("FIGURES/Figure5_VTI_IL6.pdf",
+ggsave("FIGURES/Figure5.pdf",
        plot   = Figure5,
        width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
@@ -1112,6 +1107,16 @@ fig_IL5  <- plot_cytokine(df, "IL5")
 fig_IL8  <- plot_cytokine(df, "IL8/CXCL8")
 fig_IL10 <- plot_cytokine(df, "IL10")
 fig_GDF  <- plot_cytokine(df, "GDF-15")
+```
+
+```{r Figure6-display, fig.width=8, fig.height=6, fig.scale=2, dpi=300, fig.align='center'}
+
+fig_IL6
+fig_IL5
+fig_IL8
+fig_IL10
+fig_GDF
+
 
 ggsave("FIGURES/Figure6_IL6.pdf",      fig_IL6,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
 ggsave("FIGURES/Figure6_IL5.pdf",      fig_IL5,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
@@ -1120,23 +1125,13 @@ ggsave("FIGURES/Figure6_IL10.pdf",     fig_IL10, width=160, height=120, units="m
 ggsave("FIGURES/Figure6_GDF15.pdf",    fig_GDF,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
 ```
 
-```{r Figure6-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-fig_IL6
-fig_IL5
-fig_IL8
-fig_IL10
-fig_GDF
-```
-
 # FIGURE 7: Survival \~ IL-6 admission
 
 ```{r Figure_7_censored,include=FALSE}
-F7 <- df
 
-km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = F7)
-mod_censored <- coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = F7)
+km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+mod_censored <- coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
 
-library(broom)
 res_cox <- tidy(mod_censored, exponentiate = TRUE, conf.int = TRUE)
 
 lab <- res_cox %>%
@@ -1146,7 +1141,7 @@ lab <- res_cox %>%
 
 lab2 <- median(df$IL6_J0)
 
-Figure_7_censored <- ggsurvplot(km_fit_comp, data = F7, 
+Figure_7 <- ggsurvplot(km_fit_comp, data = df, 
   pval = FALSE, conf.int = FALSE, risk.table = TRUE, risk.table.height = 0.2,
   risk.table.y.text = TRUE, risk.table.title = "Number at Risk",
   xlim = c(0, 90), ylab = "90 day survival", break.time.by = 7,
@@ -1154,18 +1149,19 @@ Figure_7_censored <- ggsurvplot(km_fit_comp, data = F7,
   legend.labs = c("below median", "above median"), legend.position= "none")
 
 xmax <- max(df$diff_days, na.rm = TRUE)
-Figure_7_censored$plot <- Figure_7_censored$plot +
+Figure_7$plot <- Figure_7$plot +
   annotate("text", x = 0.2 * xmax, y = 0.95, hjust = 0, label = lab, size = 3.7)
 
-Figure_7_censored$plot <- Figure_7_censored$plot +
+Figure_7$plot <- Figure_7$plot +
   annotate("text", x = 0.2 * xmax, y = 0.99, hjust = 0, label = paste0("Median IL-6 D0: ", lab2, " pg/ml"), size = 3.7)
 ```
 
 ```{r Figure_7_censored-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure_7_censored
 
-ggsave("FIGURES/Figure7_Survival_IL6_censored.pdf",
-       plot   = Figure_7_censored$plot,
+Figure_7$plot 
+
+ggsave("FIGURES/Figure7.pdf",
+       plot   = Figure_7$plot,
        width  = 180, height = 140, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
@@ -1173,11 +1169,9 @@ ggsave("FIGURES/Figure7_Survival_IL6_censored.pdf",
 # FIGURE 8: Association between IL-6 and vasopressor dose
 
 ```{r Figure8,include=FALSE}
-F8 <- df
-
 
 res_D0 <- test_linearity(
-  data = F8,
+  data = df,
   xvar = "log_value_IL6_D0",
     yvar = "NADcum_D0_w"
 )
@@ -1185,73 +1179,48 @@ res_D0
 
 
 res_J3_J5 <- test_linearity(
-  data = F8,
+  data = df,
   xvar = "log_value_IL6_J3_J5",
   yvar = "jp2_NAd_cum_w"
 )
 res_J3_J5
 
 
-
 res_JS <- test_linearity(
-  data = F8,
+  data = df,
   xvar = "log_value_IL6_JS",
   yvar = "jsev_NAd_cum_w"
 )
 res_JS
 
-
-
-make_il6_nad_plot <- function(data, xvar, yvar, title_lab) {
-  # test Spearman
-  ct <- cor.test(data[[xvar]], data[[yvar]],
-                 method = "spearman", use = "complete.obs")
-  rho  <- round(unname(ct$estimate), 2)
-  pval <- signif(ct$p.value, 2)
-  
-  ggplot(data, aes(x = .data[[xvar]], y = .data[[yvar]])) +
-    geom_point(alpha = 0.7, color = "steelblue") +
-    geom_smooth(method = "loess", se = TRUE, span = 0.9,
-                color = "darkred") +
-    labs(
-      title = title_lab,
-      x = "log(IL-6 + 1)",
-      y = "log(Cumulative norepinephrine dose (mg/kg/day)+1)"
-    ) +
-    coord_cartesian(ylim = c(0, max(data[[yvar]],na.rm = T))) +   # <<< coupe en dessous de 0
-    theme_classic(base_size = 14) +
-    annotate("text", x = Inf, y = max(data[[yvar]],na.rm = T),
-             label = paste0("Spearman \u03C1 = ", rho, "\nP = ", pval),
-             hjust = 1.1, vjust = 1.5, size = 4.5)
-}
-
-
 # D0
-Figure8_D0 <- make_il6_nad_plot(F8,
+Figure8_D0 <- make_il6_cor_plot(df,
                                 xvar = "log_value_IL6_D0",
                                 yvar = "NADcum_D0_w",
+                                ylab= "log(Cumulative norepinephrine dose (mg/kg/day)+1)",
                                 title_lab = "A: D0")
 
 # J3–J5
-Figure8_J3J5 <- make_il6_nad_plot(F8,
+Figure8_J3J5 <- make_il6_cor_plot(df,
                                   xvar = "log_value_IL6_J3_J5",
                                   yvar = "jp2_NAd_cum_w",
+                                  ylab= "log(Cumulative norepinephrine dose (mg/kg/day)+1)",
                                   title_lab = "B: D3–D5")
 
 # JS
-Figure8_JS <- make_il6_nad_plot(F8,
+Figure8_JS <- make_il6_cor_plot(df,
                                 xvar = "log_value_IL6_JS",
                                 yvar = "jsev_NAd_cum_w",
+                                ylab= "log(Cumulative norepinephrine dose (mg/kg/day)+1)",
                                 title_lab = "C: DS")
-
 ```
 
 ```{r Figure8,display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-# Panel Figure 8 (3 temps côte à côte)
+
 Figure8 <- Figure8_D0 | Figure8_J3J5 | Figure8_JS
+
 Figure8
 
-# Export en PDF (figure 8 complète)
 ggsave("FIGURES/Figure8.pdf",
        plot   = Figure8,
        width  = 240, height = 120, units = "mm",
@@ -1263,93 +1232,57 @@ ggsave("FIGURES/Figure8.pdf",
 ```{r Figure9, include=F}
 
 # ------------------------------
-# 1) Préparation des données
-# ------------------------------
-
-
-F9 <- df
-
-# ------------------------------
 # 1) Linéarité?
 # ------------------------------
 
-ggplot(F9, aes(x = log_value_IL6_D0, y = j0_ecmo_debit)) +
+ggplot(df, aes(x = log_value_IL6_D0, y = j0_ecmo_debit)) +
   geom_point() +
   geom_smooth(method = "lm", colour = "blue", se = FALSE) +       # modèle linéaire
   geom_smooth(method = "loess", colour = "red", se = FALSE) +     # lissage non paramétrique
   theme_classic()
 
 res_D0 <- test_linearity(
-  data = F9,
+  data = df,
   xvar = "log_value_IL6_D0",
   yvar = "j0_ecmo_debit"
 )
 res_D0
 
 res_D3_D5 <- test_linearity(
-  data = F9,
+  data = df,
   xvar = "log_value_IL6_J3_J5",
   yvar = "jp2_ecmo_debit"
 )
 res_D3_D5
 
 res_DW <- test_linearity(
-  data = F9,
+  data = df,
   xvar = "log_value_IL6_JS",
   yvar = "jsev_ecmo_debit"
 )
 res_DW
 
-# ------------------------------
-# 2) Corrélations Spearman
-# ------------------------------
-cor_D0 <- cor.test(F9$j0_ecmo_debit,   F9$log_value_IL6_D0,    method = "spearman")
-cor_J3 <- cor.test(F9$jp2_ecmo_debit,  F9$log_value_IL6_J3_J5, method = "spearman")
-cor_JS <- cor.test(F9$jsev_ecmo_debit, F9$log_value_IL6_JS,    method = "spearman")
 
-rho_D0 <- round(cor_D0$estimate, 2); p_D0  <- signif(cor_D0$p.value, 2)
-rho_J3 <- round(cor_J3$estimate, 2); p_J3  <- signif(cor_J3$p.value, 2)
-rho_JS <- round(cor_JS$estimate, 2); p_JS  <- signif(cor_JS$p.value, 2)
+F9_plot <- make_il6_cor_plot(df,
+                             xvar= "log_value_IL6_D0",
+                             yvar="j0_ecmo_debit",
+                             ylab="ECMO Flow D0 (L/min)",
+                             title_lab = "A: D0")
+F9_plot_2 <- make_il6_cor_plot(df,
+                             xvar= "log_value_IL6_D0",
+                             yvar="jp2_ecmo_debit",
+                             ylab="ECMO Flow D0 (L/min)",
+                             title_lab = "A: D0")
+F9_plot_3 <- make_il6_cor_plot(df,
+                             xvar= "log_value_IL6_D0",
+                             yvar="jsev_ecmo_debit",
+                             ylab="ECMO Flow D0 (L/min)",
+                             title_lab = "A: D0")
 
-# ------------------------------
-# 3) Figures
-# ------------------------------
-
-F9_plot <- ggplot(F9, aes(x = log_value_IL6_D0, y = j0_ecmo_debit)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_D0, "\np = ", p_D0)) +
-  labs(x = "log(IL-6 + 1) D0", y = "ECMO Flow D0 (L/min)",
-       title = "A: D0") +
-  theme_classic()
-
-F9_plot_2 <- ggplot(F9, aes(x = log_value_IL6_J3_J5, y = jp2_ecmo_debit)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_J3, "\np = ", p_J3)) +
-  labs(x = "log(IL-6 + 1) D3-D5", y = "ECMO Flow D3–D5 (L/min)",
-       title = "B: D3–D5") +
-  theme_classic()
-
-F9_plot_3 <- ggplot(F9, aes(x = log_value_IL6_JS, y = jsev_ecmo_debit)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_JS, "\np = ", p_JS)) +
-  labs(x = "log(IL-6 + 1) weaning day", y = "ECMO Flow weaning day (L/min)",
-       title = "C: Weaning day") +
-  theme_classic()
 ```
 
 ```{r Figure9-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-# ------------------------------
-# 4) Panel final
-# ------------------------------
+
 F9_panel <- F9_plot | F9_plot_2 | F9_plot_3
 
 F9_panel
@@ -1364,30 +1297,19 @@ ggsave("FIGURES/Figure9.pdf",
 
 ```{r Figure10, include=FALSE}
 
-F10 <- df
-
-cor_D0 <- cor.test(F10$log_value_IL6_D0,   F10$duree_NAd,    method = "spearman")
-rho_D0 <- round(cor_D0$estimate, 2); 
-p_D0  <- signif(cor_D0$p.value, 2)
-
-
-F10_plot <- ggplot(F10, aes(x = log_value_IL6_D0, y = duree_NAd)) +
-  geom_point(aes(color = factor(j90_deces)), alpha = 0.8, size = 2) +
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_JS, "\np = ", p_JS)) +
-  labs(x = "log(IL-6 + 1) D0", y = "Norepinephrine duration",
-       title = "") +
-  theme_classic()
+Figure_10_plot <- make_il6_cor_plot(df,
+                  "log_value_IL6_D0",
+                  "duree_NAd",
+                  "Norepinephrine duration (days)",
+                  "")
 ```
 
 ```{r Figure10-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-F10_plot
+Figure_10_plot
 
 ggsave("FIGURES/Figure10.pdf",
-       plot   = F10_plot,
+       plot   = Figure_10_plot,
        width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
@@ -1396,111 +1318,29 @@ ggsave("FIGURES/Figure10.pdf",
 
 ```{r Figure11, include=FALSE}
 
-
-# Sous-donnée IL-6 + SOFA aux 3 temps
-F11 <- df %>%
-  select(
-    IL6_J0, IL6_J3_J5, IL6_JS,
-    sofa_D0, jp2_sofa, jsev_sofa
-  ) %>%
-  mutate(
-    log_IL6_D0    = log1p(IL6_J0),
-    log_IL6_J3J5  = log1p(IL6_J3_J5),
-    log_IL6_JS    = log1p(IL6_JS)
-  )
-data=F11
-il6_var ="log_IL6_D0"
-sofa_var = "sofa_D0"
-# Fonction utilitaire pour créer les terciles de SOFA + plot IL-6
-make_il6_sofa_panel <- function(data,
-                                il6_var,
-                                sofa_var,
-                                panel_label,
-                                time_label) {
-  
-  # On enlève les NA pour ce couple de variables
-  dat <- data %>%
-    select(all_of(c(il6_var, sofa_var))) %>%
-    filter(!is.na(.data[[il6_var]]), !is.na(.data[[sofa_var]]))
-  
-  if (nrow(dat) == 0) return(NULL)
-  
-  # Terciles de SOFA
-  qs <- quantile(dat[[sofa_var]], probs = c(0, 1/3, 2/3, 1), na.rm = TRUE)
-  # sécurisation des bornes entières
-  qs[1] <- floor(qs[1])
-  qs[4] <- ceiling(qs[4])
-  
-  dat <- dat %>%
-    mutate(
-      sofa_tercile = cut(
-        .data[[sofa_var]],
-        breaks = unique(qs),
-        include.lowest = TRUE,
-        right = TRUE
-      )
-    )
-  
-  # Labels propres pour les terciles
-  sofa_labels <- levels(dat$sofa_tercile)
-  dat$sofa_tercile <- factor(
-    dat$sofa_tercile,
-    levels = sofa_labels,
-    labels = paste0("T", seq_along(sofa_labels), " ", sofa_labels)
-  )
-  
-  # Test non paramétrique : Kruskal–Wallis (IL-6 ~ terciles de SOFA)
-  kw <- kruskal.test(dat[[il6_var]] ~ dat$sofa_tercile)
-  p_kw <- signif(kw$p.value, 2)
-  
-  ggplot(dat, aes(x = sofa_tercile, y = .data[[il6_var]], fill = sofa_tercile)) +
-    geom_boxplot(outlier.shape = NA, alpha = 0.7) +
-    geom_jitter(width = 0.15, alpha = 0.7, size = 1.8) +
-    scale_fill_brewer(palette = "Blues", name = "SOFA terciles") +
-    labs(
-      title = paste0(panel_label, ": ", time_label),
-      x = "SOFA (terciles)",
-      y = "log(IL-6 + 1)"
-    ) +
-    annotate(
-      "text",
-      x = Inf, y = Inf,
-      hjust = 1.1, vjust = 1.5, size = 3.5,
-      label = paste0( "P = ", p_kw)
-    ) +
-    theme_classic(base_size = 11) +
-    theme(
-      legend.position = "none",
-      axis.text.x = element_text(angle = 30, hjust = 1)
-    )
-}
-
-
 # Construction des 3 panneaux
-F11_D0   <- make_il6_sofa_panel(F11,
-                                il6_var   = "log_IL6_D0",
+F11_D0   <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_D0",
                                 sofa_var  = "sofa_D0",
                                 panel_label = "A",
                                 time_label  = "D0")
 
-F11_J3J5 <- make_il6_sofa_panel(F11,
-                                il6_var   = "log_IL6_D0",
+F11_J3J5 <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_D0",
                                 sofa_var  = "jp2_sofa",
                                 panel_label = "B",
                                 time_label  = "D3–D5")
 
-F11_JS   <- make_il6_sofa_panel(F11,
-                                il6_var   = "log_IL6_D0",
+F11_JS   <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_D0",
                                 sofa_var  = "jsev_sofa",
                                 panel_label = "C",
                                 time_label  = "Weaning day")
-
-# Panel complet Figure 11
-Figure11 <- F11_D0 | F11_J3J5 | F11_JS
 ```
 
 ```{r Figure11-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
+# Panel complet Figure 11
+Figure11 <- F11_D0 | F11_J3J5 | F11_JS
 Figure11
 
 ggsave("FIGURES/Figure11.pdf",
@@ -1512,8 +1352,11 @@ ggsave("FIGURES/Figure11.pdf",
 # FIGURE 12: Association with T4 cell and outcomes
 
 ```{r Figure12, include=F}
+
 prep_A1 <- prep_marker_data(df, prefix = "T4", transform = "log1p")
+
 test_A1 <- test_marker(prep_A1$data)
+
 Figure12 <- plot_marker(
   dat      = prep_A1$data,
   counts   = prep_A1$counts,
@@ -1537,136 +1380,53 @@ ggsave("FIGURES/Figure12.pdf",
 
 # FIGURE 13: Renal function and IL6
 
-```{r, include:}
-
-# ------------------------------
-# 1) Préparation des données
-# ------------------------------
-### --- Fonction CKD-EPI Créatinine 2009 --- ###
-ckd_epi <- function(creat_mgdl, age, gender) {
-  # si une info manque → NA
-  if (is.na(creat_mgdl) | is.na(age) | is.na(gender)) return(NA_real_)
-  
-  # paramètres selon le sexe et la créatinine
-  if (gender == "Women") {
-    A <- 0.7
-    B <- if (creat_mgdl <= 0.7) -0.241 else -1.2
-    sex_factor <- 1.012
-  } else if (gender == "Men") {
-    A <- 0.9
-    B <- if (creat_mgdl <= 0.9) -0.302 else -1.2
-    sex_factor <- 1
-  } else {
-    return(NA_real_)  # sexe non reconnu
-  }
-  
-  eGFR <- 142 *
-    (creat_mgdl / A)^B *
-    (0.9938 ^ age) *
-    sex_factor
-  
-  return(eGFR)
-}
+```{r, include=FALSE}
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_D0",
+    yvar = "CKD_D0"
+)
+res_D0
 
 
-F13 <- df %>%
-  mutate(
-    # conversion µmol/L -> mg/dL
-    creat_D0_mgdl   = Creat_D0 / 88.4,
-    jp2_creat_mgdl  = jp2_creat / 88.4,
-    jsev_creat_mgdl = jsev_creat / 88.4,
-    
-    ### CKD-EPI calculé
-    CKD_D0_raw   = mapply(ckd_epi, creat_D0_mgdl,   Age, Gender),
-    CKD_J3J5_raw = mapply(ckd_epi, jp2_creat_mgdl,  Age, Gender),
-    CKD_JS_raw   = mapply(ckd_epi, jsev_creat_mgdl, Age, Gender),
-    
-    ### Règle : si EER = 1 → CKD = 15
-    CKD_D0   = ifelse(EER_D0   == 1, 15, CKD_D0_raw),
-    CKD_J3J5 = ifelse(jp2_eer  == 1, 15, CKD_J3J5_raw),
-    CKD_JS   = ifelse(jsev_eer == 1, 15, CKD_JS_raw)
-  ) %>%
-  select(-ends_with("_raw"), -ends_with("_mgdl"))
- 
+res_J3_J5 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J3_J5",
+  yvar = "CKD_J3J5"
+)
+res_J3_J5
 
 
-make_il6_ckd_plot <- function(data, xvar, yvar, title_lab) {
-  # test Spearman
-  ct <- cor.test(data[[xvar]], data[[yvar]],
-                 method = "spearman", use = "complete.obs")
-  rho  <- round(unname(ct$estimate), 2)
-  pval <- signif(ct$p.value, 2)
-  
-  ggplot(data, aes(x = .data[[xvar]], y = .data[[yvar]])) +
-    geom_point(alpha = 0.7, color = "steelblue") +
-    geom_smooth(method = "loess", se = TRUE, span = 0.9,
-                color = "darkred") +
-    labs(
-      title = title_lab,
-      x = "log(IL-6 + 1)",
-      y = "CKD-EPI (ml/min/1.73m²)"
-    ) +
-    coord_cartesian(ylim = c(0, max(data[[yvar]],na.rm = T))) +   # <<< coupe en dessous de 0
-    theme_classic(base_size = 14) +
-    annotate("text", x = Inf, y = max(data[[yvar]],na.rm = T),
-             label = paste0("Spearman \u03C1 = ", rho, "\nP = ", pval),
-             hjust = 1.1, vjust = 1.5, size = 4.5)
-}
+res_JS <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_JS",
+  yvar = "CKD_JS"
+)
+res_JS
 
+F13_plot <- make_il6_cor_plot(data=df,
+                    xvar= "log_value_IL6_D0",
+                    yvar = "CKD_D0",
+                    ylab = "CKD-EPI (ml/min/1.73m²)",
+                    title_lab = "A: D0")
 
-# ------------------------------
-# 2) Corrélations Spearman
-# ------------------------------
-cor_D0 <- cor.test(F13$CKD_D0,   F13$log_value_IL6_D0,    method = "spearman")
-cor_J3 <- cor.test(F13$CKD_J3J5,  F13$log_value_IL6_J3_J5, method = "spearman")
-cor_JS <- cor.test(F13$CKD_JS, F13$log_value_IL6_JS,    method = "spearman")
+F13_plot_2 <- make_il6_cor_plot(data=df,
+                    xvar= "log_value_IL6_J3_J5",
+                    yvar = "CKD_J3J5",
+                    ylab = "CKD-EPI (ml/min/1.73m²)",
+                    title_lab = "B: D3-D5")
 
-rho_D0 <- round(cor_D0$estimate, 2); p_D0  <- signif(cor_D0$p.value, 2)
-rho_J3 <- round(cor_J3$estimate, 2); p_J3  <- signif(cor_J3$p.value, 2)
-rho_JS <- round(cor_JS$estimate, 2); p_JS  <- signif(cor_JS$p.value, 2)
+F13_plot_3 <-make_il6_cor_plot(data=df,
+                    xvar= "log_value_IL6_JS",
+                    yvar = "CKD_JS",
+                    ylab = "CKD-EPI (ml/min/1.73m²)",
+                    title_lab = "C: weaning")
 
-
-# ------------------------------
-# 3) Figures
-# ------------------------------
-
-F13_plot <- ggplot(F13, aes(x = log_value_IL6_D0, y = CKD_D0)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_D0, "\np = ", p_D0)) +
-  labs(x = "log(IL-6 + 1)", y = "CKD-EPI (ml/min/1.73m²)",
-       title = "A: D0") +
-  theme_classic()
-
-F13_plot_2 <- ggplot(F13, aes(x = log_value_IL6_J3_J5, y = CKD_J3J5)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_J3, "\np = ", p_J3)) +
-  labs(x = "log(IL-6 + 1)", y = "CKD-EPI (ml/min/1.73m²)",
-       title = "B: D3–D5") +
-  theme_classic()
-
-F13_plot_3 <- ggplot(F13, aes(x = log_value_IL6_JS, y = CKD_JS)) +
-  geom_point()+
-  geom_smooth(method = "loess", span = 0.9, se = TRUE) +
-  annotate("text", x = Inf, y = Inf,
-           hjust = 1.1, vjust = 1.5, size = 5,
-           label = paste0("Spearman ρ = ", rho_JS, "\np = ", p_JS)) +
-    labs(x = "log(IL-6 + 1)", y = "CKD-EPI (ml/min/1.73m²)",
-       title = "C: Weaning day") +
-  theme_classic()
 
 ```
 
 ```{r Figure13-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-# ------------------------------
-# 4) Panel final
-# ------------------------------
 F13_panel <- F13_plot | F13_plot_2 | F13_plot_3
 
 F13_panel
@@ -1677,3 +1437,61 @@ ggsave("FIGURES/Figure13.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
+# FIGURE 14: Association IL6 hepatic function
+
+```{r Figure14, include=FALSE}
+
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_D0",
+    yvar = "ASAT_D0",
+)
+res_D0
+
+
+res_J3_J5 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J3_J5",
+  yvar = "jp2_asat"
+)
+res_J3_J5
+
+
+res_JS <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_JS",
+  yvar = "jsev_asat"
+)
+res_JS
+
+F14_1_plot <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_D0",
+                   yvar = "ASAT_D0",
+                   ylab= "ASAT (UI/l)",
+                   title_lab = "A: D0")
+
+F14_2_plot <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_J3_J5",
+                   yvar = "jp2_asat",
+                   ylab= "ASAT (UI/l)",
+                   title_lab = "B: D3-D5")
+
+F14_3_plot <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_JS",
+                   yvar = "jsev_asat",
+                  ylab= "ASAT (UI/l)",
+                   title_lab = "C: weaning")
+```
+
+```{r Figure14-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+F14_panel <- F14_1_plot | F14_2_plot | F14_3_plot
+
+F14_panel
+
+ggsave("FIGURES/Figure14.pdf",
+       plot   = F14_panel,
+       width  = 160, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+
+```

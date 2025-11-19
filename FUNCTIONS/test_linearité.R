@@ -75,3 +75,32 @@ test_linearity <- function(data, xvar, yvar, plot = TRUE) {
     Interpretation   = interpretation
   )
 }
+
+
+
+
+### --- Fonction CKD-EPI Créatinine 2021 --- ###
+ckd_epi <- function(creat_mgdl, age, gender) {
+  # si une info manque → NA
+  if (is.na(creat_mgdl) | is.na(age) | is.na(gender)) return(NA_real_)
+  
+  # paramètres selon le sexe et la créatinine
+  if (gender == "Women") {
+    A <- 0.7
+    B <- if (creat_mgdl <= 0.7) -0.241 else -1.2
+    sex_factor <- 1.012
+  } else if (gender == "Men") {
+    A <- 0.9
+    B <- if (creat_mgdl <= 0.9) -0.302 else -1.2
+    sex_factor <- 1
+  } else {
+    return(NA_real_)  # sexe non reconnu
+  }
+  
+  eGFR <- 142 *
+    (creat_mgdl / A)^B *
+    (0.9938 ^ age) *
+    sex_factor
+  
+  return(eGFR)
+}
