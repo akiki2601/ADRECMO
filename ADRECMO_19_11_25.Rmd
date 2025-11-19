@@ -1007,7 +1007,7 @@ Figure3 <- Figure3a | Figure3b +
 
 Figure3
 
-ggsave("FIGURES/Figure3_VTI_Lymphocyte_ADRB.pdf",
+ggsave("FIGURES/Figure3.pdf",
        plot   = Figure3,
        width  = 200, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
@@ -1065,6 +1065,9 @@ ggsave("FIGURES/Figure4.pdf",
 # FIGURE 5: Association between IL-6 at admission and VTI
 
 ```{r Figure5, include =FALSE}
+
+
+
 mw  <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
 p  <- sprintf("%.3f", mw$p.value)
 n   <- df %>% count(VTI_JS)
@@ -1352,6 +1355,7 @@ ggsave("FIGURES/Figure11.pdf",
 
 ```{r Figure12, include=F}
 
+df$T4_J0
 prep_A1 <- prep_marker_data(df, prefix = "T4", transform = "log1p")
 
 test_A1 <- test_marker(prep_A1$data)
@@ -1519,6 +1523,65 @@ Figure15
 
 ggsave("FIGURES/Figure15.pdf",
        plot   = Figure15,
+       width  = 160, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+
+```
+
+# Figure 16: association lactate and IL6
+
+```{r Figure16, include=FALSE}
+
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_D0",
+    yvar = "Lact_D0",
+)
+
+res_D0
+
+res_J3_J5 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J3_J5",
+  yvar = "jp2_lact"
+)
+res_J3_J5
+
+
+res_JS <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_JS",
+  yvar = "jsev_lact"
+)
+res_JS
+
+F16_1_plot <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_D0",
+                   yvar = "Lact_D0",
+                   ylab= "lactate (mmol/l)",
+                   title_lab = "A: D0")
+
+F16_2_plot <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_J3_J5",
+                   yvar = "jp2_lact",
+                   ylab= "lactate (mmol/l)",
+                   title_lab = "B: D3-D5")
+
+F16_3_plot <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_JS",
+                   yvar = "jsev_lact",
+                  ylab= "lactate (mmol/l)",
+                   title_lab = "C: weaning")
+```
+
+```{r Figure16-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+Figure16 <- F16_1_plot | F16_2_plot | F16_3_plot
+
+Figure16
+
+ggsave("FIGURES/Figure16.pdf",
+       plot   = Figure16,
        width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 

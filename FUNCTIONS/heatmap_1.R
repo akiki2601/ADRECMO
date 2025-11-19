@@ -119,8 +119,8 @@ df_heat <- df_long_non_unique %>%
 #### FIGURE#####
 library(ggnewscale)
 
-pro_cats    <- c("plasma Pro-inf cyt", "pro inf immmune cell")
-anti_cats   <- c("plasma anti-inf cyt", "anti inf\n immmune cell")
+pro_cats    <- c("plasma pro-inf\n cytokines", "pro-inf immmune cells")
+anti_cats   <- c("plasma anti-inf \n cytokines", "anti-inf\n immmune cells")
 neutral_cats<- c("cells")
 
 FIGURE1 <- ggplot() +
@@ -131,7 +131,7 @@ FIGURE1 <- ggplot() +
   ) +
   scale_fill_gradientn(
     colours = c("white","#fde0dc","#f9bdbb","#f36c60","#d32f2f"),
-    name    = "Z-score\n(log₁₊x)",
+    name    = "Z-score\n(log +1)",
     limits  = c(-3, 3),
     oob     = scales::squish,
     guide   = guide_colorbar(order = 1)
@@ -145,7 +145,7 @@ FIGURE1 <- ggplot() +
   ) +
   scale_fill_gradientn(
     colours = c("white","#e1f5fe","#81d4fa","#0288d1","#01579b"),
-    name    = "Z-score\n(log₁₊x)",
+    name    = "Z-score\n(log +1)",
     limits  = c(-3, 3),
     oob     = scales::squish,
     guide   = guide_colorbar(order = 2)
@@ -166,7 +166,7 @@ FIGURE1 <- ggplot() +
     switch = "y"
   ) +
   labs(
-    title = "Inflammatory heatmap according to outcomes",
+    title = "",
     x = "Time points", y = NULL
   ) +
   theme_minimal(base_size = 8) +
