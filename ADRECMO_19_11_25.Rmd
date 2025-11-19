@@ -1262,19 +1262,18 @@ res_DW <- test_linearity(
 )
 res_DW
 
-
 F9_plot <- make_il6_cor_plot(df,
                              xvar= "log_value_IL6_D0",
                              yvar="j0_ecmo_debit",
                              ylab="ECMO Flow D0 (L/min)",
                              title_lab = "A: D0")
 F9_plot_2 <- make_il6_cor_plot(df,
-                             xvar= "log_value_IL6_D0",
+                             xvar= "log_value_IL6_J3_J5",
                              yvar="jp2_ecmo_debit",
                              ylab="ECMO Flow D0 (L/min)",
                              title_lab = "A: D0")
 F9_plot_3 <- make_il6_cor_plot(df,
-                             xvar= "log_value_IL6_D0",
+                             xvar= "log_value_IL6_JS",
                              yvar="jsev_ecmo_debit",
                              ylab="ECMO Flow D0 (L/min)",
                              title_lab = "A: D0")
@@ -1380,7 +1379,7 @@ ggsave("FIGURES/Figure12.pdf",
 
 # FIGURE 13: Renal function and IL6
 
-```{r, include=FALSE}
+```{r Figure13, include=FALSE}
 res_D0 <- test_linearity(
   data = df,
   xvar = "log_value_IL6_D0",
@@ -1491,6 +1490,35 @@ F14_panel
 
 ggsave("FIGURES/Figure14.pdf",
        plot   = F14_panel,
+       width  = 160, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+
+```
+
+# FIGURE 15: Association IL6 D0 and Other study co-inclusion
+
+```{r Figure15, include= F}
+
+MW <- wilcox.test(log_value_IL6_D0~autre_riph_interv, df)
+p <- MW$p.value
+Figure15 <- ggplot(df,aes(y=log_value_IL6_D0, x=as.factor(autre_riph_interv),fill=as.factor(autre_riph_interv)))+
+  geom_boxplot()+
+   annotate("text",
+            x = 1,
+      y = 8,
+      label = paste0("p: ", sprintf("%.2f",p)),
+      parse = FALSE,
+      size = 4,
+      hjust = 0)
+```
+
+```{r Figure15-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+
+Figure15
+
+ggsave("FIGURES/Figure15.pdf",
+       plot   = Figure15,
        width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 
