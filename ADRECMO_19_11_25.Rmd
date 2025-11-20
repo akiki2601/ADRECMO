@@ -892,7 +892,7 @@ ggsave("FIGURES/Figure1.pdf",
 
 ```{r Figure2_tot,include=FALSE}
 
-prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "log1p")
+prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "log10")
 test_A1 <- test_marker(prep_A1$data)
 Figure_2_1 <- plot_marker(
   dat      = prep_A1$data,
@@ -905,7 +905,7 @@ Figure_2_1 <- plot_marker(
 ) +
   annotate("text", x = 1, y = min(prep_A1$data$value_log, na.rm = TRUE) +1, label = test_A1$label, hjust = 0)
 
-prep_A2 <- prep_marker_data(df, prefix = "ADR2L", transform = "log1p")
+prep_A2 <- prep_marker_data(df, prefix = "ADR2L", transform = "log10")
 test_A2 <- test_marker(prep_A2$data)
 Figure_2_2 <- plot_marker(
   dat      = prep_A2$data,
@@ -918,7 +918,7 @@ Figure_2_2 <- plot_marker(
 ) +
   annotate("text", x = 1, y = min(prep_A2$data$value_log, na.rm = TRUE) +1, label = test_A2$label, hjust = 0)
 
-prep_M1 <- prep_marker_data(df, prefix = "M_ADR1", transform = "log1p")
+prep_M1 <- prep_marker_data(df, prefix = "M_ADR1", transform = "log10")
 test_M1 <- test_marker(prep_M1$data)
 Figure_2_3 <- plot_marker(
   dat      = prep_M1$data,
@@ -929,9 +929,9 @@ Figure_2_3 <- plot_marker(
   y_lab    = "Percentage of monocytes expressing ADRB1
 (log scale)"
 ) +
-  annotate("text", x = 2, y = min(prep_M1$data$value, na.rm = TRUE), label = test_M1$label, hjust = 0)
+  annotate("text", x = 2, y = min(prep_M1$data$value_log, na.rm = TRUE), label = test_M1$label, hjust = 0)
 
-prep_M2 <- prep_marker_data(df, prefix = "M_ADR2", transform = "log1p")
+prep_M2 <- prep_marker_data(df, prefix = "M_ADR2", transform = "log10")
 test_M2 <- test_marker(prep_M2$data)
 Figure_2_4 <- plot_marker(
   dat      = prep_M2$data,
@@ -943,7 +943,7 @@ Figure_2_4 <- plot_marker(
 (log scale)",
   show_legend = TRUE
 ) +
-  annotate("text", x = 1, y = min(prep_M2$data$value, na.rm = TRUE)+1, label = test_M2$label, hjust = 0)
+  annotate("text", x = 1, y = min(prep_M2$data$value_log, na.rm = TRUE), label = test_M2$label, hjust = 0)
 
 Figure2 <- (Figure_2_1 + Figure_2_2 + Figure_2_3 + Figure_2_4) +
   patchwork::plot_layout(guides = "collect") &
@@ -957,7 +957,7 @@ Figure2
 ggsave("FIGURES/Figure2.pdf",
        plot   = Figure2,
        width  = 200, height = 150, units = "mm",
-       device = cairo_pdf, bg = "white")
+       device = cairo_pdf, bg = "white", scale= 1.5) 
 ```
 
 # FIGURE 3: Association between VTI and ADRB in Lymphocyte at admission
@@ -1528,7 +1528,7 @@ ggsave("FIGURES/Figure15.pdf",
 
 ```
 
-# Figure 16: association lactate and IL6
+# FIGURE 16: association lactate and IL6
 
 ```{r Figure16, include=FALSE}
 
@@ -1584,5 +1584,4 @@ ggsave("FIGURES/Figure16.pdf",
        plot   = Figure16,
        width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
-
 ```
