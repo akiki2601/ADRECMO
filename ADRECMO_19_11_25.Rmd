@@ -864,7 +864,7 @@ ft2b <- flextable(as.data.frame(table2b)) %>%
 save_as_docx(ft2b, path = "Tables/Table2b_weaning_test.docx")
 ```
 
-```{rtable2b-display}
+```{r table2b-display}
 table2b
 ```
 
@@ -874,16 +874,19 @@ No significant difference between VTI at 3 L and 1.5 L flow conditions at weanin
 
 ```{r Figure1, include=FALSE}
 # Source the user's heatmap script
+
 source("FUNCTIONS/heatmap_1.R")
+
+FIGURE1
 
 ```
 
 ```{r Figure1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-Figure1<-FIGURE1
+FIGURE1
 
 ggsave("FIGURES/Figure1.pdf",
-             plot   = Figure1,
+             plot   = FIGURE1,
              width  = 210, height = 180, units = "mm",
              device = cairo_pdf, bg = "white")
 ```
