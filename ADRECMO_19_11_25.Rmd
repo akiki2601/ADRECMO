@@ -79,6 +79,7 @@ library(lmerTest)
 library(emmeans)
 library(forcats)
 library(broom)
+library(ggpubr)
 ```
 
 # METHOD
@@ -391,7 +392,7 @@ df_bio <- df %>%
 
 # Timepoint check of the blood sample at day 0
 
-```{r,include=TRUE}
+```{r Timepoint,include=TRUE}
 # Blood sample at day 0 before ECMO implant?
 df %>%
   select(J0_date, j0_bilan_date) %>%
@@ -1158,14 +1159,21 @@ Figure_7$plot <- Figure_7$plot +
 
 Figure_7$plot <- Figure_7$plot +
   annotate("text", x = 0.2 * xmax, y = 0.99, hjust = 0, label = paste0("Median IL-6 D0: ", lab2, " pg/ml"), size = 3.7)
+
+Figure_7_full <- ggarrange(
+  Figure_7$plot,
+  Figure_7$table,
+  ncol = 1, nrow = 2,
+  heights = c(3, 1)
+)
 ```
 
 ```{r Figure_7_censored-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-Figure_7
+Figure_7_full
 
 ggsave("FIGURES/Figure7.pdf",
-       plot   = Figure_7,
+       plot   = Figure_7_full,
        width  = 180, height = 140, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
