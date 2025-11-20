@@ -81,7 +81,7 @@ library(forcats)
 library(broom)
 ```
 
-# Method
+# METHOD
 
 This study is a monocentric, prospective, observational investigation conducted in Nancy Hospital between 10.10.2017 and 24.05.2022, enrolling 50 adult patients with refractory cardiogenic shock requiring veno-arterial extracorporeal membrane oxygenation (VA-ECMO) support (NCT03327493).
 
