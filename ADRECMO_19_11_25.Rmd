@@ -1069,8 +1069,6 @@ ggsave("FIGURES/Figure4.pdf",
 
 ```{r Figure5, include =FALSE}
 
-
-
 mw  <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
 p  <- sprintf("%.3f", mw$p.value)
 n   <- df %>% count(VTI_JS)
@@ -1164,10 +1162,10 @@ Figure_7$plot <- Figure_7$plot +
 
 ```{r Figure_7_censored-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-Figure_7$plot 
+Figure_7
 
 ggsave("FIGURES/Figure7.pdf",
-       plot   = Figure_7$plot,
+       plot   = Figure_7,
        width  = 180, height = 140, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
@@ -1218,7 +1216,7 @@ Figure8_JS <- make_il6_cor_plot(df,
                                 xvar = "log_value_IL6_JS",
                                 yvar = "jsev_NAd_cum_w",
                                 ylab= "log(Cumulative norepinephrine dose (mg/kg/day)+1)",
-                                title_lab = "C: DS")
+                                title_lab = "C: Weaning")
 ```
 
 ```{r Figure8,display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
@@ -1277,12 +1275,12 @@ F9_plot_2 <- make_il6_cor_plot(df,
                              xvar= "log_value_IL6_J3_J5",
                              yvar="jp2_ecmo_debit",
                              ylab="ECMO Flow D0 (L/min)",
-                             title_lab = "A: D0")
+                             title_lab = "A: D3-D5")
 F9_plot_3 <- make_il6_cor_plot(df,
                              xvar= "log_value_IL6_JS",
                              yvar="jsev_ecmo_debit",
                              ylab="ECMO Flow D0 (L/min)",
-                             title_lab = "A: D0")
+                             title_lab = "A: Weaning")
 
 ```
 

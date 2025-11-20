@@ -11,7 +11,6 @@ anti_markers <- c("IL4","IL5", "IL10", "GDF-15")
 cell_inflam      <- c("L_TH1","M_TNF","M_IL1","L_IL17_pathogen","L_IL17")  # L_TH1 en simple exemplaire
 
 
-
 df_long <- df_bio %>%
   # ne garder que les colonnes d’intérêt
   dplyr::select(
@@ -118,10 +117,11 @@ df_heat <- df_long_non_unique %>%
 
 #### FIGURE#####
 library(ggnewscale)
+pro_cats    <- c("plasma Pro-inf cyt", 
+                 "pro inf immmune cell")
 
-pro_cats    <- c("plasma pro-inf\n cytokines", "pro-inf immmune cells")
-anti_cats   <- c("plasma anti-inf \n cytokines", "anti-inf\n immmune cells")
-neutral_cats<- c("cells")
+anti_cats   <- c("plasma anti-inf cyt", 
+                 "anti inf\n immmune cell")
 
 FIGURE1 <- ggplot() +
   # --- PRO (rouge) ---
@@ -177,3 +177,4 @@ FIGURE1 <- ggplot() +
     strip.text.x     = element_text(face = "bold", size = 11),
     legend.key.height = unit(0.7, "cm")
   )
+
