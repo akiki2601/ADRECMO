@@ -26,21 +26,27 @@ df_long <- df_bio %>%
     names_pattern = "(.*)_(J0|J3_J5|JS)$",
     values_to = "value"
   ) %>%
+  mutate(
+    day = recode(day,
+                 "J0"     = "D0",
+                 "J3_J5"  = "D3-D5",
+                 "JS"     = "D weaning")
+  )%>%
   dplyr::filter(!is.na(value)) %>%
   # classifier pro vs anti vs autres
   dplyr::mutate(
     category = forcats::fct_relevel(
       factor(dplyr::case_when(
-        BIO %in% pro_markers        ~ "plasma Pro-inf cyt",
-        BIO %in% cell_inflam        ~ "pro inf immmune cell",
-        BIO %in% anti_markers       ~ "plasma anti-inf cyt",
-        BIO %in% cell_anti_inflam   ~ "anti inf\n immmune cell",
+        BIO %in% pro_markers        ~ "plasma pro-inf\ncytokines",
+        BIO %in% cell_inflam        ~ "pro-inf\nimmmune cells",
+        BIO %in% anti_markers       ~ "plasma anti-inf\ncytokines",
+        BIO %in% cell_anti_inflam   ~ "anti-inf\nimmmune cells",
         TRUE                        ~ NA_character_
       )),
-      c("plasma Pro-inf cyt",
-        "pro inf immmune cell",
-        "plasma anti-inf cyt",
-        "anti inf\n immmune cell")
+      c("plasma pro-inf\ncytokines",
+        "pro-inf\nimmmunecells",
+        "plasma anti-inf\ncytokines",
+        "anti-inf\nimmmune cells")
     ),
     # ordre stable pour l'axe Y
     BIO = forcats::fct_relevel(BIO, sort(unique(BIO)))
@@ -117,11 +123,11 @@ df_heat <- df_long_non_unique %>%
 
 #### FIGURE#####
 library(ggnewscale)
-pro_cats    <- c("plasma Pro-inf cyt", 
-                 "pro inf immmune cell")
+pro_cats    <- c("plasma pro-inf\ncytokines", 
+                 "pro-inf\nimmmune cells")
 
-anti_cats   <- c("plasma anti-inf cyt", 
-                 "anti inf\n immmune cell")
+anti_cats   <- c("plasma anti-inf\ncytokines", 
+                 "anti-inf\nimmmune cells")
 
 FIGURE1 <- ggplot() +
   # --- PRO (rouge) ---
