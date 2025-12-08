@@ -1189,6 +1189,7 @@ ggsave("FIGURES/Figure5.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
+
 # FIGURE 6: Cytokines
 
 ```{r Figure6,include=F}
@@ -1207,6 +1208,7 @@ fig_IL8
 fig_IL10
 fig_GDF
 
+fig_IL6 <- fig_IL6 + theme(legend.position = "below")
 
 ggsave("FIGURES/Figure6_IL6.pdf",      fig_IL6,  width=160, height=120, units="mm", device=cairo_pdf, bg="white", scale=1.5)
 ggsave("FIGURES/Figure6_IL5.pdf",      fig_IL5,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
@@ -1263,6 +1265,23 @@ ggsave("FIGURES/Figure7.pdf",
        width  = 180, height = 140, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
+
+#FIGURE 3-5 fusion: IL6 and outcomes and survival
+
+```{r}
+Figure6_7_combined <- (fig_IL6) | (Figure_7_full) +
+  plot_annotation( tag_levels = c("A","B"))
+
+ggsave("FIGURES/Figure6_7_combined.pdf",
+       plot   = Figure6_7_combined,
+       width  = 320, height = 140, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+
+
+
+
 
 # FIGURE 8: Association between IL-6 and vasopressor dose
 
@@ -1632,7 +1651,7 @@ ggsave("FIGURES/Figure15.pdf",
 
 ```
 
-# FIGURE 16: association lactate and IL6
+# FIGURE 16: Association lactate and IL6
 
 ```{r Figure16, include=FALSE}
 
@@ -1694,43 +1713,48 @@ ggsave("FIGURES/Figure16.pdf",
 
 ```{r Figure17, include=FALSE}
 
-F17_1_plot <- make_il_cor_plot(df, "ADR1L_J0", "log_value_IL6_J0",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 ylab = "log(IL-6 + 1)",
+F17_1_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
                  title_lab = "A: D0",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F17_2_plot <- make_il_cor_plot(df, "ADR1L_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 ylab = "log(IL-6 + 1)",
+F17_2_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
                  title_lab = "B: D3-D5",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F17_3_plot <- make_il_cor_plot(df, "ADR1L_JS", "log_value_IL6_JS",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 ylab = "log(IL-6 + 1)",
+F17_3_plot <- make_il_cor_plot(df, 
+                 "ADR1L_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
                  title_lab = "C: D weaning",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
 
-F17_4_plot <- make_il_cor_plot(df, "ADR2L_J0", "log_value_IL6_J0",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 ylab = "log(IL-6 + 1)",
-                 title_lab = "D: D weaning",
-                 ylim = c(0, 6))
+F17_4_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
 
+F17_5_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
 
-F17_5_plot <- make_il_cor_plot(df, "ADR2L_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 ylab = "log(IL-6 + 1)",
-                 title_lab = "F: D3-D5",
-                 ylim = c(0, 6))
-
-F17_6_plot <- make_il_cor_plot(df, "ADR2L_JS", "log_value_IL6_JS",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 ylab = "log(IL-6 + 1)",
-                 title_lab = "G: D weaning",
-                 ylim = c(0, 6))
+F17_6_plot <- make_il_cor_plot(df, 
+                 "ADR2L_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
 
 Figure_17 <- (F17_1_plot | F17_2_plot | F17_3_plot) /
              (F17_4_plot | F17_5_plot | F17_6_plot)
@@ -1750,42 +1774,47 @@ ggsave("FIGURES/Figure17.pdf",
 
 ```{r Figure18, include=FALSE}
 
-F18_1_plot <- make_il_cor_plot(df, "M_ADR1_J0", "log_value_IL6_J0",
-                 xlab = "Percentage of monocytes\nexpressing ADRB1",
-                 ylab = "log(IL-6 + 1)",
+F18_1_plot <- make_il_cor_plot(df, 
+                 "M_ADR1_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
                  title_lab = "A: D0",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F18_2_plot <- make_il_cor_plot(df, "M_ADR1_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "Percentage of monocytes\nexpressing ADRB1",
-                 ylab = "log(IL-6 + 1)",
+F18_2_plot <- make_il_cor_plot(df, 
+                 "M_ADR1_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
                  title_lab = "B: D3-D5",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F18_3_plot <- make_il_cor_plot(df, "M_ADR1_JS", "log_value_IL6_JS",
-                 xlab = "Percentage of monocytes\nexpressing ADRB1",
-                 ylab = "log(IL-6 + 1)",
+F18_3_plot <- make_il_cor_plot(df, 
+                 "M_ADR1_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
                  title_lab = "C: D weaning",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F18_4_plot <- make_il_cor_plot(df, "M_ADR2_J0", "log_value_IL6_J0",
-                 xlab = "Percentage of monocytes\nexpressing ADRB2",
-                 ylab = "log(IL-6 + 1)",
+F18_4_plot <- make_il_cor_plot(df, 
+                 "M_ADR2_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
                  title_lab = "D: D0",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
-
-F18_5_plot <- make_il_cor_plot(df, "M_ADR2_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "Percentage of monocytes\nexpressing ADRB2",
-                 ylab = "log(IL-6 + 1)",
+F18_5_plot <- make_il_cor_plot(df, 
+                 "M_ADR2_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
                  title_lab = "E: D3-D5",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
-F18_6_plot <- make_il_cor_plot(df, "M_ADR2_JS", "log_value_IL6_JS",
-                 xlab = "Percentage of monocytes\nexpressing ADRB2",
-                 ylab = "log(IL-6 + 1)",
+F18_6_plot <- make_il_cor_plot(df, 
+                 "M_ADR2_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
                  title_lab = "F: D weaning",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
 Figure_18 <- (F18_1_plot | F18_2_plot | F18_3_plot) /
              (F18_4_plot | F18_5_plot | F18_6_plot)
@@ -1803,43 +1832,52 @@ ggsave("FIGURES/Figure18.pdf",
 
 ```{r Figure19, include=FALSE}
 
-F19_1_plot <- make_il_cor_plot(df, "ADR1L_J0", "log_value_IL10_J0",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 ylab = "log(IL-10 + 1)",
-                 title_lab = "A: D0",
-                 ylim = c(0, 7))
+F19_1_plot <- make_il_cor_plot(df, 
+                               "ADR1L_J0",
+                 "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "A: D0")
 
-F19_2_plot <- make_il_cor_plot(df, "ADR1L_J3_J5", "log_value_IL10_J3_J5",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 ylab = "log(IL-10 + 1)",
+F19_2_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J3_J5",
+                 "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
                  title_lab = "B: D3-D5",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F19_3_plot <- make_il_cor_plot(df, "ADR1L_JS", "log_value_IL10_JS",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 ylab = "log(IL-10 + 1)",
+F19_3_plot <- make_il_cor_plot(df, 
+                 "ADR1L_JS",
+                 "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
                  title_lab = "C: D weaning",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-
-F19_4_plot <- make_il_cor_plot(df, "ADR2L_J0", "log_value_IL10_J0",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 ylab = "log(IL-10 + 1)",
+F19_4_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J0",
+                 "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
                  title_lab = "D: D0",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
-
-F19_5_plot <- make_il_cor_plot(df, "ADR2L_J3_J5", "log_value_IL10_J3_J5",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 ylab = "log(IL-10 + 1)",
+F19_5_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J3_J5",
+                 "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
                  title_lab = "E: D3-D5",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
-F19_6_plot <- make_il_cor_plot(df, "ADR2L_JS", "log_value_IL10_JS",
-                 xlab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 ylab = "log(IL-10 + 1)",
+F19_6_plot <- make_il_cor_plot(df, 
+                 "ADR2L_JS",
+                 "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
                  title_lab = "F: D weaning",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
 Figure_19 <- (F19_1_plot | F19_2_plot | F19_3_plot) /
              (F19_4_plot | F19_5_plot | F19_6_plot)
@@ -1858,42 +1896,47 @@ ggsave("FIGURES/Figure19.pdf",
 
 ```{r Figure20, include=FALSE}
 
-F20_1_plot <- make_il_cor_plot(df, "M_ADR1_J0", "log_value_IL10_J0",
-                 xlab = "Percentage of monocytes\nexpressing ADRB1",
-                 ylab = "log(IL-10 + 1)",
+F20_1_plot <- make_il_cor_plot(df, 
+                 "M_ADR1_J0", "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
                  title_lab = "A: D0",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F20_2_plot <- make_il_cor_plot(df, "M_ADR1_J3_J5", "log_value_IL10_J3_J5",
-                 xlab = "Percentage of monocytes\nexpressing ADRB1",
-                 ylab = "log(IL-10 + 1)",
+F20_2_plot <- make_il_cor_plot(df, 
+                 "M_ADR1_J3_J5", "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
                  title_lab = "B: D3-D5",
-                 ylim = c(0, 7))
+                 ylim = c(0, 100))
 
-F20_3_plot <- make_il_cor_plot(df, "M_ADR1_JS", "log_value_IL10_JS",
-                 xlab = "Percentage of monocytes\nexpressing ADRB1",
-                 ylab = "log(IL-10 + 1)",
+F20_3_plot <- make_il_cor_plot(df, 
+                 "M_ADR1_JS", "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
                  title_lab = "C: D weaning",
-                 ylim = c(0, 7))
-
-F20_4_plot <- make_il_cor_plot(df, "M_ADR2_J0", "log_value_IL10_J0",
-                 xlab = "Percentage of monocytes\nexpressing ADRB2",
-                 ylab = "log(IL-10 + 1)",
+                 ylim = c(0, 100))
+F20_4_plot <- make_il_cor_plot(df, 
+                 "M_ADR2_J0", "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
                  title_lab = "D: D0",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
-
-F20_5_plot <- make_il_cor_plot(df, "M_ADR2_J3_J5", "log_value_IL10_J3_J5",
-                 xlab = "Percentage of monocytes\nexpressing ADRB2",
-                 ylab = "log(IL-10 + 1)",
+F20_5_plot <- make_il_cor_plot(df, 
+                 "M_ADR2_J3_J5", "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
                  title_lab = "E: D3-D5",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
 
-F20_6_plot <- make_il_cor_plot(df, "M_ADR2_JS", "log_value_IL10_JS",
-                 xlab = "Percentage of monocytes\nexpressing ADRB2",
-                 ylab = "log(IL-10 + 1)",
+F20_6_plot <- make_il_cor_plot(df, 
+                 "M_ADR2_JS", "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
                  title_lab = "F: D weaning",
-                 ylim = c(0, 6))
+                 ylim = c(0, 100))
+
 
 Figure_20 <- (F20_1_plot | F20_2_plot | F20_3_plot) /
              (F20_4_plot | F20_5_plot | F20_6_plot)

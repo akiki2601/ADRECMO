@@ -28,9 +28,11 @@ df_long <- df_bio %>%
   ) %>%
   mutate(
     day = recode(day,
-                 "J0"     = "D0",
+                 "J0"     = "implantation",
                  "J3_J5"  = "D3-D5",
-                 "JS"     = "D weaning")
+                 "JS"     = "explantation"),
+    day = factor(day,
+                 levels = c("implantation", "D3-D5", "explantation"))
   )%>%
   dplyr::filter(!is.na(value)) %>%
   # classifier pro vs anti vs autres
@@ -158,7 +160,6 @@ FIGURE1 <- ggplot() +
   ) +
   ggnewscale::new_scale("fill") +
   
-  ## <<< ICI : nombre de sujets par case >>>
   geom_text(
     data = df_heat,
     aes(x = day, y = BIO, label = n),

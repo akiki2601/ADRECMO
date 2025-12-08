@@ -311,9 +311,9 @@ plot_cytokine <- function(df, cytokine_name) {
   p <- ggplot(data_plot, aes(x = cyto_time, y = value_log, fill = Outcomes)) +
     geom_boxplot(position = position_dodge(0.7), width = 0.6) +
     labs(
-      title = paste("Association between", cytokine_name, "and outcomes"),
+      title = "",
       x = "Times of measurement",
-      y = paste("Log of", cytokine_name)
+      y = paste(cytokine_name, "log scale")
     ) +
     geom_text(data = count_data, aes(
       x = cyto_time,
@@ -322,7 +322,7 @@ plot_cytokine <- function(df, cytokine_name) {
       group = Outcomes
     ), position = position_dodge(0.7), size = 4, vjust = 1) +
     scale_x_discrete(labels = setNames(
-      c("implantation", "day 3 to 5", "explantation"),
+      c("implantation", "D3-D5", "explantation"),
       c(col_J0, col_J3_J5, col_JS)
     )) +
     scale_fill_manual(values = c(
@@ -334,13 +334,15 @@ plot_cytokine <- function(df, cytokine_name) {
       "text",
       x = 1,
       y = max(data_plot$value_log, na.rm = TRUE) * 1.1,
-      label = paste0("p[time]: ", p_time, " p[outcomes]: ", p_outcome),
+      label = paste0("p[time]: ", p_time, "\n", "p[outcomes]: ", p_outcome),
       parse = FALSE,
       size = 4,
       hjust = 0
-    )
-  
-  print(p)
+    ) +
+    theme_classic() +
+    theme(legend.position = "below")
+    
+  p
 }
 
 #######################
@@ -348,8 +350,8 @@ plot_cytokine <- function(df, cytokine_name) {
 make_il6_sofa_panel <- function(data,
                                 il6_var,
                                 sofa_var,
-                                panel_label,
-                                time_label) {
+                                title_label)
+  {
   
   # On enlève les NA pour ce couple de variables
   dat <- data %>%
@@ -391,7 +393,7 @@ make_il6_sofa_panel <- function(data,
     geom_jitter(width = 0.15, alpha = 0.7, size = 1.8) +
     scale_fill_brewer(palette = "Blues", name = "SOFA terciles") +
     labs(
-      title = paste0(panel_label, ": ", time_label),
+      title = title_label,
       x = "SOFA (terciles)",
       y = "log(IL-6 + 1)"
     ) +
@@ -401,7 +403,7 @@ make_il6_sofa_panel <- function(data,
       hjust = 1.1, vjust = 1.5, size = 3.5,
       label = paste0( "P = ", p_kw)
     ) +
-    theme_classic(base_size = 11) +
+    theme_classic(base_size = 14) +
     theme(
       legend.position = "none",
       axis.text.x = element_text(angle = 30, hjust = 1)
@@ -467,23 +469,34 @@ make_il6_cor_plot <- function(data, xvar, yvar, ylab, title_lab,  ylim = NULL) {
 }
 
 
-make_il_cor_plot <- function(data, xvar_percent, yvar_IL, 
-                             xlab = "%", ylab = "IL (log +1)", 
+make_il_cor_plot <- function(data, 
+                             yvar_percent, xvar_IL, 
+                             ylab = "%", 
+                             xlab = "IL (log +1)", 
                              title_lab = "", 
-                             ylim = NULL, xlim = c(0, 100)) {
+                             ylim = c(0, 100),
+                             xlim = NULL) {
   
   # test Spearman
-  ct <- cor.test(data[[xvar_percent]], data[[yvar_IL]],
+  ct <- cor.test(data[[yvar_percent]], data[[xvar_IL]],
                  method = "spearman", use = "complete.obs")
   rho  <- round(unname(ct$estimate), 2)
   pval <- signif(ct$p.value, 2)
   
-  # Définir la limite Y si non fournie
+  # Définir les limites Y si non fournies
   if (is.null(ylim)) {
-    ylim <- c(0, max(data[[yvar_IL]], na.rm = TRUE))
+    ylim <- c(0, 100)
   }
   
-  ggplot(data, aes(x = .data[[xvar_percent]], y = .data[[yvar_IL]])) +
+  # Définir les limites X si non fournies
+  if (is.null(xlim)) {
+    x_max <- max(data[[xvar_IL]], na.rm = TRUE)
+    xlim  <- c(0, x_max)
+  } else {
+    x_max <- xlim[2]
+  }
+  
+  ggplot(data, aes(x = .data[[xvar_IL]], y = .data[[yvar_percent]])) +
     geom_point(alpha = 0.7, color = "steelblue") +
     geom_smooth(method = "loess", se = TRUE, span = 0.9,
                 color = "darkred") +
@@ -496,7 +509,7 @@ make_il_cor_plot <- function(data, xvar_percent, yvar_IL,
     theme_classic(base_size = 14) +
     annotate(
       "text",
-      x = xlim[2],
+      x = x_max,
       y = ylim[2],
       label = paste0("Spearman \u03C1 = ", rho, "\nP = ", pval),
       hjust = 1.1, vjust = 1.5, size = 4.5
