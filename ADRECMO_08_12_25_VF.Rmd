@@ -391,7 +391,7 @@ df_bio <- df_fv %>%
 ```
 
 
-```{r data-management,include=TRUE}
+```{r data-management,include=FALSE}
 df <- df_fv %>%
   mutate(
     Temp_D0 = round(Temp_D0, 1),
@@ -535,17 +535,15 @@ df <- df_fv %>%
                                         T~NA),
     ECMO_duration_Dead = case_when(Outcome=="Death"~Time_ecmo,
                                         T~NA),
-    P_F_D0 = PaO2_D0 / FIO2_D0,
   ) %>%
   select(-ends_with("_raw"), -ends_with("_mgdl")
   )
-df$Sao2_D0
 ```
 
 # Timepoint check of the blood sample at day 0
 
 ```{r Timepoint,include=TRUE}
-summary_stats <- df_clean %>%
+summary_stats <- df %>%
   mutate(time_diff_hours = time_diff_mins / 60) %>%
   summarise(
     mean_minutes = mean(time_diff_hours),
@@ -726,7 +724,7 @@ table1 <- flextable(table_1_vf2) %>%
 
 ```
 
-```{r table1 display}
+```{r table1-display}
 table1
 save_as_docx(table1, path = "Tables/Table1_characteristics.docx")
 ```
@@ -1010,7 +1008,7 @@ Figure_1 <- (F1_1_plot | F1_2_plot | F1_3_plot) /
 ```
 
 
-```{r Figure17-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 Figure_1
 ggsave("FIGURES/Figure1.pdf",
        plot   = Figure_1,
@@ -1112,65 +1110,11 @@ ggsave("FIGURES/Figure3.pdf",
        device = cairo_pdf, bg = "white", scale= 1.5) 
 ```
 
-# FIGURE 3: Association between VTI and ADRB in Lymphocyte at admission
-
-```{r Figure3,include=F}
-
-# ADRB1
-mw_VTI1 <- wilcox.test(log1p(ADR1L_J0) ~ VTI_JS, data = df)
-p_value_VTI <- sprintf("%.3f", mw_VTI1$p.value)
-
-count_data <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
-
-Figure3a <- ggplot(df, aes(x = VTI_JS, y = log1p(ADR1L_J0), fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  geom_text(data = count_data,
-            aes(x = VTI_JS, y = min(log1p(df$ADR1L_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
-            size = 4, inherit.aes = FALSE) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(title = "A", x = "VTI measured at 1.5 L/min", y = "% of lymphocytes expressing ADRB1 at ECMO weaning \n (log scale)") +
-  theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(df$ADR1L_J0), na.rm = TRUE), label = paste("p:", p_value_VTI), size = 5)
-
-# ADRB2
-
-mw_VTI2 <- wilcox.test(log1p(ADR2L_J0) ~ VTI_JS, data = df)
-p_value_VTI_2 <- sprintf("%.3f", mw_VTI2$p.value)
-
-count_data2 <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
-
-Figure3b <- ggplot(df, aes(x = VTI_JS, y = log1p(ADR2L_J0), fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(title = "B", x = "VTI measured at 1.5 L/min", y = "% of lymphocytes expressing ADRB2 measured at ECMO weaning \n (log scale)") +
-  theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(df$ADR2L_J0), na.rm = TRUE), label = paste("p:", p_value_VTI_2), size = 5) +
-  geom_text(data = count_data2,
-            aes(x = VTI_JS, y = min(log1p(df$ADR2L_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)),
-            inherit.aes = FALSE, size = 4)
-```
-
-```{r Figure3_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure3 <- Figure3a | Figure3b +
-  plot_annotation(title = "Association between VTI at weaning and ADRB1/ADRB2 expression in lymphocyte", tag_levels = c("A","B"))
-
-Figure3
-
-ggsave("FIGURES/Figure3.pdf",
-       plot   = Figure3,
-       width  = 200, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
 # FIGURE 4: IL6 and outcomes
 
-```{r Figure6,include=F}
-Figure4_A  <- plot_cytokine(df, "IL6")
+```{r Figure4,include=F}
 
-ggsave("FIGURES/Figure4_A.pdf",      Figure4_A,  width=160, height=120, units="mm", device=cairo_pdf, bg="white", scale=1.5)
+Figure4_A  <- plot_cytokine(df, "IL6")
 
 
 km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
@@ -1214,10 +1158,10 @@ ggsave("FIGURES/Figure4_B.pdf",
 ```
 
 
-```{r Figure4, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure4-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
 library(patchwork)
-Figure4 <- (Figure4_A.pdf) | (Figure4_B.pdf) +
+Figure4 <- (Figure4_A) | (Figure4_B) +
   plot_annotation( tag_levels = c("A","B")) +
   plot_layout(heights = c(1.0, 0.1))
 
@@ -1382,7 +1326,7 @@ FigureS1 <- (FS1_1 | FS1_2 | FS1_3) /
              (FS1_4 | FS1_5 | FS1_6)
 ```
 
-```{r Figure18-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r FigureS1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 FigureS1
 ggsave("FIGURES/FigureS1.pdf",
        plot   = FigureS1,
@@ -1545,7 +1489,7 @@ ggsave("FIGURES/FigureS4.pdf",
 
 # FIGURE S5: Association between VTI the weaning day and IL6
 
-```{r Figure4,include=F}
+```{r FigureS5,include=F}
 # ADRB1
 
 mw_3a <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
@@ -1570,117 +1514,5 @@ FigureS5
 ggsave("FIGURES/FigureS5.pdf",
        plot   = FigureS5,
        width  = 200, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-
-#FIGURES EN PLUS
-
-# FIGURE: Cytokines
-
-```{r Figure6,include=F}
-fig_IL6  <- plot_cytokine(df, "IL6")
-fig_IL5  <- plot_cytokine(df, "IL5")
-fig_IL8  <- plot_cytokine(df, "IL8/CXCL8")
-fig_IL10 <- plot_cytokine(df, "IL10")
-fig_GDF  <- plot_cytokine(df, "GDF-15")
-```
-
-```{r Figure6-display, fig.width=8, fig.height=6, fig.scale=2, dpi=300, fig.align='center'}
-
-fig_IL6
-fig_IL5
-fig_IL8
-fig_IL10
-fig_GDF
-
-ggsave("FIGURES/Figure6_IL6.pdf",      fig_IL6,  width=160, height=120, units="mm", device=cairo_pdf, bg="white", scale=1.5)
-ggsave("FIGURES/Figure6_IL5.pdf",      fig_IL5,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
-ggsave("FIGURES/Figure6_IL8.pdf",      fig_IL8,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
-ggsave("FIGURES/Figure6_IL10.pdf",     fig_IL10, width=160, height=120, units="mm", device=cairo_pdf, bg="white")
-ggsave("FIGURES/Figure6_GDF15.pdf",    fig_GDF,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
-```
-
-
-
-
-# FIGURE: Association IL6 D0 and Other study co-inclusion
-
-```{r Figure15, include= F}
-
-MW <- wilcox.test(log_value_IL6_J0~autre_riph_interv, df)
-p <- MW$p.value
-Figure15 <- ggplot(df,aes(y=log_value_IL6_J0, x=as.factor(autre_riph_interv),fill=as.factor(autre_riph_interv)))+
-  geom_boxplot()+
-   annotate("text",
-            x = 1,
-      y = 8,
-      label = paste0("p: ", sprintf("%.2f",p)),
-      parse = FALSE,
-      size = 4,
-      hjust = 0)
-```
-
-```{r Figure15-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-
-Figure15
-
-ggsave("FIGURES/Figure15.pdf",
-       plot   = Figure15,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-
-```
-
-
-# FIGURE: Association with T4 cell and outcomes
-
-```{r Figure12, include=F}
-
-prep_A1 <- prep_marker_data(df, prefix = "T4", transform = "none")
-
-test_A1 <- test_marker(prep_A1$data)
-
-Figure12 <- plot_marker(
-  dat      = prep_A1$data,
-  counts   = prep_A1$counts,
-  x_labels = prep_A1$x_labels,
-  panel_title = "A",
-  y_var    = "value_log",
-  y_lab    = "Percentage of T4 lymphocytes"
-) +
-  annotate("text", x = 1, y = max(prep_A1$data$value_log, na.rm = TRUE) +1, label = test_A1$label, hjust = 0)+
-  coord_cartesian(ylim=c(0,20))
-```
-
-```{r Figure12-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure12
-
-ggsave("FIGURES/Figure12.pdf",
-       plot   = Figure12,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE : IL6 and duration of Noradrenaline
-
-```{r Figure10, include=FALSE}
-
-Figure_10_plot <- make_il6_cor_plot(df,
-                  "log_value_IL6_J0",
-                  "duree_NAd",
-                  "Norepinephrine duration (days)",
-                  "")
-```
-
-```{r Figure10-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure_10_plot
-
-ggsave("FIGURES/Figure10.pdf",
-       plot   = Figure_10_plot,
-       width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
