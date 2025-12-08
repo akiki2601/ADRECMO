@@ -340,7 +340,7 @@ plot_cytokine <- function(df, cytokine_name) {
       hjust = 0
     ) +
     theme_classic() +
-    theme(legend.position = "below")
+    theme(legend.position = "bottom")
     
   p
 }
@@ -464,7 +464,7 @@ make_il6_cor_plot <- function(data, xvar, yvar, ylab, title_lab,  ylim = NULL) {
     coord_cartesian(ylim = ylim) +   # <<< coupe en dessous de 0
     theme_classic(base_size = 14) +
     annotate("text", x = Inf, y = ylim[2],
-             label = paste0("Spearman \u03C1 = ", rho, "\nP = ", pval),
+             label = paste0("\u03C1 = ", rho, "\nP = ", pval),
              hjust = 1.1, vjust = 1.5, size = 4.5)
 }
 
@@ -511,7 +511,7 @@ make_il_cor_plot <- function(data,
       "text",
       x = x_max,
       y = ylim[2],
-      label = paste0("Spearman \u03C1 = ", rho, "\nP = ", pval),
+      label = paste0("\u03C1 = ", rho, "\nP = ", pval),
       hjust = 1.1, vjust = 1.5, size = 4.5
     )
 }

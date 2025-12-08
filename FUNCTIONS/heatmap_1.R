@@ -131,7 +131,7 @@ pro_cats    <- c("plasma pro-inf\ncytokines",
 anti_cats   <- c("plasma anti-inf\ncytokines", 
                  "anti-inf\nimmmune cells")
 
-FIGURE1 <- ggplot() +
+FIGURE2 <- ggplot() +
   # --- PRO (rouge) ---
   geom_tile(
     data = df_heat %>% dplyr::filter(category %in% pro_cats),

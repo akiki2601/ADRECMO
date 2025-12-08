@@ -534,11 +534,12 @@ df <- df_fv %>%
     ECMO_duration_weaned = case_when(Outcome=="ECMO Weaning"~Time_ecmo,
                                         T~NA),
     ECMO_duration_Dead = case_when(Outcome=="Death"~Time_ecmo,
-                                        T~NA)
+                                        T~NA),
+    P_F_D0 = PaO2_D0 / FIO2_D0,
   ) %>%
   select(-ends_with("_raw"), -ends_with("_mgdl")
   )
-
+df$Sao2_D0
 ```
 
 # Timepoint check of the blood sample at day 0
@@ -956,34 +957,96 @@ table2b
 
 No significant difference between VTI at 3 L and 1.5 L flow conditions at weaning day (Wilcoxon test, p = `r format.pval(TEST$p.value, digits=3)`)
 
-# FIGURE 1: Inflammatory heatmap according to outcomes
+# FIGURE 1: Association between IL6 and expression of ADRB on T Lymphocytes
 
 ```{r Figure1, include=FALSE}
+
+F1_1_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "A: implantation",
+                 ylim = c(0, 100))
+
+F1_2_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+F1_3_plot <- make_il_cor_plot(df, 
+                 "ADR1L_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "C: explantation",
+                 ylim = c(0, 100))
+
+
+F1_4_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "D: implantation",
+                 ylim = c(0, 100))
+
+F1_5_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+F1_6_plot <- make_il_cor_plot(df, 
+                 "ADR2L_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "F: explantation",
+                 ylim = c(0, 100))
+
+Figure_1 <- (F1_1_plot | F1_2_plot | F1_3_plot) /
+             (F1_4_plot | F1_5_plot | F1_6_plot)
+
+```
+
+
+```{r Figure17-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+Figure_1
+ggsave("FIGURES/Figure1.pdf",
+       plot   = Figure_1,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+
+# FIGURE 2: Inflammatory heatmap according to outcomes
+
+```{r Figure2, include=FALSE}
 # Source the user's heatmap script
 
 source("FUNCTIONS/heatmap_1.R")
 
-FIGURE1
+FIGURE2
 
 ```
 
-```{r Figure1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure2-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-FIGURE1
+FIGURE2
 
-ggsave("FIGURES/Figure1.pdf",
-             plot   = FIGURE1,
+ggsave("FIGURES/Figure2.pdf",
+             plot   = FIGURE2,
              width  = 210, height = 180, units = "mm",
              device = cairo_pdf, bg = "white")
 ```
 
-# FIGURE 2: Association between ADRB expressions and outcomes
+# FIGURE 3: Association between ADRB expressions and outcomes
 
-```{r Figure2_tot,include=FALSE}
+```{r Figure3_tot,include=FALSE}
 
 prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "none")
 test_A1 <- test_marker(prep_A1$data)
-Figure_2_1 <- plot_marker(
+Figure_3_1 <- plot_marker(
   dat      = prep_A1$data,
   counts   = prep_A1$counts,
   x_labels = prep_A1$x_labels,
@@ -996,7 +1059,7 @@ Figure_2_1 <- plot_marker(
 
 prep_A2 <- prep_marker_data(df, prefix = "ADR2L", transform = "none")
 test_A2 <- test_marker(prep_A2$data)
-Figure_2_2 <- plot_marker(
+Figure_3_2 <- plot_marker(
   dat      = prep_A2$data,
   counts   = prep_A2$counts,
   x_labels = prep_A2$x_labels,
@@ -1009,7 +1072,7 @@ Figure_2_2 <- plot_marker(
 
 prep_M1 <- prep_marker_data(df, prefix = "M_ADR1", transform = "none")
 test_M1 <- test_marker(prep_M1$data)
-Figure_2_3 <- plot_marker(
+Figure_3_3 <- plot_marker(
   dat      = prep_M1$data,
   counts   = prep_M1$counts,
   x_labels = prep_M1$x_labels,
@@ -1022,7 +1085,7 @@ Figure_2_3 <- plot_marker(
 
 prep_M2 <- prep_marker_data(df, prefix = "M_ADR2", transform = "none")
 test_M2 <- test_marker(prep_M2$data)
-Figure_2_4 <- plot_marker(
+Figure_3_4 <- plot_marker(
   dat      = prep_M2$data,
   counts   = prep_M2$counts,
   x_labels = prep_M2$x_labels,
@@ -1034,17 +1097,17 @@ Figure_2_4 <- plot_marker(
   annotate("text", x = 2.5, y = max(prep_M2$data$value_log, na.rm = TRUE)+3, label = test_M2$label, hjust = 0)+
   coord_cartesian(ylim=c(0,105))
 
-Figure2 <- (Figure_2_1 + Figure_2_2 + Figure_2_3 + Figure_2_4) +
+Figure3 <- (Figure_3_1 + Figure_3_2 + Figure_3_3 + Figure_3_4) +
   patchwork::plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 ```
 
-```{r Figure2_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure3_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-Figure2
+Figure3
 
-ggsave("FIGURES/Figure2.pdf",
-       plot   = Figure2,
+ggsave("FIGURES/Figure3.pdf",
+       plot   = Figure3,
        width  = 200, height = 150, units = "mm",
        device = cairo_pdf, bg = "white", scale= 1.5) 
 ```
@@ -1102,95 +1165,418 @@ ggsave("FIGURES/Figure3.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# FIGURE 4: Association between VTI and % of expression of ADRB on monocyte at admission
+# FIGURE 4: IL6 and outcomes
+
+```{r Figure6,include=F}
+Figure4_A  <- plot_cytokine(df, "IL6")
+
+ggsave("FIGURES/Figure4_A.pdf",      Figure4_A,  width=160, height=120, units="mm", device=cairo_pdf, bg="white", scale=1.5)
+
+
+km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+mod_censored <- coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+
+res_cox <- tidy(mod_censored, exponentiate = TRUE, conf.int = TRUE)
+
+lab <- res_cox %>%
+  filter(grepl("^IL6_median", term)) %>%
+  mutate(label = sprintf("HR = %.2f (95%% CI %.2f–%.2f)", estimate, conf.low, conf.high)) %>%
+  pull(label)
+
+lab2 <- median(df$IL6_J0)
+
+Figure4_B <- ggsurvplot(km_fit_comp, data = df, 
+  pval = FALSE, conf.int = FALSE, risk.table = TRUE, risk.table.height = 0.2,
+  risk.table.y.text = TRUE, risk.table.title = "Number at Risk",
+  xlim = c(0, 90), ylab = "90 day survival", break.time.by = 7,
+  legend.title = " ", palette = c("#E63946", "#457B9D"), ggtheme = theme_classic(),surv.scale = "percent",
+  legend.labs = c("below median", "above median"),
+  legend = "none")
+
+xmax <- max(df$diff_days, na.rm = TRUE)
+Figure4_B$plot <- Figure4_B$plot +
+  annotate("text", x = 0.2 * xmax, y = 0.90, hjust = 0, label = lab, size = 3.7)
+
+Figure4_B$plot <- Figure4_B$plot +
+  annotate("text", x = 0.2 * xmax, y = 0.99, hjust = 0, label = paste0("Median IL-6 D0: ", lab2, " pg/ml"), size = 3.7)
+
+Figure4_B <- ggarrange(
+  Figure4_B$plot,
+  Figure4_B$table,
+  ncol = 1, nrow = 2,
+  heights = c(3, 1)
+)
+ggsave("FIGURES/Figure4_B.pdf",
+       plot   = Figure4_B,
+       width  = 180, height = 140, units = "mm",
+       device = cairo_pdf, bg = "white")
+
+```
+
+
+```{r Figure4, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+library(patchwork)
+Figure4 <- (Figure4_A.pdf) | (Figure4_B.pdf) +
+  plot_annotation( tag_levels = c("A","B")) +
+  plot_layout(heights = c(1.0, 0.1))
+
+
+ggsave("FIGURES/Figure4.pdf",
+       plot   = Figure4,
+       width  = 320, height = 140, units = "mm",
+       device = cairo_pdf, bg = "white", scale=1.2)
+```
+
+
+# FIGURE 5: Association between IL-6 and Organ Dysfunction
+
+```{r Figure5,include=FALSE}
+
+###########IL6 and lactate################
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "Lact_D0",
+)
+
+F5_1 <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_J0",
+                   yvar = "Lact_D0",
+                   ylab= "lactate (mmol/l)",
+                   title_lab = "")
+
+###########Cumulative 24H norepinephrine################
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "NADcum_D0_w"
+)
+
+# D0
+F5_2 <- make_il6_cor_plot(df,
+                                xvar = "log_value_IL6_J0",
+                                yvar = "NADcum_D0_w",
+                                ylab= "Cumulative 24H norepinephrine dose\n(log+1 scale)",
+                                title_lab = "")
+
+###############association between IL6 and ECMO flow#####################
+
+
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+  yvar = "j0_ecmo_debit"
+)
+
+F5_3 <- make_il6_cor_plot(df,
+                             xvar= "log_value_IL6_J0",
+                             yvar="j0_ecmo_debit",
+                             ylab="ECMO Flow (L/min)",
+                             title_lab = "")
+
+
+
+################IL6_GFR#######################
+
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "CKD_D0"
+)
+
+
+F5_4 <- make_il6_cor_plot(data=df,
+                    xvar= "log_value_IL6_J0",
+                    yvar = "CKD_D0",
+                    ylab = "CKD-EPI (ml/min/1.73m²)",
+                    title_lab = "")
+
+######################IL6 and HEPATIC FUNCTION#########################
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "ASAT_D0",
+)
+
+F5_5 <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_J0",
+                   yvar = "ASAT_D0",
+                   ylab= "ASAT (UI/l)",
+                   title_lab = "")
+
+######################IL6 and PaO2/Fi02#########################
+F5_6 <- ggplot(df, aes(x=as.factor(Intubation), y=log_value_IL6_J0)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.5) +
+  labs(x="Intubation status", y="log(IL-6 + 1)")+
+   scale_x_discrete(labels = c("0" = "No", "1" = "Yes"))+ stat_compare_means(method = "wilcox.test",label = "p.format")
+```
+
+```{r}
+Figure5 <- (F5_1 | F5_2) / (F5_3 | F5_4) / (F5_5 | F5_6) +
+  plot_annotation( tag_levels = c("A","B","C","D","E","F"))
+
+ggsave("FIGURES/Figure5.pdf",
+       plot   = Figure5,
+       width  = 200, height = 240, units = "mm",
+       device = cairo_pdf, bg = "white", scale=1.2)
+```
+
+
+#####################################################
+#                                                   #
+#Additional Figures for Supplementary Material      #
+#                                                   #
+#####################################################
+
+
+
+# FIGURE S1: Association between IL6 and expression of ADRB on monocytes
+
+```{r FigureS1, include=FALSE}
+
+FS1_1 <- make_il_cor_plot(df, 
+                 "M_ADR1_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "A: D0",
+                 ylim = c(0, 100))
+
+FS1_2 <- make_il_cor_plot(df, 
+                 "M_ADR1_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+FS1_3 <- make_il_cor_plot(df, 
+                 "M_ADR1_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "C: D weaning",
+                 ylim = c(0, 100))
+
+FS1_4 <- make_il_cor_plot(df, 
+                 "M_ADR2_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
+
+FS1_5 <- make_il_cor_plot(df, 
+                 "M_ADR2_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+FS1_6 <- make_il_cor_plot(df, 
+                 "M_ADR2_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
+
+FigureS1 <- (FS1_1 | FS1_2 | FS1_3) /
+             (FS1_4 | FS1_5 | FS1_6)
+```
+
+```{r Figure18-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS1
+ggsave("FIGURES/FigureS1.pdf",
+       plot   = FigureS1,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+#FIGURE S2: Association between IL10 and expression of ADRB on T Lymphocytes
+
+```{r FigureS2, include=FALSE}
+
+FS2_1 <- make_il_cor_plot(df, 
+                               "ADR1L_J0",
+                 "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "A: D0")
+
+FS2_2 <- make_il_cor_plot(df, 
+                 "ADR1L_J3_J5",
+                 "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+FS2_3 <- make_il_cor_plot(df, 
+                 "ADR1L_JS",
+                 "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "C: D weaning",
+                 ylim = c(0, 100))
+
+FS2_4 <- make_il_cor_plot(df, 
+                 "ADR2L_J0",
+                 "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
+
+FS2_5 <- make_il_cor_plot(df, 
+                 "ADR2L_J3_J5",
+                 "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+FS2_6 <- make_il_cor_plot(df, 
+                 "ADR2L_JS",
+                 "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
+
+FigureS2 <- (FS2_1 | FS2_2 | FS2_3) /
+             (FS2_4 | FS2_5 | FS2_6)
+```
+
+```{r FigureS2-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+FigureS2
+ggsave("FIGURES/FigureS2.pdf",
+       plot   = FigureS2,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+# FIGURE S3: Association between IL10 and expression of ADRB on monocytes
+
+```{r FigureS3, include=FALSE}
+
+FS3_1 <- make_il_cor_plot(df, 
+                 "M_ADR1_J0", "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "A: D0",
+                 ylim = c(0, 100))
+
+FS3_2 <- make_il_cor_plot(df, 
+                 "M_ADR1_J3_J5", "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+FS3_3 <- make_il_cor_plot(df, 
+                 "M_ADR1_JS", "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "C: D weaning",
+                 ylim = c(0, 100))
+FS3_4 <- make_il_cor_plot(df, 
+                 "M_ADR2_J0", "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
+
+FS3_5 <- make_il_cor_plot(df, 
+                 "M_ADR2_J3_J5", "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+FS3_6 <- make_il_cor_plot(df, 
+                 "M_ADR2_JS", "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
+
+
+FigureS3 <- (FS3_1 | FS3_2 | FS3_3) /
+             (FS3_4 | FS3_5 | FS3_6)
+```
+
+```{r FigureS3-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS3
+ggsave("FIGURES/FigureS3.pdf",
+       plot   = FigureS3,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+
+# FIGURE S4: IL6 at D0 and SOFA over-time
+
+```{r FigureS4, include=FALSE}
+
+# Construction des 3 panneaux
+FS4_1   <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_J0",
+                                sofa_var  = "sofa_D0",
+                                title_label = "implantation")
+
+FS4_2 <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_J3_J5",
+                                sofa_var  = "jp2_sofa",
+                                title_label ="D3–D5")
+
+FS4_3   <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_JS",
+                                sofa_var  = "jsev_sofa",
+                                title_label = "explantation")
+FigureS4 <- FS4_1 | FS4_2 | FS4_3
+```
+
+```{r FigureS4-display, fig.width=8, fig.height=4, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS4
+ggsave("FIGURES/FigureS4.pdf",
+       plot   = FigureS4,
+       width  = 240, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+# FIGURE S5: Association between VTI the weaning day and IL6
 
 ```{r Figure4,include=F}
 # ADRB1
 
-mw_3a <- wilcox.test(log1p(M_ADR1_J0) ~ VTI_JS, data = df)
+mw_3a <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
 p_value_VTI <- sprintf("%.3f", mw_3a$p.value)
 
 count_data <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
 
-Figure4a <- ggplot(df, aes(x = VTI_JS, y = log1p(M_ADR1_J0), fill = VTI_JS)) +
+FigureS5 <- ggplot(df, aes(x = VTI_JS, y = log_value_IL6_JS, fill = VTI_JS)) +
   geom_boxplot() +
   geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  geom_text(data = count_data, aes(x = VTI_JS, y = -3, label = paste0("n=", n)), size = 4, inherit.aes = FALSE) +
+  geom_text(data = count_data, aes(x = VTI_JS, y = 0.5, label = paste0("n=", n)), size = 4, inherit.aes = FALSE) +
   scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(title = "A", x = "VTI measured at 1.5 L/min", y = "% of Monocytes expressing ADRB1 measured at ECMO weaning \n (log scale)") +
+  labs(x = "VTI measured at 1.5 L/min", y = "IL6 (log scale)") +
   theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(df$M_ADR1_J0), na.rm = TRUE), label = paste("p:", p_value_VTI), size = 5)
+  annotate("text", x = 1.5, y = max(df$log_value_IL6_JS, na.rm=T), label = paste("p:", p_value_VTI), size = 5)
 
-# ADRB2
-
-mw_3b <- wilcox.test(log1p(M_ADR2_J0) ~ VTI_JS, data = df)
-p_value_VTI_2 <- sprintf("%.3f", mw_3b$p.value)
-
-count_data2 <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
-
-Figure4b <- ggplot(df, aes(x = VTI_JS, y = log1p(M_ADR2_J0), fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(title = "B", x = "VTI measured at 1.5 L/min", y = "% of Monocytes expressing ADRB2 at ECMO weaning \n (log scale)") +
-  theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = max(log1p(df$M_ADR2_J0), na.rm = TRUE), label = paste("p:", p_value_VTI_2), size = 5) +
-  geom_text(data = count_data2, aes(x = VTI_JS, y = min(log1p(df$M_ADR2_J0), na.rm = TRUE) * 1.25, label = paste0("n=", n)), inherit.aes = FALSE, size = 4)
 ```
 
-```{r Figure4_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r FigureS5-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS5
 
-Figure4 <- Figure4a | Figure4b +
-  plot_annotation(title = "Association between VTI at weaning and % of monocytes expressing ADRB", tag_levels = c("A","B"))
-
-Figure4
-
-ggsave("FIGURES/Figure4.pdf",
-       plot   = Figure4,
+ggsave("FIGURES/FigureS5.pdf",
+       plot   = FigureS5,
        width  = 200, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
 
-# FIGURE 5: Association between IL-6 at admission and VTI
 
-```{r Figure5, include =FALSE}
+#FIGURES EN PLUS
 
-mw  <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
-p  <- sprintf("%.3f", mw$p.value)
-n   <- df %>% count(VTI_JS)
-
-y_max <- max(df$log_value_IL6_JS, na.rm = TRUE)
-y_min <- min(df$log_value_IL6_JS, na.rm = TRUE)
-
-Figure5 <- ggplot(df, aes(x = VTI_JS, y = log_value_IL6_JS, fill = VTI_JS)) +
-  geom_boxplot() +
-  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
-  labs(
-    title = "Association between VTI and IL-6 at weaning",
-    x = "VTI measured at 1.5 L/min",
-    y = "log(IL-6 + 1) at weaning"
-  ) +
-  theme_minimal() + theme(legend.position = "none") +
-  annotate("text", x = 1.5, y = y_max,
-           label = paste("p:", p), size = 5, color = "black") +
-  geom_text(data = n,
-            aes(x = VTI_JS, y = y_min * 1.25, label = paste0("n=", n)),
-            inherit.aes = FALSE, size = 4)
-```
-
-```{r Figure5-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure5
-
-ggsave("FIGURES/Figure5.pdf",
-       plot   = Figure5,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-
-# FIGURE 6: Cytokines
+# FIGURE: Cytokines
 
 ```{r Figure6,include=F}
 fig_IL6  <- plot_cytokine(df, "IL6")
@@ -1215,268 +1601,40 @@ ggsave("FIGURES/Figure6_IL10.pdf",     fig_IL10, width=160, height=120, units="m
 ggsave("FIGURES/Figure6_GDF15.pdf",    fig_GDF,  width=160, height=120, units="mm", device=cairo_pdf, bg="white")
 ```
 
-# FIGURE 7: Survival \~ IL-6 admission
 
-```{r Figure_7_censored,include=FALSE}
 
-km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
-mod_censored <- coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
 
-res_cox <- tidy(mod_censored, exponentiate = TRUE, conf.int = TRUE)
+# FIGURE: Association IL6 D0 and Other study co-inclusion
 
-lab <- res_cox %>%
-  filter(grepl("^IL6_median", term)) %>%
-  mutate(label = sprintf("HR = %.2f (95%% CI %.2f–%.2f)", estimate, conf.low, conf.high)) %>%
-  pull(label)
+```{r Figure15, include= F}
 
-lab2 <- median(df$IL6_J0)
-
-Figure_7 <- ggsurvplot(km_fit_comp, data = df, 
-  pval = FALSE, conf.int = FALSE, risk.table = TRUE, risk.table.height = 0.2,
-  risk.table.y.text = TRUE, risk.table.title = "Number at Risk",
-  xlim = c(0, 90), ylab = "90 day survival", break.time.by = 7,
-  legend.title = " ", palette = c("#E63946", "#457B9D"), ggtheme = theme_classic(),surv.scale = "percent",
-  legend.labs = c("below median", "above median"),
-  legend = "none")
-
-xmax <- max(df$diff_days, na.rm = TRUE)
-Figure_7$plot <- Figure_7$plot +
-  annotate("text", x = 0.2 * xmax, y = 0.90, hjust = 0, label = lab, size = 3.7)
-
-Figure_7$plot <- Figure_7$plot +
-  annotate("text", x = 0.2 * xmax, y = 0.99, hjust = 0, label = paste0("Median IL-6 D0: ", lab2, " pg/ml"), size = 3.7)
-
-Figure_7_full <- ggarrange(
-  Figure_7$plot,
-  Figure_7$table,
-  ncol = 1, nrow = 2,
-  heights = c(3, 1)
-)
+MW <- wilcox.test(log_value_IL6_J0~autre_riph_interv, df)
+p <- MW$p.value
+Figure15 <- ggplot(df,aes(y=log_value_IL6_J0, x=as.factor(autre_riph_interv),fill=as.factor(autre_riph_interv)))+
+  geom_boxplot()+
+   annotate("text",
+            x = 1,
+      y = 8,
+      label = paste0("p: ", sprintf("%.2f",p)),
+      parse = FALSE,
+      size = 4,
+      hjust = 0)
 ```
 
-```{r Figure_7_censored-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure_7_full
-
-ggsave("FIGURES/Figure7.pdf",
-       plot   = Figure_7_full,
-       width  = 180, height = 140, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-#FIGURE 3-5 fusion: IL6 and outcomes and survival
-
-```{r}
-
-library(patchwork)
-Figure6_7_combined <- (fig_IL6) | (Figure_7_full) +
-  plot_annotation( tag_levels = c("A","B")) +
-  plot_layout(heights = c(1.0, 0.1))
+```{r Figure15-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
 
-ggsave("FIGURES/Figure6_7_combined.pdf",
-       plot   = Figure6_7_combined,
-       width  = 320, height = 140, units = "mm",
-       device = cairo_pdf, bg = "white", scale=1.2)
-```
+Figure15
 
-
-
-
-
-
-# FIGURE 8: Association between IL-6 and vasopressor dose
-
-```{r Figure8,include=FALSE}
-
-res_D0 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J0",
-    yvar = "NADcum_D0_w"
-)
-res_D0
-
-
-res_J3_J5 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J3_J5",
-  yvar = "jp2_NAd_cum_w"
-)
-res_J3_J5
-
-
-res_JS <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_JS",
-  yvar = "jsev_NAd_cum_w"
-)
-res_JS
-
-# D0
-Figure8_D0 <- make_il6_cor_plot(df,
-                                xvar = "log_value_IL6_J0",
-                                yvar = "NADcum_D0_w",
-                                ylab= "Cumulative 24H norepinephrine dose\n(log+1 scale)",
-                                title_lab = "implantation")
-
-# J3–J5
-Figure8_J3J5 <- make_il6_cor_plot(df,
-                                  xvar = "log_value_IL6_J3_J5",
-                                  yvar = "jp2_NAd_cum_w",
-                                  ylab= "Cumulative 24H norepinephrine dose\n(log+1 scale)",
-                                  title_lab = "D3–D5")
-
-# JS
-Figure8_JS <- make_il6_cor_plot(df,
-                                xvar = "log_value_IL6_JS",
-                                yvar = "jsev_NAd_cum_w",
-                                ylab= "Cumulative 24H norepinephrine dose\n(log+1 scale)",
-                                title_lab = "explantation")
-```
-
-```{r Figure8,display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure8 <- Figure8_D0 | Figure8_J3J5 | Figure8_JS
-
-Figure8
-
-ggsave("FIGURES/Figure8.pdf",
-       plot   = Figure8,
-       width  = 240, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE 9: association between IL6 and ECMO flow
-
-```{r Figure9, include=F}
-
-# ------------------------------
-# 1) Linéarité?
-# ------------------------------
-
-ggplot(df, aes(x = log_value_IL6_J0, y = j0_ecmo_debit)) +
-  geom_point() +
-  geom_smooth(method = "lm", colour = "blue", se = FALSE) +       # modèle linéaire
-  geom_smooth(method = "loess", colour = "red", se = FALSE) +     # lissage non paramétrique
-  theme_classic()
-
-res_D0 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J0",
-  yvar = "j0_ecmo_debit"
-)
-res_D0
-
-res_D3_D5 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J3_J5",
-  yvar = "jp2_ecmo_debit"
-)
-res_D3_D5
-
-res_DW <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_JS",
-  yvar = "jsev_ecmo_debit"
-)
-res_DW
-
-F9_plot <- make_il6_cor_plot(df,
-                             xvar= "log_value_IL6_J0",
-                             yvar="j0_ecmo_debit",
-                             ylab="ECMO Flow (L/min)",
-                             title_lab = "implantation")
-F9_plot_2 <- make_il6_cor_plot(df,
-                             xvar= "log_value_IL6_J3_J5",
-                             yvar="jp2_ecmo_debit",
-                             ylab="ECMO Flow (L/min)",
-                             title_lab = "D3-D5")
-F9_plot_3 <- make_il6_cor_plot(df,
-                             xvar= "log_value_IL6_JS",
-                             yvar="jsev_ecmo_debit",
-                             ylab="ECMO Flow (L/min)",
-                             title_lab = "explantation")
-
-```
-
-```{r Figure9-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-F9_panel <- F9_plot | F9_plot_2 | F9_plot_3
-
-F9_panel
-
-ggsave("FIGURES/Figure9.pdf",
-       plot   = F9_panel,
+ggsave("FIGURES/Figure15.pdf",
+       plot   = Figure15,
        width  = 160, height = 120, units = "mm",
        device = cairo_pdf, bg = "white")
-```
 
-# FIGURE 10: IL6 and duration of Noradrenaline
-
-```{r Figure10, include=FALSE}
-
-Figure_10_plot <- make_il6_cor_plot(df,
-                  "log_value_IL6_J0",
-                  "duree_NAd",
-                  "Norepinephrine duration (days)",
-                  "")
-```
-
-```{r Figure10-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure_10_plot
-
-ggsave("FIGURES/Figure10.pdf",
-       plot   = Figure_10_plot,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE 11: IL6 at D0 and SOFA over-time
-
-```{r Figure11, include=FALSE}
-
-# Construction des 3 panneaux
-F11_D0   <- make_il6_sofa_panel(df,
-                                il6_var   = "log_value_IL6_J0",
-                                sofa_var  = "sofa_D0",
-                                title_label = "implantation")
-
-F11_J3J5 <- make_il6_sofa_panel(df,
-                                il6_var   = "log_value_IL6_J0",
-                                sofa_var  = "jp2_sofa",
-                                title_label ="D3–D5")
-
-F11_JS   <- make_il6_sofa_panel(df,
-                                il6_var   = "log_value_IL6_J0",
-                                sofa_var  = "jsev_sofa",
-                                title_label = "explantation")
-```
-
-```{r Figure11-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-# Panel complet Figure 11
-Figure11 <- F11_D0 | F11_J3J5 | F11_JS
-Figure11
-
-ggsave("FIGURES/Figure11.pdf",
-       plot   = Figure11,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-```{r}
-Figure_TOT_IL6_org <- Figure8 / F9_panel / Figure11 +
-  plot_annotation( tag_levels = c("A","B","C","D")) 
-
-ggsave("FIGURES/Figure_TOT_IL6_org.pdf",
-       plot   = Figure_TOT_IL6_org,
-       width  = 200, height = 240, units = "mm",
-       device = cairo_pdf, bg = "white", scale=1.2)
 ```
 
 
-
-# FIGURE 12: Association with T4 cell and outcomes
+# FIGURE: Association with T4 cell and outcomes
 
 ```{r Figure12, include=F}
 
@@ -1506,448 +1664,23 @@ ggsave("FIGURES/Figure12.pdf",
        device = cairo_pdf, bg = "white")
 ```
 
-# FIGURE 13: Renal function and IL6
+# FIGURE : IL6 and duration of Noradrenaline
 
-```{r Figure13, include=FALSE}
-res_D0 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J0",
-    yvar = "CKD_D0"
-)
-res_D0
+```{r Figure10, include=FALSE}
 
-
-res_J3_J5 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J3_J5",
-  yvar = "CKD_J3J5"
-)
-res_J3_J5
-
-
-res_JS <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_JS",
-  yvar = "CKD_JS"
-)
-res_JS
-
-F13_plot <- make_il6_cor_plot(data=df,
-                    xvar= "log_value_IL6_J0",
-                    yvar = "CKD_D0",
-                    ylab = "CKD-EPI (ml/min/1.73m²)",
-                    title_lab = "A: D0")
-
-F13_plot_2 <- make_il6_cor_plot(data=df,
-                    xvar= "log_value_IL6_J3_J5",
-                    yvar = "CKD_J3J5",
-                    ylab = "CKD-EPI (ml/min/1.73m²)",
-                    title_lab = "B: D3-D5")
-
-F13_plot_3 <-make_il6_cor_plot(data=df,
-                    xvar= "log_value_IL6_JS",
-                    yvar = "CKD_JS",
-                    ylab = "CKD-EPI (ml/min/1.73m²)",
-                    title_lab = "C: weaning")
-
-
+Figure_10_plot <- make_il6_cor_plot(df,
+                  "log_value_IL6_J0",
+                  "duree_NAd",
+                  "Norepinephrine duration (days)",
+                  "")
 ```
 
-```{r Figure13-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+```{r Figure10-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
 
-F13_panel <- F13_plot | F13_plot_2 | F13_plot_3
+Figure_10_plot
 
-F13_panel
-
-ggsave("FIGURES/Figure13.pdf",
-       plot   = F13_panel,
+ggsave("FIGURES/Figure10.pdf",
+       plot   = Figure_10_plot,
        width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE 14: Association IL6 hepatic function
-
-```{r Figure14, include=FALSE}
-
-res_D0 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J0",
-    yvar = "ASAT_D0",
-)
-res_D0
-
-
-res_J3_J5 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J3_J5",
-  yvar = "jp2_asat"
-)
-res_J3_J5
-
-
-res_JS <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_JS",
-  yvar = "jsev_asat"
-)
-res_JS
-
-F14_1_plot <- make_il6_cor_plot(data= df,
-                   xvar= "log_value_IL6_J0",
-                   yvar = "ASAT_D0",
-                   ylab= "ASAT (UI/l)",
-                   title_lab = "A: D0")
-
-F14_2_plot <- make_il6_cor_plot(data= df,
-                   xvar= "log_value_IL6_J3_J5",
-                   yvar = "jp2_asat",
-                   ylab= "ASAT (UI/l)",
-                   title_lab = "B: D3-D5")
-
-F14_3_plot <- make_il6_cor_plot(data= df,
-                   xvar= "log_value_IL6_JS",
-                   yvar = "jsev_asat",
-                  ylab= "ASAT (UI/l)",
-                   title_lab = "C: weaning")
-```
-
-```{r Figure14-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-F14_panel <- F14_1_plot | F14_2_plot | F14_3_plot
-
-F14_panel
-
-ggsave("FIGURES/Figure14.pdf",
-       plot   = F14_panel,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-
-```
-
-# FIGURE 15: Association IL6 D0 and Other study co-inclusion
-
-```{r Figure15, include= F}
-
-MW <- wilcox.test(log_value_IL6_J0~autre_riph_interv, df)
-p <- MW$p.value
-Figure15 <- ggplot(df,aes(y=log_value_IL6_J0, x=as.factor(autre_riph_interv),fill=as.factor(autre_riph_interv)))+
-  geom_boxplot()+
-   annotate("text",
-            x = 1,
-      y = 8,
-      label = paste0("p: ", sprintf("%.2f",p)),
-      parse = FALSE,
-      size = 4,
-      hjust = 0)
-```
-
-```{r Figure15-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-
-Figure15
-
-ggsave("FIGURES/Figure15.pdf",
-       plot   = Figure15,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-
-```
-
-# FIGURE 16: Association lactate and IL6
-
-```{r Figure16, include=FALSE}
-
-res_D0 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J0",
-    yvar = "Lact_D0",
-)
-
-res_D0
-
-res_J3_J5 <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_J3_J5",
-  yvar = "jp2_lact"
-)
-res_J3_J5
-
-
-res_JS <- test_linearity(
-  data = df,
-  xvar = "log_value_IL6_JS",
-  yvar = "jsev_lact"
-)
-res_JS
-
-F16_1_plot <- make_il6_cor_plot(data= df,
-                   xvar= "log_value_IL6_J0",
-                   yvar = "Lact_D0",
-                   ylab= "lactate (mmol/l)",
-                   title_lab = "A: D0")
-
-F16_2_plot <- make_il6_cor_plot(data= df,
-                   xvar= "log_value_IL6_J3_J5",
-                   yvar = "jp2_lact",
-                   ylab= "lactate (mmol/l)",
-                   title_lab = "B: D3-D5")
-
-F16_3_plot <- make_il6_cor_plot(data= df,
-                   xvar= "log_value_IL6_JS",
-                   yvar = "jsev_lact",
-                  ylab= "lactate (mmol/l)",
-                   title_lab = "C: weaning")
-```
-
-```{r Figure16-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure16 <- F16_1_plot | F16_2_plot | F16_3_plot
-
-Figure16
-
-ggsave("FIGURES/Figure16.pdf",
-       plot   = Figure16,
-       width  = 160, height = 120, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE 17: Association between IL6 and expression of ADRB on T Lymphocytes
-
-```{r Figure17, include=FALSE}
-
-F17_1_plot <- make_il_cor_plot(df, 
-                 "ADR1L_J0", "log_value_IL6_J0",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 title_lab = "A: D0",
-                 ylim = c(0, 100))
-
-F17_2_plot <- make_il_cor_plot(df, 
-                 "ADR1L_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 title_lab = "B: D3-D5",
-                 ylim = c(0, 100))
-
-F17_3_plot <- make_il_cor_plot(df, 
-                 "ADR1L_JS", "log_value_IL6_JS",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 title_lab = "C: D weaning",
-                 ylim = c(0, 100))
-
-
-F17_4_plot <- make_il_cor_plot(df, 
-                 "ADR2L_J0", "log_value_IL6_J0",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 title_lab = "D: D0",
-                 ylim = c(0, 100))
-
-F17_5_plot <- make_il_cor_plot(df, 
-                 "ADR2L_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 title_lab = "E: D3-D5",
-                 ylim = c(0, 100))
-
-F17_6_plot <- make_il_cor_plot(df, 
-                 "ADR2L_JS", "log_value_IL6_JS",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 title_lab = "F: D weaning",
-                 ylim = c(0, 100))
-
-Figure_17 <- (F17_1_plot | F17_2_plot | F17_3_plot) /
-             (F17_4_plot | F17_5_plot | F17_6_plot)
-
-```
-
-
-```{r Figure17-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure_17
-ggsave("FIGURES/Figure17.pdf",
-       plot   = Figure_17,
-       width  = 240, height = 160, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE 18: Association between IL6 and expression of ADRB on monocytes
-
-```{r Figure18, include=FALSE}
-
-F18_1_plot <- make_il_cor_plot(df, 
-                 "M_ADR1_J0", "log_value_IL6_J0",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB1",
-                 title_lab = "A: D0",
-                 ylim = c(0, 100))
-
-F18_2_plot <- make_il_cor_plot(df, 
-                 "M_ADR1_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB1",
-                 title_lab = "B: D3-D5",
-                 ylim = c(0, 100))
-
-F18_3_plot <- make_il_cor_plot(df, 
-                 "M_ADR1_JS", "log_value_IL6_JS",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB1",
-                 title_lab = "C: D weaning",
-                 ylim = c(0, 100))
-
-F18_4_plot <- make_il_cor_plot(df, 
-                 "M_ADR2_J0", "log_value_IL6_J0",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB2",
-                 title_lab = "D: D0",
-                 ylim = c(0, 100))
-
-F18_5_plot <- make_il_cor_plot(df, 
-                 "M_ADR2_J3_J5", "log_value_IL6_J3_J5",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB2",
-                 title_lab = "E: D3-D5",
-                 ylim = c(0, 100))
-
-F18_6_plot <- make_il_cor_plot(df, 
-                 "M_ADR2_JS", "log_value_IL6_JS",
-                 xlab = "log(IL-6 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB2",
-                 title_lab = "F: D weaning",
-                 ylim = c(0, 100))
-
-Figure_18 <- (F18_1_plot | F18_2_plot | F18_3_plot) /
-             (F18_4_plot | F18_5_plot | F18_6_plot)
-```
-
-```{r Figure18-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure_18
-ggsave("FIGURES/Figure18.pdf",
-       plot   = Figure_18,
-       width  = 240, height = 160, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-#FIGURE 19: Association between IL10 and expression of ADRB on T Lymphocytes
-
-```{r Figure19, include=FALSE}
-
-F19_1_plot <- make_il_cor_plot(df, 
-                               "ADR1L_J0",
-                 "log_value_IL10_J0",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 title_lab = "A: D0")
-
-F19_2_plot <- make_il_cor_plot(df, 
-                 "ADR1L_J3_J5",
-                 "log_value_IL10_J3_J5",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 title_lab = "B: D3-D5",
-                 ylim = c(0, 100))
-
-F19_3_plot <- make_il_cor_plot(df, 
-                 "ADR1L_JS",
-                 "log_value_IL10_JS",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
-                 title_lab = "C: D weaning",
-                 ylim = c(0, 100))
-
-F19_4_plot <- make_il_cor_plot(df, 
-                 "ADR2L_J0",
-                 "log_value_IL10_J0",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 title_lab = "D: D0",
-                 ylim = c(0, 100))
-
-F19_5_plot <- make_il_cor_plot(df, 
-                 "ADR2L_J3_J5",
-                 "log_value_IL10_J3_J5",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 title_lab = "E: D3-D5",
-                 ylim = c(0, 100))
-
-F19_6_plot <- make_il_cor_plot(df, 
-                 "ADR2L_JS",
-                 "log_value_IL10_JS",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
-                 title_lab = "F: D weaning",
-                 ylim = c(0, 100))
-
-Figure_19 <- (F19_1_plot | F19_2_plot | F19_3_plot) /
-             (F19_4_plot | F19_5_plot | F19_6_plot)
-```
-
-```{r Figure19-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-
-Figure_19
-ggsave("FIGURES/Figure19.pdf",
-       plot   = Figure_19,
-       width  = 240, height = 160, units = "mm",
-       device = cairo_pdf, bg = "white")
-```
-
-# FIGURE 20: Association between IL10 and expression of ADRB on monocytes
-
-```{r Figure20, include=FALSE}
-
-F20_1_plot <- make_il_cor_plot(df, 
-                 "M_ADR1_J0", "log_value_IL10_J0",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB1",
-                 title_lab = "A: D0",
-                 ylim = c(0, 100))
-
-F20_2_plot <- make_il_cor_plot(df, 
-                 "M_ADR1_J3_J5", "log_value_IL10_J3_J5",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB1",
-                 title_lab = "B: D3-D5",
-                 ylim = c(0, 100))
-
-F20_3_plot <- make_il_cor_plot(df, 
-                 "M_ADR1_JS", "log_value_IL10_JS",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB1",
-                 title_lab = "C: D weaning",
-                 ylim = c(0, 100))
-F20_4_plot <- make_il_cor_plot(df, 
-                 "M_ADR2_J0", "log_value_IL10_J0",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB2",
-                 title_lab = "D: D0",
-                 ylim = c(0, 100))
-
-F20_5_plot <- make_il_cor_plot(df, 
-                 "M_ADR2_J3_J5", "log_value_IL10_J3_J5",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB2",
-                 title_lab = "E: D3-D5",
-                 ylim = c(0, 100))
-
-F20_6_plot <- make_il_cor_plot(df, 
-                 "M_ADR2_JS", "log_value_IL10_JS",
-                 xlab = "log(IL-10 + 1)",
-                 ylab = "Percentage of monocytes\nexpressing ADRB2",
-                 title_lab = "F: D weaning",
-                 ylim = c(0, 100))
-
-
-Figure_20 <- (F20_1_plot | F20_2_plot | F20_3_plot) /
-             (F20_4_plot | F20_5_plot | F20_6_plot)
-```
-
-```{r Figure20-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
-Figure_20
-ggsave("FIGURES/Figure20.pdf",
-       plot   = Figure_20,
-       width  = 240, height = 160, units = "mm",
        device = cairo_pdf, bg = "white")
 ```
