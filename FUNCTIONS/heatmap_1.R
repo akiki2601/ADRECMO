@@ -81,7 +81,7 @@ normality_results %>%
 # 3) Optionnel : normaliser ou log-transformer
 df_long <- df_long %>% 
   mutate(value_log = log1p(value)) %>%         # évite log(0)
-  group_by(category) %>% 
+  group_by(BIO) %>% 
   mutate(value_z = (value_log - mean(value_log, na.rm = TRUE)) /
            sd(value_log,  na.rm = TRUE)) %>% 
   ungroup()

@@ -417,6 +417,8 @@ df_hapto <- read_excel("DATA/hapto.xlsx", sheet="ADRECMO ")%>%
                 values_from = hapto,
                  names_prefix = "hapto_")
 
+
+df_fv <- df_fv %>% left_join(df_hapto, by = "ID")
 ```
 
 
@@ -436,6 +438,10 @@ df <- df_fv %>%
       Outcome == 2 ~ "Bridge to Transplant",
       Outcome == 3 ~ "Bridge to LVAD",
       Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Outcome_death_bridge = case_when(
+      Outcome %in% c("Bridge to Transplant", "Bridge to LVAD", "Death") ~ "Death or Bridge",
       TRUE ~ as.character(Outcome)
     ),
     Pulsepressure_D0 = PAS_D0 - PAD_D0,
@@ -507,6 +513,7 @@ df <- df_fv %>%
     ische = relevel(as.factor(cause), ref=c("Non ischémique")),
     NAD_24H = NADcum_D0*1000/Weight,
     DOB_24H = DOBUcum_D0*1000/Weight,
+    NAD_jp2_w = jp2_NAd_cum*1000/Weight,
     
     log_value_IL6_J0    = log1p(IL6_J0),
     log_value_IL6_J3_J5 = log1p(IL6_J3_J5),
@@ -535,6 +542,7 @@ df <- df_fv %>%
     DPP3_group_D0    = factor(ifelse(DPP3_D0    > 40, 1, 0), labels = c("DPP3 ≤ 40", "DPP3 > 40")),
     DPP3_group_J3_J5 = factor(ifelse(DPP3_D3_5 > 40, 1, 0), labels = c("DPP3 ≤ 40", "DPP3 > 40")),
     DPP3_group_JS    = factor(ifelse(DPP3_w     > 40, 1, 0), labels = c("DPP3 ≤ 40", "DPP3 > 40")),
+     DPP3_median = as.factor(if_else(df$DPP3_D0<=median(df$DPP3_D0), "below median", "above median")),
     
     IL6_median = as.factor(if_else(df$IL6_J0<=median(df$IL6_J0), "<=median", ">median")),
     
@@ -660,7 +668,7 @@ traduction <- c(
 
 # Application du dictionnaire de traduction
 table_1_vf <- table_1_vf %>%
-  mutate(Variables = recode(Variables, !!!traduction))%>%
+  mutate(Variables = dplyr::recode(Variables, !!!traduction))%>%
   rename(Missing = n_missing)
 
 sections <- tibble::tribble(
