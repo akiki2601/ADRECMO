@@ -566,8 +566,8 @@ df <- df_fv %>%
     CKD_JS   = ifelse(jsev_eer == 1, 15, CKD_JS_raw),
     
     VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm"),
-    EER_Tot =  as.integer(pmax(EER_D0, jp2_eer, jsev_eer) >= 1),
-    BCPIA_Tot =  as.integer(pmax(IABP_D0,jp2_cpbia, jsev_cpbia) >= 1),
+    BCPIA_Tot = as.integer(pmax(IABP_D0, jp2_cpbia, jsev_cpbia, na.rm = TRUE) >= 1),
+    EER_Tot = as.integer(pmax(EER_D0, jp2_eer, jsev_eer, na.rm = TRUE) >= 1),
     ECMO_duration_weaned = case_when(Outcome=="ECMO Weaning"~Time_ecmo,
                                         T~NA),
     ECMO_duration_Dead = case_when(Outcome=="Death"~Time_ecmo,
@@ -575,6 +575,8 @@ df <- df_fv %>%
   ) %>%
   select(-ends_with("_raw"), -ends_with("_mgdl")
   )
+
+saveRDS(df, file = "DATA/df_managed.rds")
 ```
 
 # Timepoint check of the blood sample at day 0
@@ -599,6 +601,8 @@ Day-0 blood samples were collected on average `r round(summary_stats$mean_minute
 
 var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF","Alphablocker","Betablocker", "cause","ische", "Cardiac_arrest_before_canul", "Intubation")
 var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "HR_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "NAD_24H", "DOB_24H", "Lact_D0", "Creat_D0",  "ASAT_D0", "Bili_D0", "Tropo_i_hs_D0", "Ntprobnp_D0",  "Plq_D0")
+
+df$j0_ecmo_debit
 var.tot <- c(var.cat, var.cont)
 table(is.na(df$Weight))
 df$Weight

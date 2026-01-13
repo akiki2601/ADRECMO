@@ -81,7 +81,7 @@ normality_results %>%
 # 3) Optionnel : normaliser ou log-transformer
 df_long <- df_long %>% 
   mutate(value_log = log1p(value)) %>%         # évite log(0)
-  group_by(BIO) %>% 
+  group_by(BIO) %>% # modif KD : "group_by(BIO)" a la place de "group_by(Category)"
   mutate(value_z = (value_log - mean(value_log, na.rm = TRUE)) /
            sd(value_log,  na.rm = TRUE)) %>% 
   ungroup()
@@ -131,6 +131,9 @@ pro_cats    <- c("plasma pro-inf\ncytokines",
 anti_cats   <- c("plasma anti-inf\ncytokines", 
                  "anti-inf\nimmmune cells")
 
+range(df_heat$value_z) # ajout KD : range situe entre -1.59 et 0.93
+limits <- c(-1.5, 1.5) # ajout KD 
+
 FIGURE2 <- ggplot() +
   # --- PRO (rouge) ---
   geom_tile(
@@ -140,7 +143,7 @@ FIGURE2 <- ggplot() +
   scale_fill_gradientn(
     colours = c("white","#fde0dc","#f9bdbb","#f36c60","#d32f2f"),
     name    = "Z-score\n(log +1)",
-    limits  = c(-3, 3),
+    limits  = limits, # modif KD : limits a la place de c(-3, 3)
     oob     = scales::squish,
     guide   = guide_colorbar(order = 1)
   ) +
@@ -154,7 +157,7 @@ FIGURE2 <- ggplot() +
   scale_fill_gradientn(
     colours = c("white","#e1f5fe","#81d4fa","#0288d1","#01579b"),
     name    = "Z-score\n(log +1)",
-    limits  = c(-3, 3),
+    limits  = limits,  # modif KD : limits a la place de c(-3, 3)
     oob     = scales::squish,
     guide   = guide_colorbar(order = 2)
   ) +

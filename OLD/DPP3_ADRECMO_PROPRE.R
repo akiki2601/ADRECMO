@@ -247,6 +247,11 @@ t1_tableone_obj <- CreateTableOne(
   strata     = "DPP3_median",
   data       = df_t1_input
 )
+t1_vars_cont <- c(
+  "Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "HR_D0", "Preecmo_tte_ef",
+  "Preecmo_tte_vtiao", "sofa_D0", "NAD_24H", "DOB_24H", "Lact_D0",
+  "Creat_D0", "ASAT_D0", "Bili_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "Plq_D0"
+)
 
 t1_tableone_print <- print(
   t1_tableone_obj,
@@ -259,6 +264,28 @@ t1_tableone_print <- print(
 df_t1_tableone <- as.data.frame(t1_tableone_print) %>%
   tibble::rownames_to_column("Variables") %>%
   dplyr::select(Variables, `below median`, `above median`)
+
+round_nonnormal_0 <- function(x) {
+  x <- as.character(x)
+  m <- gregexpr("\\d+\\.\\d+", x, perl = TRUE)
+  regmatches(x, m) <- lapply(
+    regmatches(x, m),
+    function(v) as.character(round(as.numeric(v), 0))
+  )
+  x
+}
+
+nonnormal_0digit <- df_t1_tableone %>%
+  dplyr::filter(!grepl("^Lact_D0 ", Variables)) %>%               # exclure Lact_D0
+  dplyr::pull(Variables)
+
+rows_to_round <- df_t1_tableone$Variables %in% nonnormal_0digit
+
+df_t1_tableone$`below median`[rows_to_round] <-
+  round_nonnormal_0(df_t1_tableone$`below median`[rows_to_round])
+
+df_t1_tableone$`above median`[rows_to_round] <-
+  round_nonnormal_0(df_t1_tableone$`above median`[rows_to_round])
 
 df_t1_missing <- df_t1_input %>%
   summarise(across(everything(), ~ sum(is.na(.)))) %>%
@@ -396,6 +423,9 @@ df_t1_final <- df_t1_tableone_id %>%
     `Group difference [95% CI]`
   )
 
+df_t1_final$`Group difference [95% CI]` <-
+  round_nonnormal_0(df_t1_final$`Group difference [95% CI]`)
+
 
 
 dict_t1_labels <- c(
@@ -496,9 +526,8 @@ t1_order <- c(
 df_t1_display <- bind_rows(t1_sections, df_t1_final) %>%
   mutate(Variables = factor(Variables, levels = t1_order)) %>%
   arrange(Variables) %>%
-  mutate(
-    is_section = is.na(Missing) & `low cDPP3` == "" & `high cDPP3` == ""
-  )
+  mutate(    across(everything(), ~gsub("\\s*[;,]\\s*", " - ", .x)),
+    is_section = is.na(Missing) & `low cDPP3` == "" & `high cDPP3` == "")
 
 ft_t1 <- flextable(df_t1_display %>% select(-is_section)) %>%
   set_caption(CAPTION_T1) %>%
@@ -677,6 +706,7 @@ t2_tableone_print <- print(
 )
 
 
+
 # Hodges–Lehmann for continuous outcomes
 hl_diff_ci_t2 <- purrr::map_dfr(
   t2_vars_cont,
@@ -772,11 +802,29 @@ df_t2_final <- as.data.frame(t2_tableone_print) %>%
     `Group difference [95% CI]`
   )
 
+nonnormal_0digit <-  c("Lenght_eer",
+"Lenght_vm",
+"Time_hosp",
+"Time_ecmo",
+"ECMO_duration_weaned"  ,
+"ECMO_duration_Dead"  )
+
+rows_to_round <- df_t2_final$Variables %in% nonnormal_0digit
+
+df_t2_final$`low cDPP3` <-
+  round_nonnormal_0(df_t2_final$`low cDPP3`)
+
+df_t2_final$`high cDPP3`<-
+  round_nonnormal_0(df_t2_final$`high cDPP3`)
+
+df_t2_final$`Group difference [95% CI]` <-
+  round_nonnormal_0(df_t2_final$`Group difference [95% CI]`)
+
+
 t2_sections <- tibble::tribble(
   ~Variables, ~`low cDPP3`, ~`high cDPP3`, ~`Group difference [95% CI]`,
   "Outcome", "", "", ""
 )
-df_t2_final$Variables
 
 dict_t2_labels <- c(
   "Outcome_Bridge_LVAD = TRUE (%)"        = "Bridge to LVAD (%)",
@@ -816,7 +864,9 @@ t2_order <- c(
 
 df_t2_display <- bind_rows(t2_sections, df_t2_final) %>%
   mutate( Variables = dplyr::recode(Variables, !!!dict_t2_labels),
-    Variables = factor(Variables, levels = t2_order)) %>%
+    Variables = factor(Variables, levels = t2_order),
+    across(everything(), ~gsub("\\s*[;,]\\s*", " - ", .x)
+)) %>%
   arrange(Variables)
 
 
@@ -842,7 +892,6 @@ write.csv2(
   file = "issue.csv",
   row.names = FALSE
 )
-
 
 #==============================================================================
 # FIGURE — DPP3 baseline comparisons by DPP3_median (helper function)
@@ -878,27 +927,33 @@ plot_box_by_dpp3_group <- function(df_in, y_var, y_lab, x_lab = NULL) {
       data = df_counts,
       aes(x = DPP3_median, y = y_min, label = paste0("n=", n)),
       size = 4, vjust = 1
-    )
+    )+
+    theme(axis.text.y = element_text(size = 12, face="bold"),
+          axis.text.x = element_text(size = 12, face="bold"),
+          axis.title.x = element_text(size = 14, face="bold"),
+          axis.title.y = element_text(size = 14, face="bold"))
 }
-
+# Create plots
 p_dpp3_sofa <- plot_box_by_dpp3_group(df, "sofa_D0", "SOFA")
-p_dpp3_lact <- plot_box_by_dpp3_group(df, "Lact_D0", "Lactate (mmol/L)")
+p_dpp3_lact <- plot_box_by_dpp3_group(df, "Lact_D0", "Lactate\n(mmol/L)")
 p_dpp3_nad  <- plot_box_by_dpp3_group(df, "NADcum_D0_w", "Cumulated norepinephrine dose\nday of ECMO implantation (γ/kg)")
-p_dpp3_ckd  <- plot_box_by_dpp3_group(df, "CKD_D0", "CKD-EPI (ml/min/1.73m²)")
-p_dpp3_flow <- plot_box_by_dpp3_group(df, "j0_ecmo_debit", "ECMO Flow (L/min)", x_lab = "cDPP3")
-p_dpp3_alat <- plot_box_by_dpp3_group(df, "ALAT_D0", "ALAT (IU/L)", x_lab = "cDPP3")
-
+p_dpp3_ckd  <- plot_box_by_dpp3_group(df, "CKD_D0", "eGFR\n(ml/min/1.73m²)")
+p_dpp3_flow <- plot_box_by_dpp3_group(df, "j0_ecmo_debit", "ECMO Flow\n(L/min)", x_lab = "cDPP3")
+p_dpp3_asat <- plot_box_by_dpp3_group(df, "ASAT_D0", "ASAT\n(UI/L)", x_lab = "cDPP3")
+# Combine plots into a single figure
 fig_dpp3_baseline <- (p_dpp3_sofa + p_dpp3_lact) /
   (p_dpp3_nad + p_dpp3_ckd) /
-  (p_dpp3_flow + p_dpp3_alat) +
+  (p_dpp3_flow + p_dpp3_asat) +
   plot_annotation(
-    title = sprintf(
-      "Association between cDPP3 at ECMO implantation and organ dysfunction\ncDPP3 median = %.0f ng/mL",
+    title = sprintf("cDPP3 median = %.0f ng/mL",
       median(df$DPP3_D0, na.rm = TRUE)
     ),
     tag_levels = c("A", "B", "C", "D", "E", "F")
-  ) & theme(plot.title = element_text(hjust = 0.5))
+  ) & theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
 
+
+
+# Save the figure
 ggsave(
   "FIGURES/Figure_DPP3_base.pdf",
   plot   = fig_dpp3_baseline,
@@ -921,6 +976,12 @@ df_surv <- df %>%
     DPP3_median = factor(DPP3_median, levels = c("below median", "above median"))
   )
 
+
+label_median <- sprintf("cDPP3 median = %.0f ng/mL",
+  median(df$DPP3_D0, na.rm = TRUE)
+)
+
+
 km_fit_30d <- survfit(Surv(diff_days_30, outcome_censored_30) ~ DPP3_median, data = df_surv)
 
 cox_uni <- coxph(Surv(diff_days_30, outcome_censored_30) ~ DPP3_median, data = df_surv)
@@ -936,21 +997,21 @@ df_surv <- df_surv %>%
 cox_mv <- coxph(Surv(diff_days_30, outcome_censored_30) ~ DPP3_median + time_adm_ECMO + cause, data = df_surv)
 cox_mv2 <- coxph(Surv(diff_days_30, outcome_censored_30) ~ DPP3_median + time_adm_ECMO + cause + Cardiac_arrest_before_canul, data = df_surv)
 
-cox_mv_tidy <- tidy(cox_mv, exponentiate = TRUE, conf.int = TRUE)
+cox_mv_tidy <- tidy(cox_mv2, exponentiate = TRUE, conf.int = TRUE)
 cox_uni_tidy <- tidy(cox_uni, exponentiate = TRUE, conf.int = TRUE)
 
 lab_uni <- cox_uni_tidy %>%
-  mutate(label = sprintf("HR = %.2f (95%% CI %.2f–%.2f)", estimate, conf.low, conf.high)) %>%
+  mutate(label = sprintf("HR = %.2f 95%%CI (%.2f–%.2f)", estimate, conf.low, conf.high)) %>%
   pull(label)
 
 lab_adj <- cox_mv_tidy %>%
   filter(term == "DPP3_medianabove median") %>%
-  mutate(label = sprintf("aHR = %.2f (95%% CI %.2f–%.2f)", estimate, conf.low, conf.high)) %>%
+  mutate(label = sprintf("aHR = %.2f 95%%CI (%.2f–%.2f)", estimate, conf.low, conf.high)) %>%
   pull(label)
 
 lab_surv <- paste(lab_uni, lab_adj, sep = "\n")
 
-ph_test_mv <- cox.zph(cox_mv)
+ph_test_mv <- cox.zph(cox_mv2)
 
 surv_plot <- ggsurvplot(
   km_fit_30d, data = df_surv,
@@ -964,7 +1025,14 @@ surv_plot <- ggsurvplot(
 )
 
 surv_plot$plot <- surv_plot$plot +
-  annotate("text", x = 5, y = 0.15, label = lab_surv, hjust = 0, size = 4)
+  annotate("text", x = 5, y = 0.15, label = lab_surv, hjust = 0, size = 4) +
+  annotate("text", x = 15,
+    y = 1,
+    label = label_median,
+    hjust = 0.5,
+    size = 4,
+    fontface = "bold"
+  )
 
 fig_survival <- ggpubr::ggarrange(
   surv_plot$plot,
@@ -1001,7 +1069,10 @@ df_dpp3_long <- df %>%
 
 df_dpp3_n_time <- df_dpp3_long %>%
   group_by(timepoint) %>%
-  summarise(n = sum(!is.na(value)), .groups = "drop")
+  summarise(n = sum(!is.na(value)), 
+            median = median(value, na.rm = TRUE),
+            IQR_low = quantile(value, 0.25, na.rm = TRUE),
+            IQR_high = quantile(value, 0.75, na.rm = TRUE),.groups = "drop")
 
 lmm_dpp3_time <- lmer(value_log ~ timepoint + (1 | ID), data = df_dpp3_long)
 anova_dpp3_time <- anova(lmm_dpp3_time, ddf = "Kenward-Roger")
@@ -1070,13 +1141,12 @@ p_dpp3_by_outcome <- ggplot(df_dpp3_long, aes(x = timepoint, y = value_log, fill
     label = paste(df_dpp3_pvals$label, collapse = "\n"),
     hjust = 1.05, vjust = 1.1
   ) +
-  labs(x = "Time points", y = "DPP3 (log scale)", color = "Outcomes") +
+  labs(x = "Timepoints", y = "DPP3 (log scale)", color = "Outcomes") +
   theme_minimal()+
   theme(legend.position="bottom",
         legend.title = element_blank(),
         axis.title.x = element_text(size = 14, face = "bold"),
-        axis.title.y = element_text(size = 14, face = "bold"),
-        axis.text.x  = element_blank())
+        axis.title.y = element_text(size = 14, face = "bold"))
 
 fig_dpp3_serial <- p_dpp3_time / p_dpp3_by_outcome +
   plot_annotation(tag_levels = c("A", "B"))
@@ -1108,6 +1178,8 @@ df_hapto_long <- df %>%
     value = as.numeric(value)
   )
 
+
+
 df_hapto_n_time <- df_hapto_long %>%
   group_by(timepoint) %>%
   summarise(n = sum(!is.na(value)), .groups = "drop")
@@ -1115,6 +1187,17 @@ df_hapto_n_time <- df_hapto_long %>%
 lmm_hapto_time <- lmer(value ~ timepoint + (1 | ID), data = df_hapto_long)
 anova_hapto_time <- anova(lmm_hapto_time, ddf = "Kenward-Roger")
 p_time_hapto <- format.pval(anova_hapto_time["timepoint", "Pr(>F)"], digits = 3, eps = 0.001)
+
+
+###RESTRICT D0-D3-5 ONLY#####
+df_hapto_long_restrict<-df_hapto_long%>%filter(timepoint!="explantation")
+lmm_hapto_time_restrict <- lmer(value ~ timepoint + (1 | ID), data = df_hapto_long_restrict)
+anova_hapto_time_restrict <- anova(lmm_hapto_time_restrict, ddf = "Kenward-Roger")
+p_time_hapto_restrict <- format.pval(anova_hapto_time_restrict["timepoint", "Pr(>F)"], digits = 3, eps = 0.001)
+lmm_hapto_inter_restrict <- lmer(value ~ timepoint * Outcome_death_bridge + (1 | ID), data = df_hapto_long_restrict)
+anova_hapto_inter <- anova(lmm_hapto_inter_restrict, ddf = "Kenward-Roger")
+
+
 
 p_hapto_time <- ggplot(df_hapto_long, aes(x = timepoint, y = value)) +
   geom_boxplot() +
@@ -1181,12 +1264,224 @@ ggsave(
   width  = 160, height = 200, units = "mm",
   device = cairo_pdf, bg = "white", scale = 1.1)
 
+
+#####SPAGHETTI PLOT HAPTOGLOBIN####
+
+df_hapto_delta <- df %>%
+  select(ID, hapto_J0, `hapto_J3-J5`) %>%
+  mutate(
+    hapto_J0 = as.numeric(hapto_J0),
+    `hapto_J3-J5` = as.numeric(`hapto_J3-J5`)
+  ) %>%
+  filter(!is.na(hapto_J0), !is.na(`hapto_J3-J5`)) %>%
+  mutate(
+    delta_hapto = `hapto_J3-J5` - hapto_J0,
+    hapto_trend = if_else(delta_hapto > 0, "increase", "decrease")
+  )
+
+df_cDPP3_long <- df %>%
+  select(ID, DPP3_D0, DPP3_D3_5) %>%
+  pivot_longer(cols = starts_with("DPP3_"), names_to = "timepoint", values_to = "value") %>%
+  mutate(
+    timepoint = str_remove(timepoint, "^DPP3_"),
+    timepoint = case_when(
+      timepoint == "D0"   ~ "implantation",
+      timepoint == "D3_5" ~ "day 3 to 5",
+      TRUE ~ timepoint
+    ),
+    timepoint = factor(timepoint, levels = c("implantation", "day 3 to 5")),
+    log_value = log10(value)
+  )   
+
+df_cDPP3_plot <- df_cDPP3_long %>%
+  arrange(ID, timepoint) %>%
+  group_by(ID) %>%
+  mutate(
+    delta_cDPP3 = value[timepoint == "day 3 to 5"] -
+      value[timepoint == "implantation"],
+    cdpp3_trend = if_else(delta_cDPP3 > 0, "increase", "decrease")
+  ) %>%
+  ungroup() %>%
+  left_join(df_hapto_delta, by = "ID")%>%
+  filter(!is.na(cdpp3_trend), !is.na(hapto_trend))
+
+
+df_cDPP3_plot%>%
+  group_by(cdpp3_trend,hapto_trend) %>%
+  summarise(n = n_distinct(ID), .groups = "drop")
+
+###test statistiques d'interaction####
+mod <- lmer(log_value ~ timepoint * hapto_trend + (1 | ID), data = df_cDPP3_plot)
+anova_hapto_mod <- anova(mod, ddf = "Kenward-Roger")
+
+p_inter <- format.pval(
+  anova_hapto_mod["timepoint:hapto_trend", "Pr(>F)"],
+  digits = 3, eps = 0.001)
+
+df_panels <- bind_rows(
   
-  #####CORRELATIONS DPP3####
+  # Panel 1 — Global (all patients)
+  df_cDPP3_plot %>%
+    dplyr::mutate(panel = "Global"),
+  
+  # Panel 2 — Hapto decrease
+  df_cDPP3_plot %>%
+    filter(hapto_trend == "decrease") %>%
+    mutate(panel = "Haptoglobin decrease"),
+  
+  # Panel 3 — Hapto increase
+  df_cDPP3_plot %>%
+    filter(hapto_trend == "increase") %>%
+    mutate(panel = "Haptoglobin increase"),
+  
+  # Panel 4 — Hapto decrease + cDPP3 increase
+  df_cDPP3_plot %>%
+    filter(hapto_trend == "decrease", cdpp3_trend == "increase") %>%
+    mutate(panel = "Haptoglobin decrease\n+ cDPP3 increase")
+)
+
+
+annot_df <- data.frame(
+  panel = "Global",
+  x = 1.5,
+  y = max(df_panels$log_value, na.rm = TRUE) * 1.05,
+  label = paste0("Interaction p = ", p_inter)
+)
+
+
+hapto_stats <- df_cDPP3_plot %>%
+  dplyr::filter(timepoint %in% c("implantation")) %>%
+  select(-hapto_trend, -cdpp3_trend, -delta_cDPP3, -delta_hapto,-value,-log_value,-timepoint) %>%
+  pivot_longer(
+    cols = starts_with("hapto_"),
+    names_to = "timepoint",
+    values_to = "hapto_value"
+  ) %>%
+  dplyr::group_by(timepoint) %>%
+  dplyr::summarise(
+    med = median(hapto_value, na.rm = TRUE),
+    q1  = quantile(hapto_value, 0.25, na.rm = TRUE),
+    q3  = quantile(hapto_value, 0.75, na.rm = TRUE)
+  ) %>%
+  dplyr::mutate(
+    label = paste0(
+      round(med, 2), " [",
+      round(q1, 2), "–",
+      round(q3, 2), "]"
+    )
+  )
+
+hapto_map <- hapto_stats %>%
+  mutate(
+    timepoint = case_when(
+      timepoint == "hapto_J0"     ~ "implantation",
+      timepoint == "hapto_J3-J5"  ~ "day 3 to 5"
+    ))%>%
+  select(timepoint, label)
+
+
+df_panels <- df_panels %>%
+  mutate(
+    timepoint_x = factor(case_when(
+      panel == "Global" & timepoint == "implantation" ~ paste0("implantation","\n", 
+       "haptoglobin:\n", hapto_map$label[hapto_map$timepoint == "implantation"], "\nng/mL"),
+      
+      panel == "Global" & timepoint == "day 3 to 5" ~paste0("day 3 to 5","\n", 
+                                                            "haptoglobin:\n",  hapto_map$label[hapto_map$timepoint == "day 3 to 5"], "\nng/mL"),
+      
+      TRUE ~ timepoint
+    )))%>%
+  mutate(
+    timepoint_x = factor(
+      timepoint_x,
+      levels = c(
+        "implantation\nhaptoglobin:\n1.01 [0.16–1.73]\nng/mL",
+        "day 3 to 5\nhaptoglobin:\n0.66 [0–1.51]\nng/mL",
+        "implantation",
+        "day 3 to 5"
+      )
+    )
+  ) %>%
+  droplevels()
+
+panel_letters <- data.frame(
+  panel = levels(factor(df_panels$panel)),
+  label = LETTERS[seq_along(levels(factor(df_panels$panel)))],
+  x = -Inf,
+  y = Inf
+)
+
+spagh_plot <- ggplot(
+  df_panels,
+  aes(
+    x = timepoint_x,
+    y = log_value,
+    group = ID,
+    color = hapto_trend
+  )
+) +
+  geom_line() +
+  geom_point(size = 2) +
+  
+  scale_color_manual(
+    values = c(
+      "increase" = "#E63946",
+      "decrease" = "#457B9D"
+    ),
+    labels = c(
+      "increase" = "haptoglobin increase",
+      "decrease" = "haptoglobin decrease"
+    )
+  ) +
+  scale_y_continuous(limits = c(min(df_panels$log_value), max(df_panels$log_value)+0.2)
+  ) +
+  
+  facet_wrap(~ panel, nrow = 1, scales = "free")+  
+  labs(
+    x = "",
+    y = "cDPP3 (log scale)",
+    color = ""
+  ) +
+  
+  theme_bw() +
+  theme(
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    strip.text = element_text(size = 13, face = "bold"),
+    axis.title.y = element_text(size = 14, face = "bold"),
+    axis.text.x  = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12, face = "bold")
+  )+
+  geom_text(
+    data = annot_df,
+    aes(x = x, y = 3.1, label = label),
+    inherit.aes = FALSE,
+    hjust = 0.5,
+    size = 4,
+    fontface = "bold"
+  )+
+  geom_text(
+    data = panel_letters,
+    aes(x = x, y = y, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.2,
+    vjust = 1.2,
+    size = 5,
+    fontface = "bold"
+  )
+
+
+ggsave(
+  "FIGURES/Figure_cDPP3_spaghetti.pdf",
+  plot   = spagh_plot,
+  width  = 200, height = 120, units = "mm",
+  device = cairo_pdf, bg = "white", scale = 2)  
+
+#####CORRELATIONS DPP3####
   ###calculate delta####
   df <- df %>%
     mutate(
-      DPP3_delta_D0_D3_5 = DPP3_D3_5 - DPP3_D0,
+      DPP3_delta_D0_D3_5 = log10(DPP3_D3_5) - log10(DPP3_D0),
       delta_Lact_D0_D3_5 = jp2_lact - Lact_D0,
       delta_NADcum_D0_D3_5 = jp2_NAd_cum_w - NAD_24H,
       delta_ASAT_D0_D3_5 = jp2_asat - ASAT_D0,
@@ -1215,46 +1510,110 @@ ggsave(
     )
   
   
+  
   plot_spearman <- function(data, x, y, xlab, ylab) {
     
-    test <- cor.test(data[[x]], data[[y]],
-                     method = "spearman",
-                     use = "complete.obs")
-    
-    x_min <- min(data[[x]], na.rm = TRUE)
+    # Correlation test
+    test <- cor.test(
+      data[[x]], data[[y]],
+      method = "spearman",
+      use = "complete.obs"
+    )
     
     label <- paste0(
       "ρ = ", round(test$estimate, 2),
       "\n p = ", fmt_p(test$p.value)
     )
     
-    ggplot(data, aes(x = .data[[x]], y = .data[[y]])) +
+    # Remove NA for positioning
+    df <- data[!is.na(data[[x]]) & !is.na(data[[y]]), ]
+  
+    
+    # Ranges
+    x_rng <- range(df[[x]], na.rm = TRUE)
+    y_rng <- range(df[[y]], na.rm = TRUE)
+    dx <- diff(x_rng)
+    dy <- diff(y_rng)
+    
+    # Margins (où placer le texte par rapport aux bords)
+    mx <- 0.08 * dx
+    my <- 0.08 * dy
+    
+    # Taille de la zone qu'on veut garder "vide" autour du texte
+    # (à ajuster si besoin)
+    box_w <- 0.25 * dx
+    box_h <- 0.25 * dy
+    
+    candidates <- data.frame(
+      pos = c("TL","TR","BL","BR"),
+      ax  = c(x_rng[1] + mx, x_rng[2] - mx, x_rng[1] + mx, x_rng[2] - mx),
+      ay  = c(y_rng[2] - my, y_rng[2] - my, y_rng[1] + my, y_rng[1] + my),
+      hjust = c(0, 1, 0, 1),
+      vjust = c(1, 1, 0, 0)
+    )
+    
+    # Score = nombre de points proches de la zone de texte (plus petit = mieux)
+    count_in_box <- function(ax, ay) {
+      sum(
+        abs(df[[x]] - ax) <= box_w/2 &
+          abs(df[[y]] - ay) <= box_h/2
+      )
+    }
+    
+    candidates$score <- mapply(count_in_box, candidates$ax, candidates$ay)
+    
+    best <- candidates[which.min(candidates$score), ]
+    
+    annot_x <- best$ax
+    annot_y <- best$ay
+    hjust   <- best$hjust
+    vjust   <- best$vjust
+    
+    # Plot
+    ggplot(df, aes(x = .data[[x]], y = .data[[y]])) +
       geom_point(alpha = 0.7) +
-      geom_smooth(method = "lm", se = FALSE, linetype = "dashed", color = "black") +
+      geom_smooth(
+        method = "lm",
+        se = FALSE,
+        linetype = "dashed",
+        color = "blue"
+      ) +
       annotate(
         "text",
-        x = x_min+500, y = Inf,
+        x = annot_x,
+        y = annot_y,
         label = label,
-        hjust = 1.05, vjust = 1.1,
-        size = 3.5) +
-      labs(x = xlab, y = ylab, title = "Day 3 to 5 minus Day 0 changes") +
-      theme_minimal()
+        hjust = hjust,
+        vjust = vjust,
+        size = 3.5
+      ) +
+      labs(
+        x = xlab,
+        y = ylab,
+        title = ""
+      ) +
+      theme_minimal()+
+      theme(
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold")
+      )
   }
+  
   
   p_corr_NAD <- plot_spearman(
     df,
     "DPP3_delta_D0_D3_5",
     "delta_NADcum_D0_D3_5",
-    "Δ cDPP3 (ng/ml)",
-    "Δ Cumulated norepinephrine dose (γ/kg)"
+    "Δ cDPP3\n(log scale)",
+    "Δ Cumulated norepinephrine dose\n(γ/kg)"
   )
   
   p_corr_Lact <- plot_spearman(
     df,
     "DPP3_delta_D0_D3_5",
     "delta_Lact_D0_D3_5",
-    "Δ cDPP3 (ng/ml)",
-    "Δ Lactate (mmol/L)"
+    "Δ cDPP3\n(log scale)",
+    "Δ Lactate\n(mmol/L)"
   )
   
   
@@ -1262,24 +1621,24 @@ ggsave(
     df,
     "DPP3_delta_D0_D3_5",
     "delta_ASAT_D0_D3_5",
-    "Δ cDPP3 (ng/ml) ",
-    "Δ AST (IU/L)"
+    "Δ cDPP3\n(log scale)",
+    "Δ ASAT\n(IU/L)"
   )
   
   p_corr_CKD <- plot_spearman(
     df,
     "DPP3_delta_D0_D3_5",
     "delta_CKD_D0_D3_5",
-    "Δ cDPP3 (ng/ml) ",
-    "Δ CKD-EPI (ml/min/1.73m²)"
+    "Δ cDPP3\n(log scale)",
+    "Δ eGFR\n(ml/min/1.73m²)"
   )
   
   Figure_correlation_DPP3 <- (p_corr_NAD + p_corr_Lact) /
     (p_corr_ASAT + p_corr_CKD) +
-    plot_annotation(title = "Correlations between changes in cDPP3 and\n organ function from ECMO implantation to day 3–5",
+    plot_annotation(title = "",
                     tag_levels = c("A","B","C","D")) & theme(plot.title=element_text(hjust=0.5))
   ggsave("FIGURES/Figure_correlation_DPP3.pdf",
          plot   = Figure_correlation_DPP3,
-         width  = 160, height = 220, units = "mm",
-         device = cairo_pdf, bg = "white",scale=1.05)
+         width  = 160, height = 200, units = "mm",
+         device = cairo_pdf, bg = "white",scale=1)
 
