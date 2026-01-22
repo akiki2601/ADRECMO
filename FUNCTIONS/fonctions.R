@@ -515,3 +515,14 @@ make_il_cor_plot <- function(data,
       hjust = 1.1, vjust = 1.5, size = 4.5
     )
 }
+
+
+round_nonnormal_0 <- function(x) {
+  x <- as.character(x)
+  m <- gregexpr("\\d+\\.\\d+", x, perl = TRUE)
+  regmatches(x, m) <- lapply(
+    regmatches(x, m),
+    function(v) as.character(round(as.numeric(v), 0))
+  )
+  x
+}

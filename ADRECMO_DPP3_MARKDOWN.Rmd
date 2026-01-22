@@ -55,7 +55,7 @@ df <- readRDS("DATA/df_managed.rds")
 #table_1 var
 t1_vars_cont <- c(
   "Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "HR_D0", "Preecmo_tte_ef",
-  "Preecmo_tte_vtiao", "Bili_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "Plq_D0"
+  "Preecmo_tte_vtiao", "Bili_D0", "Tropo_i_hs_D0", "Ntprobnp_D0", "Plq_D0","Creat_D0"
 )
 
 t1_vars_cat <- c(
@@ -150,7 +150,7 @@ source("fonction_adrecmo_DPP3.R")
 # TABLE 1: Baseline characteristics by DPP3 median
 
 ```{r table-1, include=FALSE}
-df$DPP3_median
+
 t1_tableone_obj <- CreateTableOne(
   vars       = t1_vars_all,
   factorVars = t1_vars_cat,
@@ -181,7 +181,7 @@ hl_diff_ci <- purrr::map_dfr(
     if (nlevels(g) < 2 || any(table(g) == 0)) {
       return(tibble(
         raw_id = .x,
-        `Median difference [95% CI]` = NA_character_
+        `Median difference (95% CI)` = NA_character_
       ))
     }
     
@@ -199,7 +199,7 @@ hl_diff_ci <- purrr::map_dfr(
     
     tibble(
       raw_id = .x,
-      `Median difference [95% CI]` =
+      `Median difference (95% CI)` =
         sprintf("%.1f [%.1f; %.1f]", est, ci[1], ci[2])
     )
   }
@@ -221,7 +221,7 @@ diff_prop_ci <- purrr::map_dfr(
     if (nlevels(g) < 2 || any(table(g) == 0)) {
       return(tibble(
         raw_id = .x,
-        `Difference in proportions (% points) [95% CI]` = NA_character_
+        `Difference in proportions (% points) (95% CI)` = NA_character_
       ))
     }
     
@@ -249,7 +249,7 @@ diff_prop_ci <- purrr::map_dfr(
     if (is.null(ci)) {
       return(tibble(
         raw_id = .x,
-        `Difference in proportions (% points) [95% CI]` = NA_character_
+        `Difference in proportions (% points) (95% CI)` = NA_character_
       ))
     }
     
@@ -260,7 +260,7 @@ diff_prop_ci <- purrr::map_dfr(
     
     tibble(
       raw_id = .x,
-      `Difference in proportions (% points) [95% CI]` =
+      `Difference in proportions (% points) (95% CI)` =
         sprintf("%+.1f [%+.1f; %+.1f]", diff_pct, low_pct, high_pct)
     )
   }
@@ -292,10 +292,10 @@ df_t1_final <- df_t1_tableone_id %>%
   left_join(hl_diff_ci,   by = "raw_id") %>%
   left_join(diff_prop_ci, by = "raw_id") %>%
   mutate(
-    `Group difference [95% CI]` = dplyr::if_else(
-      !is.na(`Median difference [95% CI]`),
-      `Median difference [95% CI]`,
-      `Difference in proportions (% points) [95% CI]`
+    `Group difference (95% CI)` = dplyr::if_else(
+      !is.na(`Median difference (95% CI)`),
+      `Median difference (95% CI)`,
+      `Difference in proportions (% points) (95% CI)`
     )
   ) %>%
   transmute(
@@ -303,7 +303,7 @@ df_t1_final <- df_t1_tableone_id %>%
     `cDPP3≤73 ng/mL`,
     `cDPP3>73 ng/mL`,
     Missing = n_missing,
-    `Group difference [95% CI]`
+    `Group difference (95% CI)`
   )
 
 #ARRONDIR#
@@ -320,8 +320,8 @@ df_t1_tableone$`cDPP3>73 ng/mL`[rows_to_round] <-
   round_nonnormal_0(df_t1_tableone$`cDPP3>73 ng/mL`[rows_to_round])
 
 
-df_t1_final$`Group difference [95% CI]` <-
-  round_nonnormal_0(df_t1_final$`Group difference [95% CI]`)
+df_t1_final$`Group difference (95% CI)` <-
+  round_nonnormal_0(df_t1_final$`Group difference (95% CI)`)
 
 dict_t1_labels <- c(
   "n" = "n",
@@ -350,14 +350,15 @@ dict_t1_labels <- c(
   "Bili_D0" = "Bilirubin (mg/dL)",
   "Tropo_i_hs_D0" = "High Sensitivity Troponin I (ng/L)",
   "Ntprobnp_D0" = "NT-proBNP (pg/mL)",
-  "Plq_D0" = "Platelet Count (10⁹/L)"
+  "Plq_D0" = "Platelet Count (10⁹/L)",
+  "Creat_D0" = "Creatinine (µmol/L)"
 )
 
 df_t1_final <- df_t1_final %>%
   mutate(Variables = dplyr::recode(Variables, !!!dict_t1_labels))
 
 t1_sections <- tibble::tribble(
-  ~Variables, ~Missing, ~`cDPP3>73 ng/mL`, ~`cDPP3≤73 ng/mL`, ~`Group difference [95% CI]`,
+  ~Variables, ~Missing, ~`cDPP3>73 ng/mL`, ~`cDPP3≤73 ng/mL`, ~`Group difference (95% CI)`,
   "Demographics", NA_integer_, "", "", "",
   "Medical History", NA_integer_, "", "", "",
   "Prior-adrenergic medications", NA_integer_, "", "", "",
@@ -401,6 +402,7 @@ t1_order <- c(
   "Mechanical ventilation (%)",
   "Biological assessment",
   "Bilirubin (mg/dL)",
+  "Creatinine (µmol/L)",
   "High Sensitivity Troponin I (ng/L)",
   "NT-proBNP (pg/mL)",
   "Platelet Count (10⁹/L)"
@@ -409,7 +411,10 @@ t1_order <- c(
 df_t1_display <- bind_rows(t1_sections, df_t1_final) %>%
   mutate(Variables = factor(Variables, levels = t1_order)) %>%
   arrange(Variables) %>%
-  mutate(    across(everything(), ~gsub("\\s*[;,]\\s*", " – ", .x)),
+  mutate(across(everything(), ~gsub("\\s*[;,]\\s*", " – ", .x)),
+             across(everything(), ~ gsub("\\[", "(", .x)),
+    across(everything(), ~ gsub("\\]", ")", .x)),
+    across(everything(), ~ gsub("NA", "", .x)),
     is_section = is.na(Missing) & `cDPP3≤73 ng/mL` == "" & `cDPP3>73 ng/mL` == "")
 
 ft_t1 <- flextable(df_t1_display %>% select(-is_section)) %>%
@@ -537,13 +542,13 @@ df_t2_final <- as.data.frame(t2_tableone_print) %>%
   left_join(hl_diff_ci_t2,   by = "raw_id") %>%
   left_join(prop_diff_ci_t2, by = "raw_id") %>%
   mutate(
-    `Group difference [95% CI]` = dplyr::coalesce(Group_diff_CI.x, Group_diff_CI.y)
+    `Group difference (95% CI)` = dplyr::coalesce(Group_diff_CI.x, Group_diff_CI.y)
   ) %>%
   transmute(
     Variables,
     `cDPP3≤73 ng/mL`,
     `cDPP3>73 ng/mL`,
-    `Group difference [95% CI]`
+    `Group difference (95% CI)`
   )
 
 
@@ -554,12 +559,12 @@ df_t2_final$`cDPP3≤73 ng/mL` <-
 df_t2_final$`cDPP3>73 ng/mL`<-
   round_nonnormal_0(df_t2_final$`cDPP3>73 ng/mL`)
 
-df_t2_final$`Group difference [95% CI]` <-
-  round_nonnormal_0(df_t2_final$`Group difference [95% CI]`)
+df_t2_final$`Group difference (95% CI)` <-
+  round_nonnormal_0(df_t2_final$`Group difference (95% CI)`)
 
 
 t2_sections <- tibble::tribble(
-  ~Variables,  ~`cDPP3>73 ng/mL`,~`cDPP3≤73 ng/mL`, ~`Group difference [95% CI]`,
+  ~Variables,  ~`cDPP3>73 ng/mL`,~`cDPP3≤73 ng/mL`, ~`Group difference (95% CI)`,
   "Outcome", "", "", ""
 )
 
@@ -599,6 +604,9 @@ t2_order <- c(
 
 df_t2_display <- bind_rows(t2_sections, df_t2_final) %>%
   mutate(   across(everything(), ~gsub("\\s*[;,]\\s*", " – ", .x)),
+                         across(everything(), ~ gsub("\\[", "(", .x)),
+    across(everything(), ~ gsub("\\]", ")", .x)),
+    across(everything(), ~ gsub("NA", "", .x)),
     Variables = dplyr::recode(Variables, !!!dict_t2_labels),
     Variables = factor(
       Variables,

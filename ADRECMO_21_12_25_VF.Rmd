@@ -1,0 +1,1643 @@
+---
+title: "ADRECMO"
+author: "Jolie Bruno, Antoine Kimmoun, Kevin Duarte, Feriel Azibani, Benjamin Deniaun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    latex_engine: pdflatex
+  word_document: null
+editor_options:
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+```{=html}
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+# markdown options depending on the output (html with R code and Word without)
+output <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+
+if (output=="html") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = TRUE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "110%")
+if (output=="docx") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "110%")
+if (output=="pdf") knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE, comment = "", fig.align = "center", fig.width= 17, fig.asp =0.70, out.width = "110%")
+
+options(max.print = .Machine$integer.max)
+
+# Ensure export directories exist
+dir.create("FIGURES", showWarnings = FALSE)
+dir.create("Tables",  showWarnings = FALSE)
+```
+
+```{r load package,include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+library(gtsummary)
+library(sjlabelled)
+library(readxl)
+library(purrr)
+library(tableone)
+library(naniar)
+library(survival)
+library(survminer)
+library(patchwork)
+library(ggpmisc)
+library(cowplot)  
+library(officer)
+library(flextable)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(forcats)
+library(broom)
+library(ggpubr)
+```
+
+# METHOD
+
+This study is a monocentric, prospective, observational investigation conducted in Nancy Hospital between 10.10.2017 and 24.05.2022, enrolling 50 adult patients with refractory cardiogenic shock requiring veno-arterial extracorporeal membrane oxygenation (VA-ECMO) support (NCT03327493).
+
+The study was carried out in accordance with the Declaration of Helsinki and approved by the local institutional ethics committee. Written informed consent was obtained from all patients or their legal representatives prior to inclusion.
+
+## Patient Population
+
+Cardiogenic shock was defined as a systolic blood pressure (SBP) \<90 mmHg or a mean arterial pressure (MAP) \<65 mmHg despite adequate volume resuscitation, accompanied by signs of peripheral hypoperfusion (e.g., cold extremities, oliguria, altered mental status) and a cardiac index \<2.2 L/min/m². Refractoriness was defined as a hyporesponsiveness to norepinephrine and/or the persistence of profound clinical signs of hypoperfusion despite optimal resuscitation efforts. Eligible patients were adults (≥18 years old) affiliated with a health insurance system. Cardiogenic shock etiologies included acute ischemic coronary artery disease, primary or ischemic-related dilated cardiomyopathy, myocarditis and stress-induced cardiomyopathy. Patients were excluded if cardiogenic shock was secondary to cardiotoxic poisoning, if they were pregnant, or were under legal protective supervision (e.g., court-appointed guardianship).
+
+## Data Collection
+
+Clinical, laboratory and echocardiographic parameters were prospectively collected at three predefined timepoints: Day 0 (ECMO implantation), Day 3–5 (early course) and Day of ECMO weaning (ECMO explantation). Blood samples were drawn at each timepoint, immediately centrifuged and plasma was stored at –80°C until analysis. Samples were then transferred to the XXX for cells analysis and INSERM UMR942 laboratory (Paris, France) for cytokine analysis. Quantification of adrenoreceptors β1 and β2 on monocytes and CD4⁺ T lymphocytes was performed using flow cytometry. Cytokine concentrations in plasma, including interleukin (IL) -33, IL-1β, IL-2, IL-4, IL-5, IL-6, IL-8/CXCL8, IL-10, GDF-15, IL-12p70, IL-17A/CTLA-8, IFN-γ, TNF-α and granzyme B, were measured using [XXX].
+
+## Assessment of ADRB1 and ADRB2
+
+The expression of β1 (ADRB1) and β2 (ADRB2) adrenergic receptors on circulating immune cell, namely CD4+ T lymphocytes and monocytes, was assessed via flow cytometry. XXX [to be completed from Manon]. Results were expressed as the percentage of cells that were positive for the respective expression receptors.
+
+## Cytokine Quantification
+
+The aforementioned panel of circulating cytokines and immune mediators was quantified from plasma samples. These biomarkers were selected for their roles in pro- and anti-inflammatory signaling. Measurements were performed using a multiplex bead-based immunoassay (Luminex platform), following the manufacturer’s instructions. XXX [to be completed from Malha].
+
+## ECMO Weaning Protocol
+
+A standardized weaning protocol was applied to all patients prior to ECMO explantation. At a constant mean arterial pressure (MAP) between 65 and 75 mmHg, cardiac output was assessed by transthoracic echocardiography at two predefined timepoints: 1. Baseline under full support (ECLS flow at 3.0 L/min) and 2. Low-flow test after 45 minutes of reduced ECMO flow (1.5 L/min). Measurements included velocity time integral (VTI) at the left ventricular outflow tract and left ventricular ejection fraction. Changes in norepinephrine and dobutamin dosage during this period were also documented. The decision to explant ECMO was based on clinical tolerance, hemodynamic stability and echocardiographic parameters during the weaning trial.
+
+## Statistical Analysis
+
+Baseline clinical, demographic and hemodynamic characteristics were summarized for the overall study population (n = 50). One patient was excluded from the analysis due to being under legal guardianship. Categorical variables were reported as counts and percentages, while continuous variables were expressed as medians and interquartile ranges (IQR). The normality of continuous variables was assessed visually using histograms.
+
+To explore the distribution of ADRB1 and ADRB2 expression over time in relation to clinical outcomes, boxplots were generated at three timepoints (implantation, day 3–5, and explantation). To evaluate the temporal dynamics of ADRB1 and ADRB2 expression across clinical outcomes, we used linear mixed-effects models with time, outcome group (ECMO weaning, bridge to LVAD/transplant, or death), and their interaction as fixed effects. Random intercepts and slopes for time were included to account for intra-patient variability. When appropriate, receptor expression values were log10-transformed. Interaction terms were tested using likelihood ratio tests between full and reduced models, and Type III ANOVA with Kenward-Roger approximation was used for fixed effects.
+
+To assess the association between ADRB1 and ADRB2 expression at the time of ECMO weaning and left ventricular outflow tract velocity-time integral (VTI) measured at 1.5 L/min ECMO flow, patients were stratified according to a VTI threshold of 12 cm. Mann–Whitney U tests were used to compare log-transformed ADRB expression between the two groups (≤12 cm vs \>12 cm). Results were visualized using boxplots.
+
+```{r source-functions,include=FALSE}
+source("FUNCTIONS/fonctions.R")
+```
+
+```{r data-load,include=FALSE}
+# ADR LYMPHOCYTES
+fichier <- "DATA/df_i_stabilized.xlsx"
+feuilles <- excel_sheets(fichier)
+data_list <- lapply(feuilles, function(feuille) {
+  read_excel(fichier, sheet = feuille)
+})
+
+ADR1_lympho <- data_list[[1]] %>%
+  select("Patient","Jour",`Paramètre (Gate)`, `%Gated`) %>%
+  rename(value = `%Gated`,
+         parametre = `Paramètre (Gate)`) %>%
+  mutate(parametre = case_when(
+    parametre == "CD3+/CD4+" ~ "T4",
+    parametre == "ADR1 (CD3+/CD4+)" ~ "ADR1L",
+    parametre == "INFg+ (CD3+ CD4+)" ~ "L_TH1",
+    parametre == "IL4+ (CD3+ CD4+)" ~ "L_TH2",
+    parametre == "IL4+ INFg+ (CD3+ CD4+)" ~ "mixte",
+    parametre == "ADR1 (INFg+)" ~ "ADR1L_TH1",
+    parametre == "ADR1 (IL4+)" ~ "ADR1L_TH2",
+    parametre == "ADR1 (IL4+ INFg+)" ~ "ADR1L_mixte",
+    parametre == "IL17+ (CD3+ CD4+)" ~ "L_IL17",
+    parametre == "IL17+ INFg+ (CD3+ CD4+)" ~ "L_IL17_pathogen",
+    parametre == "ADR1 (IL17+)" ~ "L_ADR1L_IL17",
+    parametre == "ADR1 (IL17+ INFg+)" ~ "L_ADR1L_IL17_pathogen",
+    T ~ parametre),
+    ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"),
+    value = as.numeric(value)
+  ) %>%
+  pivot_wider(
+    names_from = c("parametre","Jour"),
+    values_from = "value",
+    values_fn = mean,
+    values_fill = NA
+  ) %>%
+  filter(ID!="12-AA")
+
+ADR2_lympho <- data_list[[2]] %>%
+  select("Patient","Jour",Gate, `%Gated`) %>%
+  rename(value = `%Gated`,
+         parametre = Gate) %>%
+  mutate(parametre = case_when(
+    parametre == "ADR2 (CD3+/CD4+)" ~ "ADR2L",
+    parametre == "ADR2 (INFg+)" ~ "ADR2L_TH1",
+    parametre == "ADR2 (IL4+)" ~ "ADR2L_TH2",
+    parametre == "ADR2 (IL4+ INFg+)" ~ "ADR2L_mixte",
+    parametre == "ADR2 (IL17+)" ~ "L_ADR2L_IL17",
+    parametre == "ADR2 (IL17+ INFg+)" ~ "L_ADR2L_IL17_pathogen",
+    T ~ parametre),
+    ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2"),
+    value = as.numeric(value)
+  ) %>%
+  pivot_wider(
+    names_from = c("parametre","Jour"),
+    values_from = "value",
+    values_fn = mean,
+    values_fill = NA
+  ) %>%
+  filter(ID!="12-AA")
+
+# MONOCYTES
+fichier_mono <- "DATA/monocytes.xlsx"
+feuilles_mono <- excel_sheets(fichier_mono)
+data_mono <- lapply(feuilles_mono, function(feuille_mono) {
+  read_excel(fichier_mono, sheet = feuille_mono)
+})
+
+ADR1_mono <- data_mono[[1]] %>%
+  select("Patient", "Jour","Paramètre (Gate)", "%Gated") %>%
+  rename(value = `%Gated`,
+         parametre = "Paramètre (Gate)") %>%
+  mutate(parametre= case_when(
+    parametre == "ADR1 (Monocytes)"~"M_ADR1",
+    parametre == "IL1+ (Monocytes)"~"M_IL1",
+    parametre == "IL10+ (Monocytes)"~"M_IL10",
+    parametre == "TNF+ (Monocytes)"~"M_TNF",
+    T~parametre),
+    ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2")
+  ) %>%
+  select(ID, Jour,parametre,value ) %>%
+  pivot_wider(
+    names_from = c("parametre","Jour"),
+    values_from = "value",
+    values_fn = mean,
+    values_fill = NA
+  ) %>%
+  filter(ID!="12-AA")
+
+ADR2_mono <- data_mono[[2]] %>%
+  select("Patient", "Jour","Paramètre (Gate)", "%Gated") %>%
+  rename(value = `%Gated`,
+         parametre = "Paramètre (Gate)") %>%
+  mutate(parametre= case_when(parametre == "ADR2 (Monocytes)"~"M_ADR2",T~parametre),
+         ID = str_replace(Patient, "Patient (\\d+) (\\w+)", "\\1-\\2")) %>%
+  filter(parametre=="M_ADR2") %>%
+  select(ID, Jour,parametre,value ) %>%
+  pivot_wider(
+    names_from = c("parametre","Jour"),
+    values_from = "value",
+    values_fn = mean,
+    values_fill = NA
+  ) %>%
+  filter(ID!="12-AA")
+
+df_list_1 <- lst(ADR1_lympho, ADR2_lympho, ADR1_mono, ADR2_mono)
+
+# COUNT VALID ID
+count_valid_ID <- function(data, id_col = "ID") {
+  count_one <- function(df) {
+    df %>%
+      mutate(
+        ID_num = as.integer(str_remove(.data[[id_col]], "-.*")),
+        ID_CAT = if_else(!is.na(ID_num), 1L, 0L)
+      ) %>%
+      summarise(n_valid = sum(ID_CAT, na.rm = TRUE)) %>%
+      pull(n_valid)
+  }
+  imap_dfr(
+    data,
+    ~ tibble(dataset  = .y, n_valid  = count_one(.x)),
+    .id = NULL
+  )
+}
+count_valid_ID(df_list_1)
+
+df_1 <- reduce(df_list_1, full_join, by = "ID") %>%
+  mutate(any_non_na = as.integer(
+    rowSums(!is.na(select(., starts_with("ADR"))), na.rm = TRUE) > 0
+  ))
+
+# IDENTIFY WHICH ID NOT PRESENT IN ONE AND PRESENT IN OTHER
+id_presence <- imap_dfr(df_list_1, ~ tibble(ID = .x$ID, dataset = .y)) %>%
+  mutate(present = 1L) %>%
+  distinct() %>%
+  pivot_wider(
+    names_from   = dataset, 
+    values_from  = present,    
+    values_fill  = list(present = 0L)
+  )
+diff_IDs <- id_presence %>% filter(if_any(-ID, ~ .x == 0))
+
+DATA <- read_delim("DATA/ADRECMO_DATA.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE) %>%
+  mutate(nom = str_to_upper(nom),
+         prenom =str_to_upper(prenom),
+         ID = paste0(numero,"-",nom, prenom)) %>%
+  filter(ID != "12-NANA")
+
+df_list_2 <- lst(df_1,DATA)
+df_2 <- reduce(df_list_2, left_join, by = "ID")
+
+# --- Cytokines sheet ---
+fichier_cyto <- "DATA/cytokines.xlsx"
+feuille_idx  <- 7
+
+ck_vars <- c(
+  "Sample ID number",
+  "[IL-33] in pg/mL","[IL1b] in pg/mL","[IL2] in pg/mL","[IL4] in pg/mL",
+  "[IL5] in pg/mL","[IL6] in pg/mL","[IL8/CXCL8]  in pg/mL","[IL10] in pg/mL",
+  "[GDF-15] in pg/mL","[IL12p70] in pg/mL","[IL17A/CTLA-8] in pg/mL",
+  "[IFNg] in pg/mL","[TNFa] in pg/mL","[Granzyme B]  in pg/mL"
+)
+
+normalize_jour <- function(sample_id) {
+  raw <- sample_id %>%
+    str_extract("J[A-Z0-9\\-\\.]+") %>%
+    str_to_upper() %>%
+    str_replace_all("-", "_") %>%
+    str_replace_all("\\.", "")
+  case_when(
+    raw %in% c("J3","J4","J5","J3_5","J3_J5") ~ "J3_J5",
+    raw %in% c("JS","JSEVRAGE")               ~ "JS",
+    raw == "J0"                                ~ "J0",
+    TRUE                                       ~ NA_character_
+  )
+}
+clean_measure_names <- function(x) {
+  x %>%
+    str_remove_all("\\[|\\]") %>%
+    str_remove_all("\\s+in\\s+pg/mL") %>%
+    str_squish() %>%
+    str_replace_all("\\s+", "")
+}
+to_numeric_safe <- function(x) {
+  x %>%
+    as.character() %>%
+    str_replace_all(",", ".") %>%
+    str_remove_all("\\*") %>%
+    str_replace_all("OOR.*|<.*|undetectable|low|LOQ|ND", "0.0000001") %>%
+    as.numeric()
+}
+
+all_cols <- names(read_excel(fichier_cyto, sheet = feuille_idx, n_max = 0))
+stopifnot(all(ck_vars %in% all_cols))
+
+df_cyto_raw <- read_excel(fichier_cyto, sheet = feuille_idx) %>%
+  select(all_of(ck_vars))
+
+df_ids <- df_2 %>%
+  select(ID) %>%
+  mutate(ID_num = str_extract(ID, "^\\d{1,2}") %>%
+           as.integer() %>%
+           as.character())
+
+df_cyto_clean <- df_cyto_raw %>%
+  rename(SampleID = `Sample ID number`) %>%
+  mutate(
+    ID_num = str_extract(SampleID, "\\d{2}") %>%
+      as.integer() %>%
+      as.character(),
+    Jour   = normalize_jour(SampleID)
+  ) %>%
+  left_join(df_ids, by = "ID_num") %>%
+  select(-ID_num) %>%
+  rename_with(clean_measure_names, .cols = -c(SampleID, ID, Jour)) %>%
+  mutate(across(-c(SampleID, ID, Jour), to_numeric_safe))
+
+df_cyto_long <- df_cyto_clean %>%
+  select(-SampleID) %>%
+  filter(!is.na(ID), !is.na(Jour)) %>%
+  pivot_longer(
+    cols      = -c(ID, Jour),
+    names_to  = "cytokine",
+    values_to = "value"
+  ) %>%
+  mutate(var_name = paste0(cytokine, "_", Jour)) %>%
+  select(ID, var_name, value) %>%
+  pivot_wider(names_from = var_name, values_from = value)
+
+df <- df_2 %>% left_join(df_cyto_long, by = "ID")
+
+verif <- read_excel("DATA/ADRECMO_Verif.xlsx") %>%
+  mutate(
+    Initiales = sub("-", "", Initiales),
+    ID        = paste0(`N° patient`, "-", Initiales) %>%
+      str_remove("^0+")
+  ) %>%
+  rename(cause = `Origine du choc cardiogénique`) %>%
+  select(ID, cause, CA)
+
+df_fv <- df %>% left_join(verif, by = "ID")
+
+df_bio <- df_fv %>%
+  select(
+    ID, Outcome,
+    starts_with("T4_"),
+    starts_with("ADR1L_"),
+    starts_with("ADR2L_"),
+    starts_with("L_TH1_"),
+    starts_with("L_TH2_"),
+    starts_with("mixte_"),
+    starts_with("bINFg"),
+    starts_with("IL"),
+    starts_with("IFNg"),
+    starts_with("TNF"),
+    starts_with("GDF-15"),
+    starts_with("GranzymeB"),
+    starts_with("M_"),
+    starts_with("L_"),
+    starts_with("mix")
+  ) %>%
+  mutate(
+    Outcome = case_when(
+      Outcome %in% c(2, 3) ~ "Bridge to Transplant or LVAD",
+      Outcome == 1         ~ "ECMO Weaning",
+      Outcome == 4         ~ "Death",
+      TRUE                 ~ as.character(Outcome)
+    )
+  )
+
+df_hapto <- read_excel("DATA/hapto.xlsx", sheet="ADRECMO ")%>%
+  select(`Sample ID number`,
+         `Haptoglobin\r\ng/l\r\nSiemes Atellica`)%>%
+  rename(ID_pre=`Sample ID number`,
+         hapto=`Haptoglobin\r\ng/l\r\nSiemes Atellica`)%>%
+  mutate(
+  ID_num = str_replace(ID_pre, ".*-(\\d{2})_([A-Za-z]+).*", "\\1"),
+  time_points = str_replace(ID_pre, "^[^_]*_[^_]*_",""),
+  hapto = case_when(hapto=="<LDL" ~ "0",
+                    TRUE ~hapto),
+  ID_num=as.numeric(ID_num))%>%
+    select(ID_num,
+           time_points,
+           hapto)%>%
+  left_join(df_ids%>%
+              mutate(ID_num=as.numeric(ID_num)),
+            by = "ID_num")%>%
+  select(-ID_num)%>%
+  filter(!is.na(ID))%>%
+  mutate(time_points = dplyr::case_when(
+      time_points %in% c("JSEVRAGE", "ADRECMO-40_JS") ~ "JS",
+      time_points %in% c("J3", "J4", "J5","J3-5") ~ "J3-J5",
+      TRUE ~ time_points)
+      )%>%
+    pivot_wider(names_from = time_points,
+                values_from = hapto,
+                 names_prefix = "hapto_")
+
+
+df_fv <- df_fv %>% left_join(df_hapto, by = "ID")
+```
+
+
+```{r data-management,include=FALSE}
+df <- df_fv %>%
+  mutate(
+    Temp_D0 = round(Temp_D0, 1),
+    Age = as.numeric(Age),
+    Gender = case_when(
+      Gender == 0 ~ "Men",
+      Gender == 1 ~ "Women",
+      TRUE ~ as.character(Gender)
+    ),
+    Preecmo_tte_diam_LV = Preecmo_tte_diam_LV * 10,
+    Outcome = case_when(
+      Outcome == 1 ~ "ECMO Weaning",
+      Outcome == 2 ~ "Bridge to Transplant",
+      Outcome == 3 ~ "Bridge to LVAD",
+      Outcome == 4 ~ "Death",
+      TRUE ~ as.character(Outcome)
+    ),
+    Outcome_death_bridge = case_when(
+      Outcome %in% c("Bridge to Transplant", "Bridge to LVAD", "Death") ~ "Death or Bridge",
+      TRUE ~ as.character(Outcome)
+    ),
+    Pulsepressure_D0 = PAS_D0 - PAD_D0,
+    outcome_date = str_replace_all(outcome_date, "\\.", "/"),
+    icu_admiss_date = str_replace_all(icu_admiss_date, "\\.", "/"),
+    icu_discharge_date = str_replace_all(icu_discharge_date, "\\.", "/"),
+    deces_date = dmy(deces_date),
+    icu_admiss_date = dmy(icu_admiss_date),
+    icu_discharge_date = dmy(icu_discharge_date),
+    date_levo = dmy(date_levo),
+    ecmo_start_date = dmy(ecmo_start_date),
+    ecmo_stop_date = dmy(ecmo_stop_date),
+    outcome_date = case_when(is.na(deces_date)~ icu_admiss_date + 90, TRUE~deces_date),
+    diff_days = time_length(interval(icu_admiss_date, outcome_date), "days"),
+    Time_hosp = time_length(interval(icu_admiss_date, icu_discharge_date), "days"),
+    as.numeric(icu_discharge_date - icu_admiss_date),
+    Time_ecmo = time_length(interval(ecmo_start_date, ecmo_stop_date), "days"),
+    Time_levo = time_length(interval(ecmo_start_date, date_levo), "days"),
+    jsev_date = dmy(jsev_date),
+    Time_weaning = time_length(interval(ecmo_start_date, jsev_date), "days"),
+    Levo_before_ecmo_end = case_when(
+      Levosimendan == 1 & date_levo >= ecmo_start_date & date_levo <= ecmo_stop_date ~ 1L,
+      TRUE ~ 0L),
+    
+    j0_bilan_date = as.Date(j0_bilan_date, format = "%d.%m.%Y"),
+    J0_date = as.Date(J0_date, format = "%d.%m.%Y"),
+    datetime_bilan = as.POSIXct(paste(j0_bilan_date, as.character(j0_bilan_heure)), format = "%Y-%m-%d %H:%M", tz = "UTC"),
+    datetime_ecmo  = as.POSIXct(paste(J0_date, as.character(J0_heure)), format = "%Y-%m-%d %H:%M", tz = "UTC"),
+    time_diff_mins = as.numeric(difftime(datetime_bilan, datetime_ecmo, units = "mins")),
+    #ADR_LOG
+    across(starts_with("ADR"),
+                ~ log1p(.x),
+                .names = "log1p_{.col}"),
+    
+    across(starts_with("M_ADR"),
+                ~ log1p(.x),
+                .names = "log1p_{.col}"),
+
+    ADR1L_J0_median = case_when(
+      ADR1L_J0 > median(ADR1L_J0, na.rm = TRUE) ~ "High",
+      ADR1L_J0 <= median(ADR1L_J0, na.rm = TRUE) ~ "Low"
+    ),
+    ADR2L_J0_median = case_when(
+      ADR2L_J0 > median(ADR2L_J0, na.rm = TRUE) ~ "High",
+      ADR2L_J0 <= median(ADR2L_J0, na.rm = TRUE) ~ "Low"
+    ),
+    M_ADR1_J0_median = case_when(
+      M_ADR1_J0 > median(M_ADR1_J0, na.rm = TRUE) ~ "High",
+      M_ADR1_J0 <= median(M_ADR1_J0, na.rm = TRUE) ~ "Low",
+      TRUE ~ NA_character_
+    ),
+    M_ADR2_D0_median = case_when(
+      M_ADR2_J0 > median(M_ADR2_J0, na.rm = TRUE) ~ "High",
+      M_ADR2_J0 <= median(M_ADR2_J0, na.rm = TRUE) ~ "Low",
+      TRUE ~ NA_character_
+    ),
+    Betablocker = case_when(Betablocker == 1 ~ "YES", Betablocker == 0 ~ "NO"),
+    dose_tot_dobu_yes_no = droplevels(as.factor(case_when(dose_tot_dobu > 0 ~ "YES", dose_tot_dobu == 0 ~ "NO"))),
+    levo_in_icu = case_when(
+      Levosimendan == 1 & Time_levo >= 0 ~ "Yes",  
+      Levosimendan == 1 & Time_levo < 0 ~ "No",
+      Levosimendan == 0 ~ "No"
+    ),
+    Levosimendan = case_when(
+      Levosimendan == 1 ~ "YES",
+      Levosimendan == 0 ~ "NO",
+      TRUE ~ NA_character_ 
+    ),
+    ische = relevel(as.factor(cause), ref=c("Non ischémique")),
+    NAD_24H = NADcum_D0*1000/Weight,
+    DOB_24H = DOBUcum_D0*1000/Weight,
+    NAD_jp2_w = jp2_NAd_cum*1000/Weight,
+    
+    log_value_IL6_J0    = log1p(IL6_J0),
+    log_value_IL6_J3_J5 = log1p(IL6_J3_J5),
+    log_value_IL6_JS    = log1p(IL6_JS),
+    
+        log_value_IL10_J0    = log1p(IL10_J0),
+    log_value_IL10_J3_J5 = log1p(IL10_J3_J5),
+    log_value_IL10_JS    = log1p(IL10_JS),
+    
+    NADcum_D0_w = log1p(NADcum_D0/Weight),
+     jp2_NAd_cum_w = log1p(jp2_NAd_cum/Weight),
+     jsev_NAd_cum_w = log1p(jsev_NAd_cum/Weight),
+  
+    preecmo_ett_ann_aor_d_corr = case_when(
+      is.na(preecmo_ett_ann_aor_d) ~ 2,
+      TRUE ~ preecmo_ett_ann_aor_d
+    ),
+    CO_D0        = (preecmo_ett_ann_aor_d_corr/2)^2 * Preecmo_tte_vtiao * 3.14 * preecmo_ett_freq_card,
+    Tot_flow_J0  = CO_D0/1000,
+    C0_J3_J5     = (preecmo_ett_ann_aor_d_corr/2)^2 * 3.14 * jp2_ett_itvssao * jp2_ett_freq_card/1000,
+    tot_flow_J3_J5 = C0_J3_J5 + jp2_ecmo_debit,
+    CO_JS        = (preecmo_ett_ann_aor_d_corr/2)^2 * 3.14 * jsev_ett_freq_card * jsev_ett_itvssao/1000,
+    tot_flow_JS  = CO_JS + jsev_ecmo_debit,
+
+    # DPP3 cut-off > 40
+    DPP3_group_D0    = factor(ifelse(DPP3_D0    > 40, 1, 0), labels = c("DPP3 ≤ 40", "DPP3 > 40")),
+    DPP3_group_J3_J5 = factor(ifelse(DPP3_D3_5 > 40, 1, 0), labels = c("DPP3 ≤ 40", "DPP3 > 40")),
+    DPP3_group_JS    = factor(ifelse(DPP3_w     > 40, 1, 0), labels = c("DPP3 ≤ 40", "DPP3 > 40")),
+     DPP3_median = as.factor(if_else(df$DPP3_D0<=median(df$DPP3_D0), "below median", "above median")),
+    
+    IL6_median = as.factor(if_else(df$IL6_J0<=median(df$IL6_J0), "<=median", ">median")),
+    
+    outcome_censored = case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~0,
+                                 Outcome=="ECMO Weaning"~ 0, TRUE~1),
+    outcome_FG = factor(case_when(Outcome=="Bridge to LVAD"|Outcome=="Bridge to Transplant"~2,
+                                  Outcome=="ECMO Weaning"~ 0, TRUE~1)),
+    # conversion µmol/L -> mg/dL
+    creat_D0_mgdl   = Creat_D0 / 88.4,
+    jp2_creat_mgdl  = jp2_creat / 88.4,
+    jsev_creat_mgdl = jsev_creat / 88.4,
+    
+    ### CKD-EPI calculé
+    CKD_D0_raw   = mapply(ckd_epi, creat_D0_mgdl,   Age, Gender),
+    CKD_J3J5_raw = mapply(ckd_epi, jp2_creat_mgdl,  Age, Gender),
+    CKD_JS_raw   = mapply(ckd_epi, jsev_creat_mgdl, Age, Gender),
+    
+    ### Règle : si EER = 1 → CKD = 15
+    CKD_D0   = ifelse(EER_D0   == 1, 15, CKD_D0_raw),
+    CKD_J3J5 = ifelse(jp2_eer  == 1, 15, CKD_J3J5_raw),
+    CKD_JS   = ifelse(jsev_eer == 1, 15, CKD_JS_raw),
+    
+    VTI_JS = case_when(`jsev_epr_sev_t1_1,5l_itv` > 12 ~ ">12 cm", TRUE ~ "≤12 cm"),
+    BCPIA_Tot = as.integer(pmax(IABP_D0, jp2_cpbia, jsev_cpbia, na.rm = TRUE) >= 1),
+    EER_Tot = as.integer(pmax(EER_D0, jp2_eer, jsev_eer, na.rm = TRUE) >= 1),
+    ECMO_duration_weaned = case_when(Outcome=="ECMO Weaning"~Time_ecmo,
+                                        T~NA),
+    ECMO_duration_Dead = case_when(Outcome=="Death"~Time_ecmo,
+                                        T~NA),
+  ) %>%
+  select(-ends_with("_raw"), -ends_with("_mgdl")
+  )
+
+saveRDS(df, file = "DATA/df_managed.rds")
+```
+
+# Timepoint check of the blood sample at day 0
+
+```{r Timepoint,include=TRUE}
+summary_stats <- df %>%
+  mutate(time_diff_hours = time_diff_mins / 60) %>%
+  summarise(
+    mean_hours = mean(time_diff_hours),
+    sd_hours = sd(time_diff_hours),
+    min = min(time_diff_hours),
+    max = max(time_diff_hours)
+  )
+```
+
+Day-0 blood samples were collected on average `r round(summary_stats$mean_hours, 2)` hours (SD `r round(summary_stats$sd_hours, 2)` hours) before ECMO implantation, ranging from `r round(summary_stats$min, 1)` hours before to `r round(summary_stats$min, 1)` hours after ECMO cannulation.
+
+
+# TABLE 1: Characteristics of the population
+
+```{r table1,include=FALSE}
+
+var.cat <- c("Gender", "HTN", "DM", "Immunodepression", "CKD", "Neurologic_deficit", "Chronic_respiratory_disease", "HF","Alphablocker","Betablocker", "cause","ische", "Cardiac_arrest_before_canul", "Intubation")
+var.cont <- c("Age", "BMI", "PAS_D0", "PAD_D0", "PAM_D0", "HR_D0", "Preecmo_tte_ef", "Preecmo_tte_vtiao", "NAD_24H", "DOB_24H", "Lact_D0", "Creat_D0", "Bili_D0", "Tropo_i_hs_D0", "Ntprobnp_D0",  "Plq_D0")
+
+var.tot <- c(var.cat, var.cont)
+table(is.na(df$Weight))
+df$Weight
+T1 <- df %>%
+  dplyr::select(all_of(var.tot)) %>%
+  mutate(across(all_of(var.cont), as.numeric), 
+         across(all_of(var.cat), as.factor))
+
+table1 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data = T1) 
+table1 <- print(table1, nonnormal = var.cont, contDigits = 1, showAllLevels = FALSE)
+
+table1_df <- as.data.frame(table1)
+table1_df$Variables <- row.names(table1_df)
+row.names(table1_df) <- NULL
+table1_df <- table1_df[, c(2,1)]
+
+T1_n <- T1%>%
+  summarise(across(everything(), ~ sum(is.na(.))))%>%
+  pivot_longer(cols= everything(),
+    values_to = "n_missing",
+    names_to = "ID")
+
+table1_df1 <- table1_df %>%
+  mutate(ID = sub("\\(median \\[IQR\\]\\)|= 1 \\(\\%\\)|= Women \\(\\%\\)|\\(\\%\\)|= Non ischémique \\(\\%\\)|= ischémique \\(\\%\\)", "",Variables),
+         ID = trimws(ID))%>%
+  mutate(ID =sub(" = YES","",ID))
+
+table_1_vf <- left_join(table1_df1, T1_n, by = "ID") %>%
+  select(Variables, n_missing, Overall) %>%
+  mutate(Variables = str_remove(Variables, " \\(median \\[IQR\\]\\)"))
+
+
+traduction <- c(
+  "n" = "n",
+  "Gender = Women (%)" = "Gender = Female (%)",
+  "HTN = 1 (%)" = "Hypertension (%)",
+  "DM = 1 (%)" = "Diabetes Mellitus (%)",
+  "Immunodepression = 1 (%)" = "Immunosuppression (%)",
+  "CKD = 1 (%)" = "Chronic Kidney Disease (%)",
+  "Neurologic_deficit = 1 (%)" = "Neurological Deficit (%)",
+  "Chronic_respiratory_disease = 1 (%)" = "Chronic Respiratory Disease (%)",
+  "HF = 1 (%)" = "Heart Failure (%)",
+  "Alphablocker = 1 (%)" = "Alpha-blocker (%)",
+  "Betablocker = YES (%)" = "Beta-blocker (%)",
+  "cause = Non ischémique (%)" = "Non-ischemic (%)",
+  "ische = ischémique (%)" = "Ischemic (%)",
+  "Cardiac_arrest_before_canul = 1 (%)" = "Cardiac Arrest Before Cannulation (%)",
+  "Intubation = 1 (%)" = "Mechanical ventilation (%)",
+  "Age" = "Age (years)",
+  "BMI" = "Body Mass Index (kg/m²)",
+  "PAS_D0" = "Systolic Blood Pressure (mmHg)",
+  "PAD_D0" = "Diastolic Blood Pressure (mmHg)",
+  "PAM_D0" = "Mean Arterial Pressure (mmHg)",
+  "HR_D0" = "Heart Rate (bpm)",
+  "Preecmo_tte_ef" = "Pre-ECMO Ejection Fraction (%)",
+  "Preecmo_tte_vtiao" = "Pre-ECMO Aortic Velocity Time Integral (cm)",
+  "NAD_24H" = "Norepinephrine cumulative Dose on the VA-ECMO implantation day (γ/kg)",
+  "DOB_24H" = "Dobutamine cumulative Dose on the VA-ECMO implantation day (γ/kg)",
+  "Lact_D0" = "Lactate (mmol/L)",
+  "Creat_D0" = "Creatinine (µmol/L)",
+  "Bili_D0" = "Bilirubin (mg/dL)",
+  "Tropo_i_hs_D0" = "High Sensitivity Troponin I (ng/L)",
+  "Ntprobnp_D0" = "NT-proBNP (pg/mL)",
+  "Plq_D0" = "Platelet Count (10⁹/L)"
+)
+
+# Application du dictionnaire de traduction
+table_1_vf <- table_1_vf %>%
+  mutate(Variables = dplyr::recode(Variables, !!!traduction))%>%
+  rename(Missing = n_missing)
+
+sections <- tibble::tribble(
+  ~Variables, ~Missing, ~Overall,
+  "Demographics", "", "",
+  "Medical History", "", "",
+  "Prior-adrenergic medications", "", "",
+  "Cardiogenic shock cause", "", "",
+  "Pre-ECMO Clinical parameters", "", "",
+  "Pre-ECMO heart function", "", "",
+  "Pre-ECMO supports", "", "",
+  "Pre-ECMO Biological assessment", "", ""
+)%>%
+  mutate(Missing = as.integer(Missing))
+
+
+# Ordre des variables corrigé (selon la table fournie)
+order <- c(
+  "n",
+  "Demographics",
+  "Age (years)",
+  "Gender = Female (%)",
+  "Body Mass Index (kg/m²)",
+  
+  "Medical History",
+  "Hypertension (%)",
+  "Diabetes Mellitus (%)",
+  "Heart Failure (%)",
+  "Chronic Kidney Disease (%)",
+  "Chronic Respiratory Disease (%)",
+  "Neurological Deficit (%)",
+  "Immunosuppression (%)",
+  
+  "Prior-adrenergic medications",
+  "Beta-blocker (%)",
+  "Alpha-blocker (%)",
+  "Levosimendan (%)",
+  
+  "Cardiogenic shock cause",
+  "Non-ischemic (%)",
+  "Ischemic (%)",
+  "Cardiac Arrest Before Cannulation (%)",
+  
+  "Pre-ECMO Clinical parameters",
+  "Systolic Blood Pressure (mmHg)",
+  "Diastolic Blood Pressure (mmHg)",
+  "Mean Arterial Pressure (mmHg)",
+  "Heart Rate (bpm)",
+  
+  "Pre-ECMO heart function",
+  "Pre-ECMO Ejection Fraction (%)",
+  "Pre-ECMO Aortic Velocity Time Integral (cm)",
+  
+  "Pre-ECMO supports",
+  "Mechanical ventilation (%)",
+  "Norepinephrine cumulative Dose on the VA-ECMO implantation day (γ/kg)",
+  "Dobutamine cumulative Dose on the VA-ECMO implantation day (γ/kg)",
+  
+  "Pre-ECMO Biological assessment",
+  "Lactate (mmol/L)",
+  "Creatinine (µmol/L)",
+  "Bilirubin (mg/dL)",
+  "High Sensitivity Troponin I (ng/L)",
+  "NT-proBNP (pg/mL)",
+  "Platelet Count (10⁹/L)"
+)
+
+table_1_vf2 <- bind_rows(sections, table_1_vf) %>%
+  mutate(across(everything(), ~gsub("\\[", "(", .x )),
+         across(everything(), ~gsub("\\]", ")", .x )),
+across(everything(), ~gsub("\\s*[;,]\\s*", " – ", .x)),
+Variables = factor(Variables, levels = order))%>%
+  arrange(Variables)
+
+###ARRONDIR###
+patterns <- c(
+  "Pre-ECMO Aortic Velocity Time Integral \\(cm\\)",
+  "Lactate \\(mmol/L\\)"
+)
+
+zerodigit <- table_1_vf2 %>%
+  dplyr::filter(
+    !str_detect(
+      Variables,
+      str_c(
+        "Pre-ECMO Aortic Velocity Time Integral \\(cm\\)",
+        "Lactate \\(mmol/L\\)",
+        sep = "|"
+      )
+    )
+  ) %>%
+  dplyr::pull(Variables)
+
+rows_to_round <- table_1_vf2$Variables %in% zerodigit
+
+table_1_vf2$Overall[rows_to_round] <-
+  round_nonnormal_0(table_1_vf2$Overall[rows_to_round])
+
+
+table1 <- flextable(table_1_vf2) %>%
+  set_caption("Table 1: Characteristics of the population at VA-ECMO implantation") %>% 
+  autofit() %>%
+  align(j = 2:3, align = "center") %>%
+  bold(i = ~ is.na(Missing) & Overall == "") %>%        # titres en gras
+  align(i = ~ is.na(Missing) & Overall == "", j = 1, align = "left") %>% 
+  bg(i = ~ is.na(Missing) & Overall == "", bg = "#FFFFFF") %>%
+   hline_bottom(part = "header", border = fp_border(color="black", width = 1)) %>%  # sous l'en-tête
+  hline_bottom(part = "body",   border = fp_border(color="black", width = 1)) %>%  # ligne finale du tableau
+    add_footer_lines(
+    values = "Data are expressed in n(%) for categorical variables and median (25th–75th) for continuous variables."
+  ) %>%
+  align(part = "footer", align = "left") %>%
+  fontsize(part = "footer", size = 9)
+
+```
+
+```{r table1-display}
+table1
+save_as_docx(table1, path = "Tables/Table1_characteristics.docx")
+```
+
+
+# TABLE 2: Management and Outcomes
+```{r table2,include=FALSE}
+
+var.cont = c("Lenght_vm",
+             "Time_hosp",
+             "Time_ecmo",
+             "ECMO_duration_weaned",
+             "ECMO_duration_Dead")
+
+var.cat = c("BCPIA_Tot", "EER_Tot" ,"Outcome","j90_deces")
+
+var.tot = c(var.cat, var.cont)
+
+T2 <- df %>%
+  dplyr::select(all_of(var.tot)) %>%
+  mutate(across(all_of(var.cont), as.numeric), 
+         across(all_of(var.cat), as.factor))
+
+table2 <- CreateTableOne(vars = var.tot, factorVars = var.cat, data = T2) 
+table2 <- print(table2, nonnormal = var.cont, contDigits = 1, showAllLevels = FALSE)
+
+table2_df <- as.data.frame(table2)
+table2_df$Variables <- row.names(table2_df)
+row.names(table2_df) <- NULL
+table2_df <- table2_df[, c(2,1)]
+
+table_2_vf <-table2_df  %>%
+  select(Variables, Overall) %>%
+  mutate(Variables = str_remove(Variables, " \\(median \\[IQR\\]\\)"))
+
+# 2) Dictionnaire de traduction
+traduction <- c(
+  "n"                        = "n",
+  "Outcome (%)"              = "Outcome",
+  "   Bridge to LVAD"        = "Bridge to LVAD (%)",
+  "   Bridge to Transplant"  = "Bridge to Transplant (%)",
+  "   Death"                 = "Death in ICU (%)",
+  "   ECMO Weaning"          = "ECMO Weaning (%)",
+  "BCPIA_Tot = 1 (%)"        = "Intra-Aortic Balloon Pump (%)",
+  "j90_deces = 1 (%)"        = "90-day Mortality (%)",
+  "EER_Tot = 1 (%)"          = "Renal Replacement Therapy (%)",
+  "Lenght_vm"                = "Duration of Mechanical Ventilation (days)",
+  "Time_hosp"                = "ICU Length of Stay (days)",
+  "Time_ecmo"                = "ECMO Duration (days)",
+  "ECMO_duration_weaned"                = "ECMO Duration in weaned (days)",
+  "ECMO_duration_Dead"                = "ECMO Duration in deceased (days)"
+  
+)
+
+# 3) Ordre final
+order <- c(
+  "n",
+  "ECMO Duration (days)",
+  "ECMO Duration in weaned (days)",
+  "ECMO Duration in deceased (days)",
+  "Intra-Aortic Balloon Pump (%)",
+  "Renal Replacement Therapy (%)",
+  "Duration of Mechanical Ventilation (days)",
+  "ICU Length of Stay (days)",
+  "Outcome",
+  "ECMO Weaning (%)",
+  "Death in ICU (%)",
+  "Bridge to LVAD (%)",
+  "Bridge to Transplant (%)",
+  "90-day Mortality (%)"
+)
+
+
+table_2_vf$Overall <- round_nonnormal_0(table_2_vf$Overall)
+
+
+# 4) Application traduction + ordre + renommage Missing
+table_2_vf <- table_2_vf %>%
+  mutate(    across(everything(), ~gsub("\\[", "(", .x )),
+    across(everything(), ~gsub("\\]", ")", .x )),
+    across(everything(), ~gsub("\\s*[;,]\\s*", " – ", .x)),
+    Variables = recode(Variables, !!!traduction),
+    Variables = factor(Variables, levels = order)
+  ) %>%
+  arrange(Variables)
+
+# 5) Flextable
+
+table2 <- flextable(table_2_vf) %>%
+  set_caption("Table 2: Outcomes in the whole population") %>% 
+  autofit() %>%
+  align(j = 2, align = "center") %>%
+  bold(i = ~ Variables == "Outcome") %>%
+  align(i = ~ Variables == "Outcome", j = 1, align = "left") %>%
+  hline_bottom(part = "header", border = fp_border(color = "black", width = 1)) %>%
+  hline_bottom(part = "body",   border = fp_border(color = "black", width = 1)) %>%
+  add_footer_lines(
+    values = "Data are expressed in n(%) for categorical variables and median (25th – 75th) for continuous variables."
+  ) %>%
+  align(part = "footer", align = "left") %>%
+  fontsize(part = "footer", size = 9)
+```
+
+```{r table1 display}
+table2
+save_as_docx(table2, path = "Tables/Table2_Outcome.docx")
+```
+
+# TABLE 2a: Hemodynamic parameters on weaning day
+
+```{r table2a, include=FALSE}
+df_long <- df %>%
+  select(
+    ID,
+    Time_weaning,
+    jsev_ecmo_debit,
+    jsev_dobu_cum,
+    jsev_NAd_cum,
+    jsev_pam,
+    jsev_freq,
+    jsev_ett_fevg,
+    jsev_ett_vmax_s_mit_lat_vg,
+    jsev_lact
+  ) %>%
+  rename(
+    `delay to weaning test` = Time_weaning,
+    `ECMO flow (l)` = jsev_ecmo_debit,
+    `Dobutamine cumulative (mg)` = jsev_dobu_cum,
+    `Noradrenaline cumulative (mg)` = jsev_NAd_cum,
+    `MAP_baseline (mmHg)` = jsev_pam,
+    `HR (bpm)` = jsev_freq,
+    `FEVG (%)` = jsev_ett_fevg,
+    `Mitral S' (cm/s)` = jsev_ett_vmax_s_mit_lat_vg,
+    `Lactate (mmol/L)` = jsev_lact
+  ) %>%
+  pivot_longer(cols = -ID, names_to = "Parameter", values_to = "Value")
+
+custom_order <- c(
+  "delay to weaning test",
+  "ECMO flow (l)",
+  "Dobutamine cumulative (mg)",
+  "Noradrenaline cumulative (mg)",
+  "MAP_baseline (mmHg)",
+  "HR (bpm)",
+  "FEVG (%)",
+  "Mitral S' (cm/s)",
+  "Lactate (mmol/L)"
+)
+
+table2a <- df_long %>%
+  group_by(Parameter) %>%
+  summarise(
+    n = sum(!is.na(Value)),
+    Median = round(median(Value, na.rm = TRUE), 1),
+    Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 1),
+    Q3 = round(quantile(Value, 0.75, na.rm = TRUE), 1),
+    .groups = "drop"
+  ) %>%
+  mutate(`Median [IQR]` = paste0(Median, " [", Q1, "–", Q3, "], n=", n)) %>%
+  select(Parameter, `Median [IQR]`) %>%
+  slice(match(custom_order, Parameter))
+
+ft2a <- flextable(as.data.frame(table2a)) %>%
+  autofit() %>%
+  set_caption("Table 2a: Hemodynamic parameters on weaning day")
+
+save_as_docx(ft2a, path = "Tables/Table2a_weaning_hemodynamics.docx")
+```
+
+```{r table2a-display}
+table2a
+```
+
+# TABLE 2b: Hemodynamic parameters during the weaning test
+
+```{r table2b, include=FALSE}
+df_long <- df %>%
+  select(
+    ID,
+    jsev_epr_sev_t0_3l_itv,
+    jsev_epr_sev_t0_3l_pam,
+    `jsev_epr_sev_t1_1,5l_itv`,
+    `jsev_epr_sev_t1_1,5l_pam`
+  ) %>%
+  rename(
+    `VTI (cm)` = jsev_epr_sev_t0_3l_itv,
+    `MAP (mmHg)` = jsev_epr_sev_t0_3l_pam,
+    `VTI_1.5L (cm)` = `jsev_epr_sev_t1_1,5l_itv`,
+    `MAP_1.5L (mmHg)` = `jsev_epr_sev_t1_1,5l_pam`,
+  ) %>%
+  pivot_longer(
+    cols = -c(ID),
+    names_to = "Parameter_raw",
+    values_to = "Value"
+  ) %>%
+  mutate(
+    Value = as.numeric(Value),
+    Condition = case_when(
+      str_detect(Parameter_raw, "1.5L") ~ "1.5L",
+      TRUE ~ "3L"
+    ),
+    Condition = factor(Condition, levels = c("3L", "1.5L")),
+    Parameter = str_replace(Parameter_raw, "_1.5L", "")
+  )
+
+table2b <- df_long %>%
+  group_by(Parameter, Condition) %>%
+  summarise(
+    n = sum(!is.na(Value)),
+    Median = round(median(Value, na.rm = TRUE), 5),
+    Q1 = round(quantile(Value, 0.25, na.rm = TRUE), 5),
+    Q3 = round(quantile(Value, 0.75, na.rm = TRUE), 5),
+    .groups = "drop"
+  ) %>%
+  mutate(Value_IQR = paste0(Median, " [", Q1, "–", Q3, "]; n=", n)) %>%
+  select(Parameter, Condition, Value_IQR) %>%
+  pivot_wider(names_from = Condition, values_from = Value_IQR)
+
+TEST <- wilcox.test(Value ~ Condition, data = df_long %>% filter(Parameter == "VTI (cm)"))
+
+ft2b <- flextable(as.data.frame(table2b)) %>%
+  autofit() %>%
+  set_caption("Table 2b: Hemodynamic parameters during the weaning test")
+
+save_as_docx(ft2b, path = "Tables/Table2b_weaning_test.docx")
+```
+
+```{r table2b-display}
+table2b
+```
+
+No significant difference between VTI at 3 L and 1.5 L flow conditions at weaning day (Wilcoxon test, p = `r format.pval(TEST$p.value, digits=3)`)
+
+# FIGURE 1: Association between IL6 and expression of ADRB on T Lymphocytes
+
+```{r Figure1, include=FALSE}
+
+F1_1_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "A: implantation",
+                 ylim = c(0, 100))
+
+F1_2_plot <- make_il_cor_plot(df, 
+                 "ADR1L_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+F1_3_plot <- make_il_cor_plot(df, 
+                 "ADR1L_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "C: explantation",
+                 ylim = c(0, 100))
+
+
+F1_4_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "D: implantation",
+                 ylim = c(0, 100))
+
+F1_5_plot <- make_il_cor_plot(df, 
+                 "ADR2L_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+F1_6_plot <- make_il_cor_plot(df, 
+                 "ADR2L_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "F: explantation",
+                 ylim = c(0, 100))
+
+Figure_1 <- (F1_1_plot | F1_2_plot | F1_3_plot) /
+             (F1_4_plot | F1_5_plot | F1_6_plot)
+```
+
+
+```{r Figure1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+Figure_1
+ggsave("FIGURES/Figure1.pdf",
+       plot   = Figure_1,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+```{r FIGURE_1BIS, include=FALSE}
+F1bis_1_plot <- make_il_cor_plot(
+  df,
+  "ADR1L_J0", "log_value_IL10_J0",
+  xlab = "log(IL-10 + 1)",
+  ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+  title_lab = "A: implantation",
+  ylim = c(0, 100)
+)
+
+F1bis_2_plot <- make_il_cor_plot(
+  df,
+  "ADR1L_J3_J5", "log_value_IL10_J3_J5",
+  xlab = "log(IL-10 + 1)",
+  ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+  title_lab = "B: D3–D5",
+  ylim = c(0, 100)
+)
+
+F1bis_3_plot <- make_il_cor_plot(
+  df,
+  "ADR1L_JS", "log_value_IL10_JS",
+  xlab = "log(IL-10 + 1)",
+  ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+  title_lab = "C: explantation",
+  ylim = c(0, 100)
+)
+
+F1bis_4_plot <- make_il_cor_plot(
+  df,
+  "ADR2L_J0", "log_value_IL10_J0",
+  xlab = "log(IL-10 + 1)",
+  ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+  title_lab = "D: implantation",
+  ylim = c(0, 100)
+)
+
+F1bis_5_plot <- make_il_cor_plot(
+  df,
+  "ADR2L_J3_J5", "log_value_IL10_J3_J5",
+  xlab = "log(IL-10 + 1)",
+  ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+  title_lab = "E: D3–D5",
+  ylim = c(0, 100)
+)
+
+F1bis_6_plot <- make_il_cor_plot(
+  df,
+  "ADR2L_JS", "log_value_IL10_JS",
+  xlab = "log(IL-10 + 1)",
+  ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+  title_lab = "F: explantation",
+  ylim = c(0, 100)
+)
+
+Figure_1_bis <- (F1bis_1_plot | F1bis_2_plot | F1bis_3_plot) /
+                (F1bis_4_plot | F1bis_5_plot | F1bis_6_plot)
+
+```
+
+
+# FIGURE 2: Inflammatory heatmap according to outcomes
+
+```{r Figure2, include=FALSE}
+# Source the user's heatmap script
+
+source("FUNCTIONS/heatmap_1.R")
+
+FIGURE2
+
+```
+
+```{r Figure2-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+FIGURE2
+
+ggsave("FIGURES/Figure2.pdf",
+             plot   = FIGURE2,
+             width  = 210, height = 180, units = "mm",
+             device = cairo_pdf, bg = "white")
+```
+
+# FIGURE 3: Association between ADRB expressions and outcomes
+
+```{r Figure3_tot,include=FALSE}
+
+prep_A1 <- prep_marker_data(df, prefix = "ADR1L", transform = "none")
+test_A1 <- test_marker(prep_A1$data)
+Figure_3_1 <- plot_marker(
+  dat      = prep_A1$data,
+  counts   = prep_A1$counts,
+  x_labels = prep_A1$x_labels,
+  panel_title = "A",
+  y_var    = "value_log",
+  y_lab    = "Percentage of T lymphocytes expressing ADRB1"
+) +
+  annotate("text", x = 1, y = min(prep_A1$data$value_log, na.rm = TRUE) +40, label = test_A1$label, hjust = 0) +
+  coord_cartesian(ylim=c(0,105))
+
+prep_A2 <- prep_marker_data(df, prefix = "ADR2L", transform = "none")
+test_A2 <- test_marker(prep_A2$data)
+Figure_3_2 <- plot_marker(
+  dat      = prep_A2$data,
+  counts   = prep_A2$counts,
+  x_labels = prep_A2$x_labels,
+  panel_title = "B",
+  y_var    = "value_log",
+  y_lab    = "Percentage of T lymphocytes expressing ADRB2"
+) +
+  annotate("text", x = 2.5, y = max(prep_A2$data$value_log, na.rm = TRUE) +1, label = test_A2$label, hjust = 0) +
+  coord_cartesian(ylim=c(0,105))
+
+prep_M1 <- prep_marker_data(df, prefix = "M_ADR1", transform = "none")
+test_M1 <- test_marker(prep_M1$data)
+Figure_3_3 <- plot_marker(
+  dat      = prep_M1$data,
+  counts   = prep_M1$counts,
+  x_labels = prep_M1$x_labels,
+  panel_title = "C",
+  y_var    = "value_log",
+  y_lab    = "Percentage of monocytes expressing ADRB1"
+) +
+  annotate("text", x = 2.5, y = max(prep_M1$data$value_log, na.rm = TRUE), label = test_M1$label, hjust = 0)+
+  coord_cartesian(ylim=c(0,105))
+
+prep_M2 <- prep_marker_data(df, prefix = "M_ADR2", transform = "none")
+test_M2 <- test_marker(prep_M2$data)
+Figure_3_4 <- plot_marker(
+  dat      = prep_M2$data,
+  counts   = prep_M2$counts,
+  x_labels = prep_M2$x_labels,
+  panel_title = "D",
+  y_var    = "value_log",
+  y_lab    = "Percentage of monocytes expressing ADRB2",
+  show_legend = TRUE
+) +
+  annotate("text", x = 2.5, y = max(prep_M2$data$value_log, na.rm = TRUE)+3, label = test_M2$label, hjust = 0)+
+  coord_cartesian(ylim=c(0,105))
+
+Figure3 <- (Figure_3_1 + Figure_3_2 + Figure_3_3 + Figure_3_4) +
+  patchwork::plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+```
+
+```{r Figure3_tot-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+Figure3
+
+ggsave("FIGURES/Figure3.pdf",
+       plot   = Figure3,
+       width  = 200, height = 150, units = "mm",
+       device = cairo_pdf, bg = "white", scale= 1.5) 
+```
+
+# FIGURE 4: IL6 and outcomes
+
+```{r Figure4,include=F}
+
+Figure4_A  <- plot_cytokine(df, "IL6")
+
+
+km_fit_comp <- survfit(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+mod_censored <- coxph(Surv(diff_days, outcome_censored) ~ IL6_median , data = df)
+
+res_cox <- tidy(mod_censored, exponentiate = TRUE, conf.int = TRUE)
+
+lab <- res_cox %>%
+  filter(grepl("^IL6_median", term)) %>%
+  mutate(label = sprintf("HR = %.2f (95%% CI %.2f–%.2f)", estimate, conf.low, conf.high)) %>%
+  pull(label)
+
+lab2 <- median(df$IL6_J0)
+
+Figure4_B <- ggsurvplot(km_fit_comp, data = df, 
+  pval = FALSE, conf.int = FALSE, risk.table = TRUE, risk.table.height = 0.2,
+  risk.table.y.text = TRUE, risk.table.title = "Number at Risk",
+  xlim = c(0, 90), ylab = "90 day survival", break.time.by = 7,
+  legend.title = " ", palette = c("#E63946", "#457B9D"), ggtheme = theme_classic(),surv.scale = "percent",
+  legend.labs = c("below median", "above median"),
+  legend = "none")
+
+xmax <- max(df$diff_days, na.rm = TRUE)
+Figure4_B$plot <- Figure4_B$plot +
+  annotate("text", x = 0.2 * xmax, y = 0.90, hjust = 0, label = lab, size = 3.7)
+
+Figure4_B$plot <- Figure4_B$plot +
+  annotate("text", x = 0.2 * xmax, y = 0.99, hjust = 0, label = paste0("Median IL-6 D0: ", lab2, " pg/ml"), size = 3.7)
+
+Figure4_B <- ggarrange(
+  Figure4_B$plot,
+  Figure4_B$table,
+  ncol = 1, nrow = 2,
+  heights = c(3, 1)
+)
+ggsave("FIGURES/Figure4_B.pdf",
+       plot   = Figure4_B,
+       width  = 180, height = 140, units = "mm",
+       device = cairo_pdf, bg = "white")
+
+```
+
+
+```{r Figure4-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+library(patchwork)
+Figure4 <- (Figure4_A) | (Figure4_B) +
+  plot_annotation( tag_levels = c("A","B")) +
+  plot_layout(heights = c(1.0, 0.1))
+
+
+ggsave("FIGURES/Figure4.pdf",
+       plot   = Figure4,
+       width  = 320, height = 140, units = "mm",
+       device = cairo_pdf, bg = "white", scale=1.2)
+```
+
+
+# FIGURE 5: Association between IL-6 and Organ Dysfunction
+
+```{r Figure5,include=FALSE}
+
+###########IL6 and lactate################
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "Lact_D0",
+)
+
+F5_1 <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_J0",
+                   yvar = "Lact_D0",
+                   ylab= "lactate (mmol/l)",
+                   title_lab = "")
+
+###########Cumulative 24H norepinephrine################
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "NADcum_D0_w"
+)
+
+# D0
+F5_2 <- make_il6_cor_plot(df,
+                                xvar = "log_value_IL6_J0",
+                                yvar = "NADcum_D0_w",
+                                ylab= "Cumulative 24H norepinephrine dose\n(log+1 scale)",
+                                title_lab = "")
+
+###############association between IL6 and ECMO flow#####################
+
+
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+  yvar = "j0_ecmo_debit"
+)
+
+F5_3 <- make_il6_cor_plot(df,
+                             xvar= "log_value_IL6_J0",
+                             yvar="j0_ecmo_debit",
+                             ylab="ECMO Flow (L/min)",
+                             title_lab = "")
+
+
+
+################IL6_GFR#######################
+
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "CKD_D0"
+)
+
+
+F5_4 <- make_il6_cor_plot(data=df,
+                    xvar= "log_value_IL6_J0",
+                    yvar = "CKD_D0",
+                    ylab = "CKD-EPI (ml/min/1.73m²)",
+                    title_lab = "")
+
+######################IL6 and HEPATIC FUNCTION#########################
+res_D0 <- test_linearity(
+  data = df,
+  xvar = "log_value_IL6_J0",
+    yvar = "ASAT_D0",
+)
+
+F5_5 <- make_il6_cor_plot(data= df,
+                   xvar= "log_value_IL6_J0",
+                   yvar = "ASAT_D0",
+                   ylab= "ASAT (UI/l)",
+                   title_lab = "")
+
+######################IL6 and PaO2/Fi02#########################
+F5_6 <- ggplot(df, aes(x=as.factor(Intubation), y=log_value_IL6_J0)) +
+  geom_boxplot() +
+  geom_jitter(width=0.2, alpha=0.5) +
+  labs(x="Intubation status", y="log(IL-6 + 1)")+
+   scale_x_discrete(labels = c("0" = "No", "1" = "Yes"))+ stat_compare_means(method = "wilcox.test",label = "p.format")
+```
+
+```{r}
+Figure5 <- (F5_1 | F5_2) / (F5_3 | F5_4) / (F5_5 | F5_6) +
+  plot_annotation( tag_levels = c("A","B","C","D","E","F"))
+
+ggsave("FIGURES/Figure5.pdf",
+       plot   = Figure5,
+       width  = 200, height = 240, units = "mm",
+       device = cairo_pdf, bg = "white", scale=1.2)
+```
+
+
+#####################################################
+#                                                   #
+#Additional Figures for Supplementary Material      #
+#                                                   #
+#####################################################
+
+
+
+# FIGURE S1: Association between IL6 and expression of ADRB on monocytes
+
+```{r FigureS1, include=FALSE}
+
+FS1_1 <- make_il_cor_plot(df, 
+                 "M_ADR1_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "A: D0",
+                 ylim = c(0, 100))
+
+FS1_2 <- make_il_cor_plot(df, 
+                 "M_ADR1_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+FS1_3 <- make_il_cor_plot(df, 
+                 "M_ADR1_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "C: D weaning",
+                 ylim = c(0, 100))
+
+FS1_4 <- make_il_cor_plot(df, 
+                 "M_ADR2_J0", "log_value_IL6_J0",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
+
+FS1_5 <- make_il_cor_plot(df, 
+                 "M_ADR2_J3_J5", "log_value_IL6_J3_J5",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+FS1_6 <- make_il_cor_plot(df, 
+                 "M_ADR2_JS", "log_value_IL6_JS",
+                 xlab = "log(IL-6 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
+
+FigureS1 <- (FS1_1 | FS1_2 | FS1_3) /
+             (FS1_4 | FS1_5 | FS1_6)
+```
+
+```{r FigureS1-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS1
+ggsave("FIGURES/FigureS1.pdf",
+       plot   = FigureS1,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+#FIGURE S2: Association between IL10 and expression of ADRB on T Lymphocytes
+
+```{r FigureS2, include=FALSE}
+
+FS2_1 <- make_il_cor_plot(df, 
+                               "ADR1L_J0",
+                 "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "A: D0")
+
+FS2_2 <- make_il_cor_plot(df, 
+                 "ADR1L_J3_J5",
+                 "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+FS2_3 <- make_il_cor_plot(df, 
+                 "ADR1L_JS",
+                 "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB1",
+                 title_lab = "C: D weaning",
+                 ylim = c(0, 100))
+
+FS2_4 <- make_il_cor_plot(df, 
+                 "ADR2L_J0",
+                 "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
+
+FS2_5 <- make_il_cor_plot(df, 
+                 "ADR2L_J3_J5",
+                 "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+FS2_6 <- make_il_cor_plot(df, 
+                 "ADR2L_JS",
+                 "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of T lymphocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
+
+FigureS2 <- (FS2_1 | FS2_2 | FS2_3) /
+             (FS2_4 | FS2_5 | FS2_6)
+```
+
+```{r FigureS2-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+
+FigureS2
+ggsave("FIGURES/FigureS2.pdf",
+       plot   = FigureS2,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+# FIGURE S3: Association between IL10 and expression of ADRB on monocytes
+
+```{r FigureS3, include=FALSE}
+
+FS3_1 <- make_il_cor_plot(df, 
+                 "M_ADR1_J0", "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "A: D0",
+                 ylim = c(0, 100))
+
+FS3_2 <- make_il_cor_plot(df, 
+                 "M_ADR1_J3_J5", "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "B: D3-D5",
+                 ylim = c(0, 100))
+
+FS3_3 <- make_il_cor_plot(df, 
+                 "M_ADR1_JS", "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB1",
+                 title_lab = "C: D weaning",
+                 ylim = c(0, 100))
+FS3_4 <- make_il_cor_plot(df, 
+                 "M_ADR2_J0", "log_value_IL10_J0",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "D: D0",
+                 ylim = c(0, 100))
+
+FS3_5 <- make_il_cor_plot(df, 
+                 "M_ADR2_J3_J5", "log_value_IL10_J3_J5",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "E: D3-D5",
+                 ylim = c(0, 100))
+
+FS3_6 <- make_il_cor_plot(df, 
+                 "M_ADR2_JS", "log_value_IL10_JS",
+                 xlab = "log(IL-10 + 1)",
+                 ylab = "Percentage of monocytes\nexpressing ADRB2",
+                 title_lab = "F: D weaning",
+                 ylim = c(0, 100))
+
+
+FigureS3 <- (FS3_1 | FS3_2 | FS3_3) /
+             (FS3_4 | FS3_5 | FS3_6)
+```
+
+```{r FigureS3-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS3
+ggsave("FIGURES/FigureS3.pdf",
+       plot   = FigureS3,
+       width  = 240, height = 160, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+
+# FIGURE S4: IL6 at D0 and SOFA over-time
+
+```{r FigureS4, include=FALSE}
+
+# Construction des 3 panneaux
+FS4_1   <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_J0",
+                                sofa_var  = "sofa_D0",
+                                title_label = "implantation")
+
+FS4_2 <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_J3_J5",
+                                sofa_var  = "jp2_sofa",
+                                title_label ="D3–D5")
+
+FS4_3   <- make_il6_sofa_panel(df,
+                                il6_var   = "log_value_IL6_JS",
+                                sofa_var  = "jsev_sofa",
+                                title_label = "explantation")
+FigureS4 <- FS4_1 | FS4_2 | FS4_3
+```
+
+```{r FigureS4-display, fig.width=8, fig.height=4, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS4
+ggsave("FIGURES/FigureS4.pdf",
+       plot   = FigureS4,
+       width  = 240, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```
+
+# FIGURE S5: Association between VTI the weaning day and IL6
+
+```{r FigureS5,include=F}
+# ADRB1
+
+mw_3a <- wilcox.test(log_value_IL6_JS ~ VTI_JS, data = df)
+p_value_VTI <- sprintf("%.3f", mw_3a$p.value)
+
+count_data <- df %>% group_by(VTI_JS) %>% summarise(n = n(), .groups = "drop")
+
+FigureS5 <- ggplot(df, aes(x = VTI_JS, y = log_value_IL6_JS, fill = VTI_JS)) +
+  geom_boxplot() +
+  geom_point(size = 2, alpha = 0.7, position = position_jitter(width = 0.1)) +
+  geom_text(data = count_data, aes(x = VTI_JS, y = 0.5, label = paste0("n=", n)), size = 4, inherit.aes = FALSE) +
+  scale_fill_manual(values = c("≤12 cm" = "#0072B2", ">12 cm" = "#D55E00")) +
+  labs(x = "VTI measured at 1.5 L/min", y = "IL6 (log scale)") +
+  theme_minimal() + theme(legend.position = "none") +
+  annotate("text", x = 1.5, y = max(df$log_value_IL6_JS, na.rm=T), label = paste("p:", p_value_VTI), size = 5)
+
+```
+
+```{r FigureS5-display, fig.width=8, fig.height=6, fig.scale=1.5, dpi=300, fig.align='center'}
+FigureS5
+
+ggsave("FIGURES/FigureS5.pdf",
+       plot   = FigureS5,
+       width  = 200, height = 120, units = "mm",
+       device = cairo_pdf, bg = "white")
+```

@@ -592,7 +592,7 @@ summary_stats <- df %>%
   )
 ```
 
-Day-0 blood samples were collected on average `r round(summary_stats$mean_minutes, 2)` hours (SD `r round(summary_stats$sd_minutes, 2)` hours) before ECMO implantation, ranging from `r round(summary_stats$min, 1)` hours before to `r round(summary_stats$min, 1)` hours after ECMO cannulation.
+Day-0 blood samples were collected on average `r round(summary_stats$mean_hours, 2)` hours (SD `r round(summary_stats$sd_hours, 2)` hours) before ECMO implantation, ranging from `r round(summary_stats$min, 1)` hours before to `r round(summary_stats$min, 1)` hours after ECMO cannulation.
 
 
 # TABLE 1: Characteristics of the population
